@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 type mainGrid [9][9]int
 
@@ -32,15 +35,32 @@ func isValid(grid *mainGrid, row, col, value int) bool {
 	return true
 }
 
-// func sudokuSolver(grid *mainGrid) bool {
-// 	intermediateGrid := grid
-// 	//  backtracking algorithm
-// 	for row := 0; row < 9; row++ {
-// 		for col := 0; col < 9; col++ {
+func sudokuSolver(grid *mainGrid) bool {
+	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	rand.Shuffle(len(numbers), func(i, j int) { numbers[i], numbers[j] = numbers[j], numbers[i] })
 
-// 		}
-// 	}
-// }
+	//  backtracking algorithm
+	for row := 0; row < 9; row++ {
+		for col := 0; col < 9; col++ {
+			if grid[row][col] == 0 {
+				for _, number := range numbers {
+					if isValid(grid, row, col, number) {
+						grid[row][col] = number
+						sudokuSolver(grid)
+					} else {
+						// wip finir les tests
+						grid[row][col] = 0
+
+					}
+
+				}
+			}
+
+		}
+
+	}
+	return true
+}
 
 func main() {
 	Sudoku := mainGrid{
@@ -58,4 +78,7 @@ func main() {
 	// fmt.Println(isValid(&Sudoku, 6, 6, 5))
 	// fmt.Println(isValid(&Sudoku, 0, 0, 3))
 	fmt.Println(isValid(&Sudoku, 5, 1, 9))
+	sudokuSolver(&Sudoku)
+	fmt.Println(Sudoku)
+
 }
