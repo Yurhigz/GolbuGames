@@ -6,9 +6,9 @@ Du solveur => générateur de grille avec niveau de difficultés en fonction du 
 Générer des grilles de manières aléatoires et les stocker dans une BDD pour éviter de devoir faire de nouveaux des calculs lors de la génération en direct. 
 Une fois le solveur et générateur => transcrire ça en typescript/react sur une version front qui intéragit par le biais d'appel de fonction avec le code go derrière
 
-1️⃣ Créer la structure Sudoku et écrire la fonction isValid(). \n
-2️⃣ Implémenter le backtracking (solveSudoku()). \n
-3️⃣ Générer un puzzle en supprimant des chiffres (removeNumbers()). \n
-4️⃣ Vérifier l'unicité de la solution (hasUniqueSolution()). \n
-5️⃣ Créer une API REST avec Gin pour envoyer des grilles. \n
-6️⃣ Développer le frontend en TypeScript pour afficher le jeu. \n
+1️⃣ Créer la structure Sudoku et écrire la fonction isValid(). <br>
+2️⃣ Implémenter le backtracking (solveSudoku()). <br> 
+3️⃣ Générer un puzzle en supprimant des chiffres (removeNumbers()). 
+4️⃣ Vérifier l'unicité de la solution (hasUniqueSolution()). 
+5️⃣ Créer une API REST avec Gin pour envoyer des grilles. 
+6️⃣ Développer le frontend en TypeScript pour afficher le jeu. 
