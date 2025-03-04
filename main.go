@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 )
@@ -70,6 +71,32 @@ func sudokuSolver(grid *mainGrid) bool {
 	return false
 }
 
+func symmetryRemoving() bool {
+
+}
+
+func basicRemoving() bool {
+
+}
+
+func difficulty(difficulty string) (int, error) {
+	for _, c := range difficulty {
+		if (c < 48 || c > 57) && (c < 65 || c > 90) && (c < 97 || c > 122) {
+			return -1, errors.New("difficulty must be a string such as easy")
+		}
+	}
+	switch difficulty {
+	case "easy":
+		return 0, nil
+	case "medium":
+		return 1, nil
+	case "hard":
+		return 2, nil
+	default:
+		return -1, nil
+	}
+}
+
 func generateGrid(difficulty string) bool {
 	emptyGrid := mainGrid{
 		{0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -82,6 +109,8 @@ func generateGrid(difficulty string) bool {
 		{0, 0, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0},
 	}
+	sudokuSolver(&emptyGrid)
+
 	return false
 }
 
@@ -113,6 +142,15 @@ func main() {
 	// fmt.Println(isValid(&Sudoku, 0, 0, 3))
 	// fmt.Println(isValid(&Sudoku, 5, 1, 9))
 	sudokuSolver(&Sudoku2)
+	fmt.Println(Sudoku2)
+	for row := 0; row < 9; row += 2 {
+		Sudoku2[row][0] = 0
+	}
+
+	fmt.Println(Sudoku2)
+
+	sudokuSolver(&Sudoku2)
+
 	fmt.Println(Sudoku2)
 
 }
