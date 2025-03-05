@@ -114,7 +114,7 @@ JWT_SECRET=your_jwt_secret
 
 ## 📝 Licence
 
-Ce projet est sous licence [À DÉFINIR]
+[À DÉFINIR]
 
 ## 📞 Contact
 
