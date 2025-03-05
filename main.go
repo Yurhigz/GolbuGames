@@ -8,6 +8,8 @@ import (
 
 type mainGrid [9][9]int
 
+type Coordinates [2]int
+
 func isValid(grid *mainGrid, row, col, value int) bool {
 	// Je vérifie dans les lignes et colonnes
 	for i := 0; i < 9; i++ {
@@ -71,12 +73,55 @@ func sudokuSolver(grid *mainGrid) bool {
 	return false
 }
 
-func symmetryRemoving() bool {
-
+func validNbIndices(numbers int) (bool, error) {
+	if numbers > 54 || numbers < 0 {
+		return false, errors.New("")
+	}
+	return true, nil
 }
 
-func basicRemoving() bool {
+func symmetryRandomRemoving(numbers int, grid *mainGrid) (bool, error) {
+	if numbers%2 != 0 {
+		return false, errors.New("numbers must be even for symmetrical requirements")
+	}
+	valid, err := validNbIndices(numbers)
+	if !valid {
+		return valid, err
+	}
 
+	removed := 0
+
+	for removed < numbers/2 {
+		row := rand.Intn(9)
+		col := rand.Intn(9)
+
+		if grid[row][col] != 0 && grid[col][row] != 0 {
+			grid[row][col] = 0
+			grid[col][row] = 0
+			removed++
+		}
+
+	}
+	return true, nil
+}
+
+func basicRandomRemoving(numbers int, grid *mainGrid) (bool, error) {
+	valid, err := validNbIndices(numbers)
+	if !valid {
+		return valid, err
+	}
+	removed := 0
+
+	for removed < numbers {
+		row := rand.Intn(9)
+		col := rand.Intn(9)
+
+		if grid[row][col] != 0 {
+			grid[row][col] = 0
+			removed++
+		}
+	}
+	return true, nil
 }
 
 func difficulty(difficulty string) (int, error) {
@@ -115,17 +160,6 @@ func generateGrid(difficulty string) bool {
 }
 
 func main() {
-	// Sudoku := mainGrid{
-	// 	{0, 8, 0, 0, 7, 0, 0, 0, 0},
-	// 	{6, 3, 0, 1, 9, 5, 0, 0, 0},
-	// 	{0, 0, 8, 0, 0, 0, 0, 6, 0},
-	// 	{8, 0, 0, 0, 6, 0, 0, 0, 3},
-	// 	{4, 0, 0, 8, 0, 3, 0, 0, 1},
-	// 	{7, 0, 0, 0, 2, 0, 0, 0, 6},
-	// 	{0, 6, 0, 0, 0, 0, 0, 8, 0},
-	// 	{0, 0, 0, 4, 1, 9, 0, 0, 0},
-	// 	{0, 0, 0, 0, 8, 0, 0, 7, 9},
-	// }
 	Sudoku2 := mainGrid{
 		{0, 0, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0},
