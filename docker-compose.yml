@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: golbugames_sudoku
+      POSTGRES_USER: ${BDD_USER}
+      POSTGRES_PASSWORD: ${BDD_PWD}
+    ports:
+      - "${BDD_PORT_IN}:${BDD_PORT_OUT}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
