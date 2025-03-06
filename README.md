@@ -41,7 +41,7 @@ cd GolbuGames
 
 2. Installer les dépendances
 ```bash
-npm install
+# Instructions à venir
 ```
 
 3. Configurer la base de données
@@ -51,7 +51,7 @@ npm install
 
 4. Lancer l'application
 ```bash
-npm start
+# Instructions à venir
 ```
 
 ## 🔧 Configuration
@@ -114,7 +114,7 @@ JWT_SECRET=your_jwt_secret
 
 ## 📝 Licence
 
-Ce projet est sous licence [À DÉFINIR]
+[À DÉFINIR]
 
 ## 📞 Contact
 
