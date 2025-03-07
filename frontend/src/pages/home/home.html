@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GolbuGames - Plateforme de jeux multijoueurs</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">GolbuGames</div>
+            <ul>
+                <li><a href="#games">Jeux</a></li>
+                <li><a href="#leaderboard">Classement</a></li>
+                <li><a href="#profile">Profil</a></li>
+                <li><button id="loginBtn">Connexion</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="games-grid">
+            <h2>Nos Jeux</h2>
+            <div class="games-container">
+                <div class="game-card">
+                    <img src="assets/sudoku.png" alt="Sudoku">
+                    <h3>Sudoku</h3>
+                    <p>Jouez au Sudoku en temps réel contre d'autres joueurs</p>
+                    <button class="play-btn">Jouer</button>
+                </div>
+                <!-- More game cards... -->
+            </div>
+        </section>
+
+        <section id="connection-status">
+            <div id="ws-status">
+                Status: <span class="status-indicator">Déconnecté</span>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 GolbuGames - Tous droits réservés</p>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
