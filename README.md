@@ -24,6 +24,7 @@ Une plateforme web moderne permettant de jouer à différents jeux en multijoueu
 - Go
 - PostgreSQL
 - Authentication JWT
+- Package pgx
 
 ### Frontend
 - React.js
@@ -39,9 +40,10 @@ git clone [url-du-repo]
 cd GolbuGames
 ```
 
-2. Installer les dépendances
+2. Installer les dépendances 
 ```bash
 # Instructions à venir
+go get github.com/jackc/pgx/v5
 ```
 
 3. Configurer la base de données
@@ -92,6 +94,7 @@ JWT_SECRET=your_jwt_secret
 
 ### Phase 1
 - [x] Mise en place de l'architecture de base
+- [] Mise en place de la connexion avec la DB et fonctions d'intéractions
 - [ ] Système d'authentification
 - [ ] Implémentation du Sudoku
 - [ ] Système de classement basique
