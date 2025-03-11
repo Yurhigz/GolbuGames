@@ -1,7 +1,8 @@
 -- init-db.sql
-CREATE DATABASE sudokuDB;
+CREATE DATABASE sudokudb;
+CREATE DATABASE membersgg;
 
-\c sudokuDB
+\c sudokudb
 
 CREATE TABLE sudoku (
     id SERIAL PRIMARY KEY,
@@ -22,7 +23,7 @@ CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     token VARCHAR(100) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE -- Suppression en cascade en cas de suppresion d'un utilisateur, mécanisme à confirmer
 );
 
@@ -30,8 +31,10 @@ CREATE TABLE scores (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     score INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE 
 );
 
-CREATE DATABASE membersGG;
+\c membersgg 
+
+-- Ajouter les tables après s'est connecté à la base de données membersgg
