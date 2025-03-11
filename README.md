@@ -94,7 +94,7 @@ JWT_SECRET=your_jwt_secret
 
 ### Phase 1
 - [x] Mise en place de l'architecture de base
-- [] Mise en place de la connexion avec la DB et fonctions d'intéractions
+- [ ] Mise en place de la connexion avec la DB et fonctions d'intéractions
 - [ ] Système d'authentification
 - [ ] Implémentation du Sudoku
 - [ ] Système de classement basique
