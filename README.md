@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/c3e181af-ca3a-491d-8d87-09eb13543526)# GolbuGames - Plateforme de Jeux en Ligne
+# GolbuGames - Plateforme de Jeux en Ligne
 
 Une plateforme web moderne permettant de jouer à différents jeux en multijoueur avec un système de classement intégré.
 
