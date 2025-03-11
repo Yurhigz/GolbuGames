@@ -1,5 +1,19 @@
 package database
 
-func AddUser() {
+func AddUser() error {
+	
+}
+
+func DeleteUser() {
 
 }
+
+func AddGrid() {
+
+}
+
+func GetGrid() {
+
+}
+
+func 
