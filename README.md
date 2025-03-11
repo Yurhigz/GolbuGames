@@ -1,4 +1,4 @@
-# GolbuGames - Plateforme de Jeux en Ligne
+![image](https://github.com/user-attachments/assets/c3e181af-ca3a-491d-8d87-09eb13543526)# GolbuGames - Plateforme de Jeux en Ligne
 
 Une plateforme web moderne permettant de jouer à différents jeux en multijoueur avec un système de classement intégré.
 
@@ -94,7 +94,7 @@ JWT_SECRET=your_jwt_secret
 
 ### Phase 1
 - [x] Mise en place de l'architecture de base
-- [] Mise en place de la connexion avec la DB et fonctions d'intéractions
+- [ ] Mise en place de la connexion avec la DB et fonctions d'intéractions
 - [ ] Système d'authentification
 - [ ] Implémentation du Sudoku
 - [ ] Système de classement basique
