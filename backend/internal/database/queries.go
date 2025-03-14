@@ -2,29 +2,41 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 )
 
-func AddUser(parentsContext context.Context, bdd string, id int, username, password string) error {
+func AddUser(parentsContext context.Context, username, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
-
-	query := fmt.Sprintf("INSERT INTO %s (username, password) VALUES ($1, $2)", bdd)
+	// trouver un moyen pour éviter les injections sql basiques
+	query := `INSERT INTO users (username, password) VALUES ($1, $2)`
 
 	_, err := DBPool.Exec(ctx, query, username, password)
 	if err != nil {
-		log.Println("Error inserting user:", err)
+		log.Printf("Error inserting user [%s] %v", username, err)
 		return err
 	}
 
-	log.Println("✅ User added successfully:", username)
+	log.Println("User added successfully:", username)
 	return nil
 }
 
-func DeleteUser() {
+func DeleteUser(parentsContext context.Context, id_user int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
 
+	query := `DELETE FROM users WHERE id = $1`
+
+	_, err := DBPool.Exec(ctx, query, id_user)
+
+	if err != nil {
+		log.Printf("Error deleting user (ID: %d): %v", id_user, err)
+		return err
+	}
+
+	log.Printf("User (ID: %d) deleted successfully:", id_user)
+	return nil
 }
 
 func AddGrid() {
