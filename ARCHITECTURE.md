@@ -52,3 +52,8 @@ Exemple d'architecture des bases de données
     chess_db → Stocke les parties, coups et historiques pour les échecs (exemple futur).
 
 Chaque base de données est gérée indépendamment, et les connexions sont ouvertes en fonction du module de jeu en cours. L’application backend sélectionne dynamiquement la base concernée selon le contexte de la requête. Sachant que pour l'ensemble des classements cela sera effectuer par jeu et on pourra ensuite effectuer des moyennes globales pour un classement global.
+
+## 6. Organisation base de données SudokuDB 
+
+Création et stockage de grille de sudoku au préalable ou à l'instant t ? Si création système de complétion en interne pour éviter de redonner les mêmes grilles à un même utilisateur en mode joueur simple. 
+Pour le jeu en multijoueurs sélection peu importe les grilles effectuées par les utilisateurs ? 
