@@ -11,14 +11,11 @@ import (
 
 var DBPool *pgxpool.Pool
 
-func InitDB() error {
-	dbURL := "host=127.0.0.1 user=postgres password=postgres dbname=sudokudb port=5442 sslmode=disable TimeZone=Asia/Shanghai"
+func InitDB(ctx context.Context) error {
+	dbURL := "host=127.0.0.1 user=postgres password=postgres dbname=golbugamesdb port=5442 sslmode=disable TimeZone=Asia/Shanghai"
 	if dbURL == "" {
 		return fmt.Errorf("DATABASE_URL is not set")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	// Configuration du pool à partir de la dburl
 	poolConfig, err := pgxpool.ParseConfig(dbURL)
