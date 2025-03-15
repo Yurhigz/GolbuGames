@@ -23,3 +23,7 @@ func DeleteUserTest(ctx context.Context) error {
 	}
 	return nil
 }
+
+// Tests de stockage et de récupération des grilles
+
+//  Tests de transformation de type pour le stockage

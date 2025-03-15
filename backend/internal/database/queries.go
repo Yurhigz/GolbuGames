@@ -39,10 +39,14 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 	return nil
 }
 
-func AddGrid() {
+//  Mettre en place une fonction de stockage des grilles complètes en version string pour simplifier le stockage
 
-}
+// func AddGrid(parentsContext context.Context) {
 
-func GetGrid() {
+// }
 
-}
+// Une fonction de récupération des grilles pour l'utilisateur côté frontend
+
+// func GetGrid() {
+
+// }

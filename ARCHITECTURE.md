@@ -57,3 +57,6 @@ Chaque base de données est gérée indépendamment, et les connexions sont ouve
 
 Création et stockage de grille de sudoku au préalable ou à l'instant t ? Si création système de complétion en interne pour éviter de redonner les mêmes grilles à un même utilisateur en mode joueur simple. 
 Pour le jeu en multijoueurs sélection peu importe les grilles effectuées par les utilisateurs ? 
+
+Fichier config => initialisation de la création des grilles (imaginons 5000 grilles pour commencer), elles sont complètes et selon la difficulté choisie par l'utilisateur on appliquera l'algorithme de suppression d'indice. 
+Il faudra ajouter un système de vérification des grilles avant de les stockers en BDD, stockage en string avec un élément de séparation type un "," pour les valeurs d'une même ligne et un ";" pour un deuxième ligne.
