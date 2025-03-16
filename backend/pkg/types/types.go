@@ -1,4 +1,4 @@
-package game
+package types
 
 // MainGrid représente une grille de Sudoku 9x9
 type MainGrid [9][9]int
