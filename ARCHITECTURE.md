@@ -60,3 +60,9 @@ Pour le jeu en multijoueurs sélection peu importe les grilles effectuées par l
 
 Fichier config => initialisation de la création des grilles (imaginons 5000 grilles pour commencer), elles sont complètes et selon la difficulté choisie par l'utilisateur on appliquera l'algorithme de suppression d'indice. 
 Il faudra ajouter un système de vérification des grilles avant de les stockers en BDD, stockage en string avec un élément de séparation type un "," pour les valeurs d'une même ligne et un ";" pour un deuxième ligne.
+
+
+## Appendix / Idées
+
+Ajout d'un mode avec un timer qui implique des resets d'une grille ou d'une sous grille 
+Un mode qui sanctionne les erreurs 
