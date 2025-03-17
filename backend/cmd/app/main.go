@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golbugames/backend/internal/database"
-	"golbugames/backend/internal/game"
+	"golbugames/backend/internal/games"
 	"golbugames/backend/tests/unit_tests"
 	"log"
 	"os"
@@ -17,10 +17,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	grid, err := game.GenerateGrid("easy")
+	solvedGrid, err := games.GenerateSolvedGrid()
 	if err != nil {
 		return
 	}
+
+	grid, err := games.GeneratePlayableGrid(solvedGrid, "easy")
 
 	fmt.Println(grid)
 
