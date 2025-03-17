@@ -8,6 +8,40 @@ import (
 	"math/rand"
 )
 
+// type Difficulty struct {
+// 	Name      string
+// 	MinRemove int
+// 	MaxRemove int
+// 	Symmetric bool
+// }
+
+// var Difficulties = map[string]Difficulty{
+// 	"easy": {
+// 		Name:      "easy",
+// 		MinRemove: 43,
+// 		MaxRemove: 46,
+// 		Symmetric: true,
+// 	},
+// 	"intermediate": {
+// 		Name:      "intermediate",
+// 		MinRemove: 46,
+// 		MaxRemove: 52,
+// 		Symmetric: true,
+// 	},
+// 	"advanced": {
+// 		Name:      "advanced",
+// 		MinRemove: 52,
+// 		MaxRemove: 56,
+// 		Symmetric: false,
+// 	},
+// 	"expert": {
+// 		Name:      "expert",
+// 		MinRemove: 56,
+// 		MaxRemove: 61,
+// 		Symmetric: false,
+// 	},
+// }
+
 func isValid(grid *types.MainGrid, row, col, value int) bool {
 	// Je vérifie dans les lignes et colonnes
 	for i := 0; i < 9; i++ {
@@ -136,43 +170,47 @@ func difficultySelection(difficulty string) (int, error) {
 		return -1, errors.New("difficulty must be a string such as easy")
 	}
 }
+func GenerateSolvedGrid() (*types.MainGrid, error) {
+	var emptyGrid types.MainGrid
+	if !SudokuSolver(&emptyGrid) {
+		return nil, errors.New("failed to generate valid grid")
+	}
+	solvedGrid := emptyGrid
+	return &solvedGrid, nil
+}
 
-// 43-45 cases dissimulées => easy
-// 46-51 cases dissimulées => medium
-// 52-55 cases dissimulées => hard
-// 56-60 cases dissimulées => expert
+func GeneratePlayableGrid(solvedGrid *types.MainGrid, difficulty string) (*types.MainGrid, error) {
 
-func GenerateGrid(difficulty string) (*types.MainGrid, error) {
 	var emptyGrid types.MainGrid
 	v, err := difficultySelection(difficulty)
 	if err != nil {
 		return &emptyGrid, err
 	}
-	if !SudokuSolver(&emptyGrid) {
-		return nil, errors.New("failed to generate valid grid")
-	}
-
-	solvedGrid := emptyGrid
 
 	var success bool
+
 	switch v {
 	case 0:
+		// 43-45 cases dissimulées => easy
 		indices := utils.RandRange(43, 46)
-		success, err = symmetryRandomRemoving(indices, &solvedGrid)
+		success, err = symmetryRandomRemoving(indices, solvedGrid)
 	case 1:
+		// 46-51 cases dissimulées => medium
 		indices := utils.RandRange(46, 52)
-		success, err = symmetryRandomRemoving(indices, &solvedGrid)
+		success, err = symmetryRandomRemoving(indices, solvedGrid)
 	case 2:
+		// 52-55 cases dissimulées => hard
 		indices := utils.RandRange(52, 56)
-		success, err = basicRandomRemoving(indices, &solvedGrid)
+		success, err = basicRandomRemoving(indices, solvedGrid)
 	case 3:
+		// 56-60 cases dissimulées => expert
 		indices := utils.RandRange(56, 61)
-		success, err = basicRandomRemoving(indices, &solvedGrid)
+		success, err = basicRandomRemoving(indices, solvedGrid)
 	}
 
 	if err != nil || !success {
 		return nil, fmt.Errorf("failed to remove numbers: %v", err)
 	}
 
-	return &solvedGrid, nil
+	return solvedGrid, nil
 }
