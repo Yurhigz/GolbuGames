@@ -2,7 +2,9 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"math/rand/v2"
 	"time"
 )
 
@@ -41,12 +43,75 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 
 //  Mettre en place une fonction de stockage des grilles complètes en version string pour simplifier le stockage
 
-// func AddGrid(parentsContext context.Context) {
+func AddGrid(parentsContext context.Context, board, solution, difficulty string) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
 
-// }
+	query := `INSERT INTO sudoku_games (board, solution, difficulty) VALUES ($1, $2, $3)`
+
+	_, err := DBPool.Exec(ctx, query, board, solution, difficulty)
+
+	if err != nil {
+		log.Printf("Error inserting sudoku grid : %v", err)
+		return err
+	}
+
+	log.Printf("Sudoku grid added successfully with difficulty : %s", difficulty)
+	return nil
+}
 
 // Une fonction de récupération des grilles pour l'utilisateur côté frontend
 
-// func GetGrid() {
+func GetGrid(parentsContext context.Context, id int) (string, string, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
 
-// }
+	query := `SELECT board,solution FROM sudoku_games WHERE id = $1`
+	var board, solution string
+
+	err := DBPool.QueryRow(ctx, query, id).Scan(&board, &solution)
+	if err != nil {
+		log.Printf("cannot find grid %d : %v", id, err)
+		return "", "", err
+	}
+
+	log.Printf("Sudoku grid (id: %d) successfully retrieved", id)
+	return board, solution, nil
+}
+
+// Une fonction de récupération aléatoire des grilles pour l'utilisateur a voir si on choisit aléatoirement côté back ou côté front selon les performances
+
+func GetRandomGrid(parentsContext context.Context, difficulty string) (string, string, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	// Première requête pour compter
+	var count int
+	countQuery := `SELECT COUNT(*) FROM sudoku_games WHERE difficulty = $1`
+	err := DBPool.QueryRow(ctx, countQuery, difficulty).Scan(&count)
+	if err != nil {
+		log.Printf("failed to count grids: %v", err)
+		return "", "", err
+	}
+
+	if count == 0 {
+		log.Printf("no grids found for difficulty %s", difficulty)
+		return "", "", err
+	}
+
+	offset := rand.IntN(count)
+
+	var board, solution string
+	query := `
+        SELECT board, solution 
+        FROM sudoku_games 
+        WHERE difficulty = $1 
+        LIMIT 1 OFFSET $2`
+
+	err = DBPool.QueryRow(ctx, query, difficulty, offset).Scan(&board, &solution)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get random grid: %w", err)
+	}
+
+	return board, solution, nil
+}
