@@ -2,8 +2,11 @@ package utils
 
 import (
 	"golbugames/backend/pkg/types"
+	"log"
 	"math/rand/v2"
 	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func RandRange(min, max int) int {
@@ -13,14 +16,24 @@ func RandRange(min, max int) int {
 // Fonction de hashage pour les passwords
 
 func HashPassword(password string) (string, error) {
-	// "Latacora, 2018: In order of preference, use scrypt, argon2, bcrypt, and then if nothing else is available PBKDF2."
-	// Check les librairies scrypt et argon2
-	// hachage =/= encryption
+
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+
+	if err != nil {
+		log.Println("password cannot be hashed : ", err)
+		return "", err
+	}
+
+	return string(bytes), nil
 }
 
 // comparaison du mot de passe utilisateur et du hash en BDD
 func ValidatePassword(password, hash string) bool {
-	// Récupération du hash dans la bdd en fonction de l'utilisateur et comparaison avec la proposition du user
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	if err == nil {
+		return true
+	}
+	return false
 }
 
 // Fonction de transformation des données de type sudokuGrid en mode string
