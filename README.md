@@ -7,16 +7,22 @@ Une plateforme web moderne permettant de jouer à différents jeux en multijoueu
 ### Actuelles
 - Algorithme de génération & résolution d'Algorithme
 - Choix du niveau de difficulté
+- Initialisation de la génération des grilles
+- Base de données PostgreSQL & init.db
+- Fonction d'intéraction et de stockage dans la BDD
+- Hashage et gestion des mots de passe
+- Quelques tests unitaires
 
 ### À venir
 - Interface web responsive
 - Système d'authentification sécurisé
-- Base de données PostgreSQL
-- Jeu de Sudoku multijoueur
+- Mode de jeu solo
+- Websocket pour multijoueurs
 - Système de classement global
-- Nouveaux jeux
+- Nouveaux jeux (tango autres...)
 - Chat en temps réel
 - Profils utilisateurs personnalisés
+- Suivi des performances joueurs
 
 ## 🛠 Stack Technique
 
@@ -36,24 +42,13 @@ Une plateforme web moderne permettant de jouer à différents jeux en multijoueu
 
 1. Cloner le repository
 ```bash
-git clone [url-du-repo]
+git clone golbugames
 cd GolbuGames
 ```
 
 2. Installer les dépendances 
 ```bash
-# Instructions à venir
-go get github.com/jackc/pgx/v5
-```
-
-3. Configurer la base de données
-```bash
-# Instructions à venir
-```
-
-4. Lancer l'application
-```bash
-# Instructions à venir
+script bash WIP
 ```
 
 ## 🔧 Configuration
@@ -68,7 +63,7 @@ DB_NAME=golbugames
 JWT_SECRET=your_jwt_secret
 ```
 
-## 🎲 Jeux disponibles
+## 🎲 Jeux disponibles (En développement)
 
 ### Sudoku
 - Mode multijoueur en temps réel
@@ -93,27 +88,27 @@ JWT_SECRET=your_jwt_secret
 ## 🚀 Roadmap
 
 ### Phase 1
-- [x] Mise en place de l'architecture de base
+- [x] Mise en place de la logique métier du sudoku
 - [x] Mise en place de la connexion avec la DB et fonctions d'intéractions
-- [ ] Système d'authentification
-- [x] Implémentation du Sudoku
-- [ ] Système de classement basique
-
+- [ ] Implémentation du Sudoku et intéractions BDD 
+- [ ] Implémentation graphique et intéraction UI
+- [ ] Système d'authentification JWT tokens
+      
 ### Phase 2
 - [ ] Ajout du chat en temps réel
-- [ ] Nouveaux jeux
-- [ ] Profils utilisateurs avancés
+- [ ] Mise en place mode multijoueurs & websocket
 - [ ] Système de badges
+- [ ] Système de classement basique
 
 ### Phase 3
 - [ ] Mode tournoi
 - [ ] Système d'amis
-- [ ] Statistiques avancées
+- [ ] Profils utilisateurs avancés & statistiques
 - [ ] Application mobile
 
 ## 👥 Contribution
 
-[À DÉFINIR]
+cf CONTRIBUTING.md
 
 ## 📝 Licence
 
