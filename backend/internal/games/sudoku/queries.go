@@ -1,8 +1,9 @@
-package database
+package sudoku
 
 import (
 	"context"
 	"fmt"
+	"golbugames/backend/internal/database"
 	"log"
 	"math/rand/v2"
 	"time"
@@ -14,7 +15,7 @@ func AddUser(parentsContext context.Context, username, password string) error {
 	// trouver un moyen pour éviter les injections sql basiques
 	query := `INSERT INTO users (username, password) VALUES ($1, $2)`
 
-	_, err := DBPool.Exec(ctx, query, username, password)
+	_, err := database.DBPool.Exec(ctx, query, username, password)
 	if err != nil {
 		log.Printf("Error inserting user [%s] %v", username, err)
 		return err
@@ -30,7 +31,7 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 
 	query := `DELETE FROM users WHERE id = $1`
 
-	_, err := DBPool.Exec(ctx, query, id_user)
+	_, err := database.DBPool.Exec(ctx, query, id_user)
 
 	if err != nil {
 		log.Printf("Error deleting user (ID: %d): %v", id_user, err)
@@ -49,7 +50,7 @@ func AddGrid(parentsContext context.Context, board, solution, difficulty string)
 
 	query := `INSERT INTO sudoku_games (board, solution, difficulty) VALUES ($1, $2, $3)`
 
-	_, err := DBPool.Exec(ctx, query, board, solution, difficulty)
+	_, err := database.DBPool.Exec(ctx, query, board, solution, difficulty)
 
 	if err != nil {
 		log.Printf("Error inserting sudoku grid : %v", err)
@@ -69,7 +70,7 @@ func GetGrid(parentsContext context.Context, id int) (string, string, error) {
 	query := `SELECT board,solution FROM sudoku_games WHERE id = $1`
 	var board, solution string
 
-	err := DBPool.QueryRow(ctx, query, id).Scan(&board, &solution)
+	err := database.DBPool.QueryRow(ctx, query, id).Scan(&board, &solution)
 	if err != nil {
 		log.Printf("cannot find grid %d : %v", id, err)
 		return "", "", err
@@ -88,7 +89,7 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (string, s
 	// Première requête pour compter
 	var count int
 	countQuery := `SELECT COUNT(*) FROM sudoku_games WHERE difficulty = $1`
-	err := DBPool.QueryRow(ctx, countQuery, difficulty).Scan(&count)
+	err := database.DBPool.QueryRow(ctx, countQuery, difficulty).Scan(&count)
 	if err != nil {
 		log.Printf("failed to count grids: %v", err)
 		return "", "", err
@@ -108,7 +109,7 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (string, s
         WHERE difficulty = $1 
         LIMIT 1 OFFSET $2`
 
-	err = DBPool.QueryRow(ctx, query, difficulty, offset).Scan(&board, &solution)
+	err = database.DBPool.QueryRow(ctx, query, difficulty, offset).Scan(&board, &solution)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to get random grid: %w", err)
 	}
