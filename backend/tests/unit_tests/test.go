@@ -2,12 +2,12 @@ package unit_tests
 
 import (
 	"context"
-	"golbugames/backend/internal/database"
+	"golbugames/backend/internal/games/sudoku"
 	"log"
 )
 
 func CreateUserTest(ctx context.Context) error {
-	errTest := database.AddUser(ctx, "test", "test123")
+	errTest := sudoku.AddUser(ctx, "test", "test123")
 	if errTest != nil {
 		log.Println("Error when using function <database.AddUser>", errTest)
 		return errTest
@@ -16,7 +16,7 @@ func CreateUserTest(ctx context.Context) error {
 }
 
 func DeleteUserTest(ctx context.Context) error {
-	errTest := database.DeleteUser(ctx, 1)
+	errTest := sudoku.DeleteUser(ctx, 1)
 	if errTest != nil {
 		log.Println("Error when using function <database.AddUser>", errTest)
 		return errTest
