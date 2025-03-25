@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"golbugames/backend/internal/database"
+	"golbugames/backend/pkg/types"
 	"log"
 	"math/rand/v2"
 	"time"
@@ -12,10 +13,22 @@ import (
 func AddUser(parentsContext context.Context, username, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
+
+	// vérification de l'unicité de l'utilisateur
+	var exists bool
+	err := database.DBPool.QueryRow(parentsContext, "SELECT * FROM users WHERE username = $1 ", username).Scan(&exists)
+	if err != nil {
+		log.Printf("error checking user existence: %v", err)
+		return err
+	}
+	if exists {
+		log.Printf("username %v already exists", username)
+		return fmt.Errorf("username already exists")
+	}
 	// trouver un moyen pour éviter les injections sql basiques
 	query := `INSERT INTO users (username, password) VALUES ($1, $2)`
 
-	_, err := database.DBPool.Exec(ctx, query, username, password)
+	_, err = database.DBPool.Exec(ctx, query, username, password)
 	if err != nil {
 		log.Printf("Error inserting user [%s] %v", username, err)
 		return err
@@ -40,6 +53,23 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 
 	log.Printf("User (ID: %d) deleted successfully:", id_user)
 	return nil
+}
+
+func GetUser(parentsContext context.Context, id_user int) (*types.User, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	var user types.User
+	query := `SELECT * FROM users WHERE id = $1`
+
+	err := database.DBPool.QueryRow(ctx, query, id_user).Scan(&user)
+
+	if err != nil {
+		log.Printf("Error retrieving user %d : %v", id_user, err)
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 //  Mettre en place une fonction de stockage des grilles complètes en version string pour simplifier le stockage
