@@ -19,3 +19,20 @@ type Coordinates [2]int
 // 	Level    string
 // 	Solution MainGrid
 // }
+
+// Ajout user API
+type UserRegistration struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// suppression user API
+type UserDeletion struct {
+	ID int `json:"id"`
+}
+
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	ID       int    `json:"id"`
+}
