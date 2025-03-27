@@ -76,14 +76,43 @@ func deleterUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func addGrid(w http.ResponseWriter, r *http.Request) {
+func getUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
 func getGrid(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
 
-}
+	difficulty := r.URL.Query().Get("difficulty")
+	if difficulty == "" {
+		difficulty = "easy"
+	}
 
-func getRandomGrid(w http.ResponseWriter, r *http.Request) {
+	validDifficulties := map[string]bool{
+		"easy":         true,
+		"intermediate": true,
+		"advanced":     true,
+		"expert":       true,
+	}
+
+	if !validDifficulties[difficulty] {
+		http.Error(w, "Invalid difficulty level", http.StatusBadRequest)
+		return
+	}
+
+	board, _, err := sudoku.GetRandomGrid(r.Context(), difficulty)
+
+	if err != nil {
+		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Grid sucessfully retrieved",
+		"board":   board,
+	})
 
 }
