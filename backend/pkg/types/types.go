@@ -22,8 +22,9 @@ type Coordinates [2]int
 
 // Ajout user API
 type UserRegistration struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username    string `json:"username"`
+	Accountname string `json:"accountname"`
+	Password    string `json:"password"`
 }
 
 // suppression user API
@@ -32,7 +33,8 @@ type UserDeletion struct {
 }
 
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	ID       int    `json:"id"`
+	Username    string `json:"username"`
+	Accountname string `json:"accountname"`
+	Password    string `json:"password"`
+	ID          int    `json:"id"`
 }
