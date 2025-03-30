@@ -7,6 +7,7 @@ CREATE DATABASE golbugamesdb;
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
+    accountname VARCHAR(50) NOT NULL,
     password VARCHAR(100) NOT NULL, --system de hash avant insertion
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
