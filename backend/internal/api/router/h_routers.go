@@ -13,3 +13,5 @@ func NewRouter() *Router {
 		mux: http.NewServeMux(),
 	}
 }
+
+redirectHandler := http.RedirectHandler("http://example.org", 307)
