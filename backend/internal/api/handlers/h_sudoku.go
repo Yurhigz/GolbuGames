@@ -9,7 +9,8 @@ import (
 	"strconv"
 )
 
-func createUser(w http.ResponseWriter, r *http.Request) {
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+	// log.Printf("Received request: %s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
 		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
 		return
@@ -18,16 +19,16 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	var userReg types.UserRegistration
 	err := json.NewDecoder(r.Body).Decode(&userReg)
 	if err != nil {
-		http.Error(w, "invalid data format, must be a json", http.StatusBadRequest)
+		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
 	}
 	// revoir les vérifications pour les usernames et passwords
-	if userReg.Username == "" || userReg.Password == "" {
-		http.Error(w, "username and password are required", http.StatusBadRequest)
+	if userReg.Username == "" || userReg.Password == "" || userReg.Accountname == "" {
+		http.Error(w, "username, account name and password are required", http.StatusBadRequest)
 		return
 	}
 
-	err = sudoku.AddUser(r.Context(), userReg.Username, userReg.Password)
+	err = sudoku.AddUser(r.Context(), userReg.Username, userReg.Accountname, userReg.Password)
 	// Vérifier les duplicatas d'utilisateurs
 	if err != nil {
 		log.Printf("%v", err)
@@ -52,7 +53,7 @@ func deleterUser(w http.ResponseWriter, r *http.Request) {
 	var userDel types.UserDeletion
 	err := json.NewDecoder(r.Body).Decode(&userDel)
 	if err != nil {
-		http.Error(w, "invalid data format, must be a json", http.StatusBadRequest)
+		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
 	}
 
@@ -77,6 +78,34 @@ func deleterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var id int
+	var user *types.User
+	err := json.NewDecoder(r.Body).Decode(&id)
+	if err != nil {
+		http.Error(w, "invalid data format", http.StatusBadRequest)
+		return
+	}
+
+	user, err = sudoku.GetUser(r.Context(), id)
+
+	if err != nil {
+		http.Error(w, "user id is invalid", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(
+		map[string]string{
+			"message":  "User succesfully retrieved",
+			"userid":   strconv.Itoa(user.ID),
+			"username": user.Username,
+		})
 
 }
 
@@ -107,6 +136,7 @@ func getGrid(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -114,5 +144,4 @@ func getGrid(w http.ResponseWriter, r *http.Request) {
 		"message": "Grid sucessfully retrieved",
 		"board":   board,
 	})
-
 }
