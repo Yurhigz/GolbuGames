@@ -10,28 +10,23 @@ import (
 	"time"
 )
 
-func AddUser(parentsContext context.Context, username, password string) error {
+func AddUser(parentsContext context.Context, username, accountname, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
 	// vérification de l'unicité de l'utilisateur
 	var exists bool
 	err := database.DBPool.QueryRow(parentsContext, "SELECT * FROM users WHERE username = $1 ", username).Scan(&exists)
-	if err != nil {
-		log.Printf("error checking user existence: %v", err)
-		return err
-	}
+	// Vérification de l'unicité de l'utilisateur
 	if exists {
-		log.Printf("username %v already exists", username)
-		return fmt.Errorf("username already exists")
+		return fmt.Errorf("[AddUser] username <%v> already exists", username)
 	}
 	// trouver un moyen pour éviter les injections sql basiques
-	query := `INSERT INTO users (username, password) VALUES ($1, $2)`
+	query := `INSERT INTO users (username, accountname, password) VALUES ($1, $2, $3)`
 
-	_, err = database.DBPool.Exec(ctx, query, username, password)
+	_, err = database.DBPool.Exec(ctx, query, username, accountname, password)
 	if err != nil {
-		log.Printf("Error inserting user [%s] %v", username, err)
-		return err
+		return fmt.Errorf("[AddUser] Error inserting user [%s] %v", username, err)
 	}
 
 	log.Println("User added successfully:", username)
@@ -47,8 +42,7 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 	_, err := database.DBPool.Exec(ctx, query, id_user)
 
 	if err != nil {
-		log.Printf("Error deleting user (ID: %d): %v", id_user, err)
-		return err
+		return fmt.Errorf("[DeleteUser] Error deleting user (ID: %d): %v", id_user, err)
 	}
 
 	log.Printf("User (ID: %d) deleted successfully:", id_user)
@@ -65,8 +59,7 @@ func GetUser(parentsContext context.Context, id_user int) (*types.User, error) {
 	err := database.DBPool.QueryRow(ctx, query, id_user).Scan(&user)
 
 	if err != nil {
-		log.Printf("Error retrieving user %d : %v", id_user, err)
-		return nil, err
+		return nil, fmt.Errorf("[GetUser] Error retrieving user %d : %v", id_user, err)
 	}
 
 	return &user, nil
@@ -83,8 +76,7 @@ func AddGrid(parentsContext context.Context, board, solution, difficulty string)
 	_, err := database.DBPool.Exec(ctx, query, board, solution, difficulty)
 
 	if err != nil {
-		log.Printf("Error inserting sudoku grid : %v", err)
-		return err
+		return fmt.Errorf("[AddGrid] Error inserting sudoku grid : %v", err)
 	}
 
 	log.Printf("Sudoku grid added successfully with difficulty : %s", difficulty)
@@ -102,8 +94,7 @@ func GetGrid(parentsContext context.Context, id int) (string, string, error) {
 
 	err := database.DBPool.QueryRow(ctx, query, id).Scan(&board, &solution)
 	if err != nil {
-		log.Printf("cannot find grid %d : %v", id, err)
-		return "", "", err
+		return "", "", fmt.Errorf("[GetGrid] cannot find grid %d : %v", id, err)
 	}
 
 	log.Printf("Sudoku grid (id: %d) successfully retrieved", id)
@@ -121,13 +112,11 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (string, s
 	countQuery := `SELECT COUNT(*) FROM sudoku_games WHERE difficulty = $1`
 	err := database.DBPool.QueryRow(ctx, countQuery, difficulty).Scan(&count)
 	if err != nil {
-		log.Printf("failed to count grids: %v", err)
-		return "", "", err
+		return "", "", fmt.Errorf("[GetRandomGrid] failed to count grids: %v", err)
 	}
 
 	if count == 0 {
-		log.Printf("no grids found for difficulty %s", difficulty)
-		return "", "", err
+		return "", "", fmt.Errorf("[GetRandomGrid] no grid found for difficulty %s", difficulty)
 	}
 
 	offset := rand.IntN(count)
@@ -141,7 +130,7 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (string, s
 
 	err = database.DBPool.QueryRow(ctx, query, difficulty, offset).Scan(&board, &solution)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get random grid: %w", err)
+		return "", "", fmt.Errorf("[GetRandomGrid] failed to get random grid: %w", err)
 	}
 
 	return board, solution, nil
