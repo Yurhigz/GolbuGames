@@ -25,8 +25,8 @@ CREATE TABLE sessions (
 
 CREATE TABLE sudoku_games (
     id SERIAL PRIMARY KEY,
-    board VARCHAR(160) NOT NULL,
-    solution VARCHAR(160) NOT NULL,
+    board VARCHAR(200) NOT NULL,
+    solution VARCHAR(200) NOT NULL,
     difficulty VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
