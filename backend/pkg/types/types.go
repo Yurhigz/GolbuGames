@@ -38,3 +38,7 @@ type User struct {
 	Password    string `json:"password"`
 	ID          int    `json:"id"`
 }
+
+type GridRequest struct {
+	Difficulty string `json:"difficulty"`
+}
