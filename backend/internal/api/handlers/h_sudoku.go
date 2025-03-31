@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"golbugames/backend/internal/games/sudoku"
 	"golbugames/backend/pkg/types"
+	"golbugames/backend/pkg/utils"
 	"log"
 	"net/http"
 	"strconv"
@@ -109,7 +110,65 @@ func getUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getGrid(w http.ResponseWriter, r *http.Request) {
+func AddGrid(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req types.GridRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+
+	if err != nil {
+		log.Printf("Erreur : %v", err)
+		http.Error(w, "invalid data format", http.StatusBadRequest)
+		return
+	}
+	difficulty := req.Difficulty
+	if difficulty == "" {
+		difficulty = "easy"
+	}
+
+	validDifficulties := map[string]bool{
+		"easy":         true,
+		"intermediate": true,
+		"advanced":     true,
+		"expert":       true,
+	}
+
+	if !validDifficulties[difficulty] {
+		http.Error(w, "Invalid difficulty level", http.StatusBadRequest)
+		return
+	}
+
+	solvedGrid, _ := sudoku.GenerateSolvedGrid()
+	savedSolvedGrid := solvedGrid
+	playableGrid, _ := sudoku.GeneratePlayableGrid(solvedGrid, difficulty)
+
+	boardStr := utils.GridTransformer(playableGrid)
+	solutionStr := utils.GridTransformer(savedSolvedGrid)
+
+	err = sudoku.AddGrid(r.Context(), boardStr, solutionStr, difficulty)
+	if err != nil {
+		log.Printf("Error saving grid to DB: %v", err)
+		http.Error(w, "Failed to save grid", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(
+		map[string]string{
+			"message":    "Grid successfully created",
+			"board":      boardStr,
+			"solution":   solutionStr,
+			"difficulty": difficulty,
+		})
+
+}
+
+func GetGrid(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
 		return
