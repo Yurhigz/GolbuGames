@@ -45,7 +45,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func deleterUser(w http.ResponseWriter, r *http.Request) {
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
 		return
@@ -78,7 +78,7 @@ func deleterUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getUser(w http.ResponseWriter, r *http.Request) {
+func GetUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
 		return
@@ -203,4 +203,36 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 		"message": "Grid sucessfully retrieved",
 		"board":   board,
 	})
+}
+func SubmitGame(w http.ResponseWriter, r *http.Request) {
+	// Enregistre le score final
+	// Calcule le temps
+	// Met à jour les statistiques dans la BDD
+}
+
+func GetUserStats(w http.ResponseWriter, r *http.Request) {
+	// Nombre de parties jouées
+	// Temps moyen
+	// Taux de réussite
+	// Niveau préféré
+}
+
+func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	// Classement des meilleurs joueurs
+	// Filtrage par difficulté et ELO
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	// Modification du mot de passe
+	// Mise à jour des préférences
+}
+
+func GetUserHistory(w http.ResponseWriter, r *http.Request) {
+	// Historique des parties
+	// Progression
+}
+
+func SaveGameProgress(w http.ResponseWriter, r *http.Request) {
+	// Sauvegarde l'état actuel
+	// Permet de reprendre plus tard
 }
