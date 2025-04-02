@@ -3,7 +3,8 @@ POST  http://localhost:3000/create_user
 Content-Type: application/json
 
 {
-    "username": "testuser2",
+    "username": "FefLaRage92i",
+    "accountname": "fefounet",
     "password": "testpass1"
 }
 
@@ -19,6 +20,14 @@ Content-Type: application/json
 GET  http://localhost:3000/user/1
 Content-Type: application/json
 
-### get grid
-GET  http://localhost:3000/grid/1
+### Add Grid 
+POST  http://localhost:3000/add_grid
+Content-Type: application/json
+
+{
+    "difficulty": "easy"
+}
+
+### Get grid 
+GET  http://localhost:3000/random_grid
 Content-Type: application/json
