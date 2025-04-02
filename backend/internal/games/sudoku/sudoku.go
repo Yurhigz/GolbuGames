@@ -8,52 +8,18 @@ import (
 	"math/rand"
 )
 
-// type Difficulty struct {
-// 	Name      string
-// 	MinRemove int
-// 	MaxRemove int
-// 	Symmetric bool
-// }
-
-// var Difficulties = map[string]Difficulty{
-// 	"easy": {
-// 		Name:      "easy",
-// 		MinRemove: 43,
-// 		MaxRemove: 46,
-// 		Symmetric: true,
-// 	},
-// 	"intermediate": {
-// 		Name:      "intermediate",
-// 		MinRemove: 46,
-// 		MaxRemove: 52,
-// 		Symmetric: true,
-// 	},
-// 	"advanced": {
-// 		Name:      "advanced",
-// 		MinRemove: 52,
-// 		MaxRemove: 56,
-// 		Symmetric: false,
-// 	},
-// 	"expert": {
-// 		Name:      "expert",
-// 		MinRemove: 56,
-// 		MaxRemove: 61,
-// 		Symmetric: false,
-// 	},
-// }
-
 func isValid(grid *types.MainGrid, row, col, value int) bool {
-	// Je vérifie dans les lignes et colonnes
+	// Il faut que la case soit vide
+	if grid[row][col] != 0 {
+		return false
+	}
+
 	for i := 0; i < 9; i++ {
 
 		if grid[row][i] == value || grid[i][col] == value {
 
 			return false
 		}
-	}
-	// Il faut que la case soit vide
-	if grid[row][col] != 0 {
-		return false
 	}
 
 	// je vérifie dans la subgrid
@@ -144,7 +110,7 @@ func basicRandomRemoving(numbers int, grid *types.MainGrid) (bool, error) {
 	}
 	removed := 0
 
-	for removed <= numbers {
+	for removed < numbers {
 		row := rand.Intn(9)
 		col := rand.Intn(9)
 
@@ -186,6 +152,7 @@ func GeneratePlayableGrid(solvedGrid *types.MainGrid, difficulty string) (*types
 	if err != nil {
 		return &emptyGrid, err
 	}
+	playableGrid := *solvedGrid
 
 	var success bool
 
@@ -193,24 +160,24 @@ func GeneratePlayableGrid(solvedGrid *types.MainGrid, difficulty string) (*types
 	case 0:
 		// 43-45 cases dissimulées => easy
 		indices := utils.RandRange(43, 46)
-		success, err = symmetryRandomRemoving(indices, solvedGrid)
+		success, err = symmetryRandomRemoving(indices, &playableGrid)
 	case 1:
 		// 46-51 cases dissimulées => medium
 		indices := utils.RandRange(46, 52)
-		success, err = symmetryRandomRemoving(indices, solvedGrid)
+		success, err = symmetryRandomRemoving(indices, &playableGrid)
 	case 2:
 		// 52-55 cases dissimulées => hard
 		indices := utils.RandRange(52, 56)
-		success, err = basicRandomRemoving(indices, solvedGrid)
+		success, err = basicRandomRemoving(indices, &playableGrid)
 	case 3:
 		// 56-60 cases dissimulées => expert
 		indices := utils.RandRange(56, 61)
-		success, err = basicRandomRemoving(indices, solvedGrid)
+		success, err = basicRandomRemoving(indices, &playableGrid)
 	}
 
 	if err != nil || !success {
 		return nil, fmt.Errorf("failed to remove numbers: %v", err)
 	}
 
-	return solvedGrid, nil
+	return &playableGrid, nil
 }
