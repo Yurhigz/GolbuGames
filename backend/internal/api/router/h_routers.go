@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func initRoutesSudoku(mux *http.ServeMux) {
+func InitRoutesSudoku(mux *http.ServeMux) {
 	mux.HandleFunc("/create_user", handlers.CreateUser)
 	mux.HandleFunc("/delete_user", handlers.DeleteUser)
 	mux.HandleFunc("/user", handlers.GetUser)
