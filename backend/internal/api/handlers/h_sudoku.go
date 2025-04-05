@@ -10,13 +10,9 @@ import (
 	"strconv"
 )
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
-	// log.Printf("Received request: %s %s", r.Method, r.URL.Path)
-	if r.Method != http.MethodPost {
-		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
+//  Mettre en place un système de structures personnalisé pour utliser la fonction handle plutôt que handlefunc
 
+func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var userReg types.UserRegistration
 	err := json.NewDecoder(r.Body).Decode(&userReg)
 	if err != nil {
@@ -46,11 +42,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var userDel types.UserDeletion
 	err := json.NewDecoder(r.Body).Decode(&userDel)
 	if err != nil {
@@ -79,22 +70,19 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
 
-	var id int
 	var user *types.User
-	err := json.NewDecoder(r.Body).Decode(&id)
-	if err != nil {
-		http.Error(w, "invalid data format", http.StatusBadRequest)
-		return
-	}
 
-	user, err = sudoku.GetUser(r.Context(), id)
+	id := r.PathValue("id")
+	// if err != nil {
+	// 	http.Error(w, "invalid id format", http.StatusBadRequest)
+	// 	return
+	// }
+
+	user, err := sudoku.GetUser(r.Context(), id)
 
 	if err != nil {
+		log.Printf("%v", err)
 		http.Error(w, "user id is invalid", http.StatusBadRequest)
 		return
 	}
@@ -111,10 +99,6 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddGrid(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
 
 	var req types.GridRequest
 
@@ -169,10 +153,6 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetGrid(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "unauthorized method", http.StatusMethodNotAllowed)
-		return
-	}
 
 	difficulty := r.URL.Query().Get("difficulty")
 	if difficulty == "" {
