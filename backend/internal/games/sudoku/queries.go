@@ -49,17 +49,17 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 	return nil
 }
 
-func GetUser(parentsContext context.Context, id_user int) (*types.User, error) {
+func GetUser(parentsContext context.Context, id_user string) (*types.User, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
 	var user types.User
-	query := `SELECT * FROM users WHERE id = $1`
+	query := `SELECT username,accountname,password,id FROM users WHERE id = $1`
 
-	err := database.DBPool.QueryRow(ctx, query, id_user).Scan(&user)
+	err := database.DBPool.QueryRow(ctx, query, id_user).Scan(&user.Username, &user.Accountname, &user.Password, &user.ID)
 
 	if err != nil {
-		return nil, fmt.Errorf("[GetUser] Error retrieving user %d : %v", id_user, err)
+		return nil, fmt.Errorf("[GetUser] Error retrieving user %v : %v", id_user, err)
 	}
 
 	return &user, nil
