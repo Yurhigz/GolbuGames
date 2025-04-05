@@ -13,11 +13,7 @@ func NewRouter() *Router {
 }
 
 func (r *Router) InitRoutes() {
-	// Initialiser les différents groupes de routes
-	InitSudokuRoutes(r.mux)
-	// Autres initialisations de routes futures
-	// initChessRoutes(r.mux)
-	// initAuthRoutes(r.mux)
+	InitRoutesSudoku(r.mux)
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
