@@ -7,6 +7,7 @@ import (
 	"golbugames/backend/pkg/types"
 	"log"
 	"math/rand/v2"
+	"net/http"
 	"time"
 )
 
@@ -49,7 +50,7 @@ func DeleteUser(parentsContext context.Context, id_user int) error {
 	return nil
 }
 
-func GetUser(parentsContext context.Context, id_user string) (*types.User, error) {
+func GetUser(parentsContext context.Context, id_user int) (*types.User, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -134,4 +135,75 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (string, s
 	}
 
 	return board, solution, nil
+}
+
+func SubmitSoloGame(parentsContext context.Context, userId, completionTime int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `INSERT INTO games_scores (user_id, completion_time) VALUES ($1, $2)`
+
+	_, err := GetUser(parentsContext, userId)
+	if err != nil {
+		return fmt.Errorf("[SubmitSoloGame] the user id does not exist %w", err)
+	}
+
+	_, err = database.DBPool.Exec(ctx, query, userId, completionTime)
+
+	if err != nil {
+		return fmt.Errorf("[SubmitSoloGame] cannot submit the game results %w", err)
+	}
+	log.Printf("The game has been sucessfully submitted")
+	return nil
+}
+
+func SubmitMultiGame(parentsContext context.Context, user1, user2 int, results, completionTime int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `INSERT INTO games_scores (user_id, opponent_id, results, completion_time) VALUES ($1, $2, $3, $4)`
+	_, err := GetUser(parentsContext, user1)
+	if err != nil {
+		return fmt.Errorf("[SubmitMultiGame] the user id does not exist %w", err)
+	}
+	_, err = GetUser(parentsContext, user2)
+	if err != nil {
+		return fmt.Errorf("[SubmitMultiGame] the opponent id does not exist %w", err)
+	}
+
+	_, err = database.DBPool.Exec(ctx, query, user1, user2, results, completionTime)
+	if err != nil {
+		return fmt.Errorf("[SubmitMultiGame] cannot submit the game results %w", err)
+	}
+	log.Printf("The game has been sucessfully submitted")
+	return nil
+}
+
+func GetUserStats(w http.ResponseWriter, r *http.Request) {
+	// Statistiques de l'utilisateur
+	// Nombre de parties jouées
+	// Temps moyen par partie
+	// Meilleur score
+	// Nombre de victoires
+	// Nombre de défaites
+}
+
+func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	// Classement des meilleurs joueurs
+	// Filtrage par difficulté et ELO
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	// Modification du mot de passe
+	// Mise à jour des préférences
+}
+
+func GetUserHistory(w http.ResponseWriter, r *http.Request) {
+	// Historique des parties
+	// Progression
+}
+
+func SaveGameProgress(w http.ResponseWriter, r *http.Request) {
+	// Sauvegarde l'état actuel
+	// Permet de reprendre plus tard
 }
