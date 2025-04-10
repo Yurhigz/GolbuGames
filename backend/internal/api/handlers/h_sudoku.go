@@ -73,13 +73,16 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	var user *types.User
 
-	id := r.PathValue("id")
-	// if err != nil {
-	// 	http.Error(w, "invalid id format", http.StatusBadRequest)
-	// 	return
-	// }
+	strId := r.PathValue("id")
 
-	user, err := sudoku.GetUser(r.Context(), id)
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "id must be a number", http.StatusBadRequest)
+		return
+	}
+
+	user, err = sudoku.GetUser(r.Context(), id)
 
 	if err != nil {
 		log.Printf("%v", err)
@@ -184,6 +187,7 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 		"board":   board,
 	})
 }
+
 func SubmitGame(w http.ResponseWriter, r *http.Request) {
 	// Enregistre le score final
 	// Calcule le temps
