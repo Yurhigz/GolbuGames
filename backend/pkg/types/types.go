@@ -14,11 +14,10 @@ type Coordinates [2]int
 // }
 
 // // SudokuGame implémente l'interface Game
-// type SudokuGame struct {
-// 	Grid     MainGrid
-// 	Level    string
-// 	Solution MainGrid
-// }
+type SudokuGrid struct {
+	Board    string
+	Solution string
+}
 
 // Ajout user API
 type UserRegistration struct {
@@ -41,4 +40,18 @@ type User struct {
 
 type GridRequest struct {
 	Difficulty string `json:"difficulty"`
+}
+
+// User stats API
+type UserStats struct {
+	ID           int    `json:"id"`
+	Score        int    `json:"score"`
+	Level        string `json:"level"`
+	CreatedAt    string `json:"created_at"`
+	Total_games  int    `json:"total_games"`
+	Total_wins   int    `json:"total_wins"`
+	Total_losses int    `json:"total_losses"`
+	Total_draws  int    `json:"total_draws"`
+	Total_time   int    `json:"total_time"`
+	Average_time int    `json:"average_time"`
 }
