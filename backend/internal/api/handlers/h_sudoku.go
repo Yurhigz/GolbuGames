@@ -174,7 +174,7 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	board, _, err := sudoku.GetRandomGrid(r.Context(), difficulty)
+	sudokuGrid, err := sudoku.GetRandomGrid(r.Context(), difficulty)
 
 	if err != nil {
 		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
@@ -184,7 +184,7 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Grid sucessfully retrieved",
-		"board":   board,
+		"board":   sudokuGrid.Board,
 	})
 }
 
