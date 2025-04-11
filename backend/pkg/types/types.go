@@ -55,3 +55,11 @@ type UserStats struct {
 	Total_time   int    `json:"total_time"`
 	Average_time int    `json:"average_time"`
 }
+
+type Game struct {
+	UserID          int     `json:"user_id"`
+	OpponentID      *int    `json:"opponent_id,omitempty"`
+	GameMode        string  `json:"game_mode"`
+	Results         *string `json:"results,omitempty"`
+	Completion_time int     `json:"completion_time"`
+}
