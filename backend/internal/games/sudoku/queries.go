@@ -97,7 +97,7 @@ func UpdateUserPassword(parentsContext context.Context, id_user int, password st
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
-	query := `UPDATE users SET password = $2 WHERE id = $3`
+	query := `UPDATE users SET password = $1 WHERE id = $2`
 
 	_, err := database.DBPool.Exec(ctx, query, password, id_user)
 
@@ -294,11 +294,11 @@ func GetUserStats(parentsContext context.Context, id_user int) (*types.UserStats
 		return nil, fmt.Errorf("[GetUserStats] the user id does not exist %w", err)
 	}
 
-	query := `SELECT id, score, level, created_at, total_games, total_wins, total_losses, total_draws, total_time, average_time FROM users WHERE id = $1`
+	query := `SELECT user_id, total_games, total_wins, total_losses, total_draws, total_time, average_time FROM user_stats WHERE user_id = $1`
 
 	var stats types.UserStats
 
-	err = database.DBPool.QueryRow(ctx, query, id_user).Scan(&stats.ID, &stats.Score, &stats.Level, &stats.CreatedAt, &stats.Total_games, &stats.Total_wins, &stats.Total_losses, &stats.Total_draws, &stats.Total_time, &stats.Average_time)
+	err = database.DBPool.QueryRow(ctx, query, id_user).Scan(&stats.ID, &stats.Total_games, &stats.Total_wins, &stats.Total_losses, &stats.Total_draws, &stats.Total_time, &stats.Average_time)
 	if err != nil {
 		return nil, fmt.Errorf("[GetUserStats] Error retrieving user stats %v : %v", id_user, err)
 	}
