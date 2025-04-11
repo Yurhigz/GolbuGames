@@ -93,13 +93,13 @@ func GetUser(parentsContext context.Context, id_user int) (*types.User, error) {
 	return &user, nil
 }
 
-func UpdateUser(parentsContext context.Context, id_user int, username, accountname, password string) error {
+func UpdateUserPassword(parentsContext context.Context, id_user int, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
-	query := `UPDATE users SET username = $1, accountname = $2, password = $3 WHERE id = $4`
+	query := `UPDATE users SET password = $2 WHERE id = $3`
 
-	_, err := database.DBPool.Exec(ctx, query, username, accountname, password, id_user)
+	_, err := database.DBPool.Exec(ctx, query, password, id_user)
 
 	if err != nil {
 		return fmt.Errorf("[UpdateUser] Error updating user %v : %v", id_user, err)
