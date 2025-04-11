@@ -42,22 +42,31 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	var userDel types.UserDeletion
-	err := json.NewDecoder(r.Body).Decode(&userDel)
+
+	strId := r.PathValue("id")
+	id, err := strconv.Atoi(strId)
 	if err != nil {
-		http.Error(w, "invalid data format", http.StatusBadRequest)
+		log.Printf("%v", err)
+		http.Error(w, "id must be a number", http.StatusBadRequest)
 		return
 	}
 
-	if userDel.ID <= 0 {
+	if id <= 0 {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
 		return
 	}
 
-	err = sudoku.DeleteUser(r.Context(), userDel.ID)
+	_, err = sudoku.GetUser(r.Context(), id)
+	if err != nil {
+		log.Printf("Error retrieving user %d: %v", id, err)
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	err = sudoku.DeleteUser(r.Context(), id)
 
 	if err != nil {
-		log.Printf("Error deleting user %d: %v", userDel.ID, err)
+		log.Printf("Error deleting user %d: %v", id, err)
 		http.Error(w, "the user cannot be deleted", http.StatusInternalServerError)
 		return
 	}
@@ -65,7 +74,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "User sucessfully deleted",
-		"userId":  strconv.Itoa(userDel.ID),
+		"userId":  strconv.Itoa(id),
 	})
 }
 
@@ -102,29 +111,52 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
-	var user types.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	strId := r.PathValue("id")
+
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "id must be a number", http.StatusBadRequest)
+		return
+	}
+
+	var pwdUpdate types.PasswordUpdate
+	err = json.NewDecoder(r.Body).Decode(&pwdUpdate)
 	if err != nil {
 		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
 	}
-	if user.ID <= 0 {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+
+	if pwdUpdate.ID != id {
+		http.Error(w, "ID mismatch between URL and body", http.StatusBadRequest)
 		return
 	}
 
-	err = sudoku.UpdateUserPassword(r.Context(), user.ID, user.Password)
+	if pwdUpdate.NewPassword == "" {
+		http.Error(w, "new password is required", http.StatusBadRequest)
+		return
+	}
+
+	// Vérifier que l'utilisateur existe
+	_, err = sudoku.GetUser(r.Context(), id)
 	if err != nil {
-		log.Printf("Error updating password for user %d: %v", user.ID, err)
+		log.Printf("Error retrieving user %d: %v", id, err)
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	err = sudoku.UpdateUserPassword(r.Context(), id, pwdUpdate.NewPassword)
+	if err != nil {
+		log.Printf("Error updating password for user %d: %v", id, err)
 		http.Error(w, "Failed to update password", http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message":  "Password updated successfully",
-		"userid":   strconv.Itoa(user.ID),
-		"username": user.Username,
+		"message": "Password updated successfully",
+		"userid":  strconv.Itoa(id),
 	})
 }
 
@@ -245,35 +277,84 @@ func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
 }
 
 func SubmitMultiGame(w http.ResponseWriter, r *http.Request) {
-	// Enregistre le score final
-	// Calcule le temps
-	// Met à jour les statistiques dans la BDD
-	// Met à jour le classement
+	var game types.Game
+	err := json.NewDecoder(r.Body).Decode(&game)
+	if err != nil {
+		http.Error(w, "invalid data format", http.StatusBadRequest)
+		return
+	}
+	if game.GameMode != "1v1" || game.OpponentID == nil || game.Results == nil {
+		http.Error(w, "Invalid game mode or results for multiplayer game", http.StatusBadRequest)
+		return
+	}
+	err = sudoku.SubmitMultiGame(r.Context(), game.UserID, *game.OpponentID, *game.Results, game.Completion_time)
+	if err != nil {
+		log.Printf("Error submitting game for user %d: %v", game.UserID, err)
+		http.Error(w, "Failed to submit game", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":    "Game submitted successfully",
+		"userId":     strconv.Itoa(game.UserID),
+		"opponentId": strconv.Itoa(*game.OpponentID),
+		"score":      strconv.Itoa(*game.Results),
+	})
 }
 
 func GetUserStats(w http.ResponseWriter, r *http.Request) {
-	// Nombre de parties jouées
-	// Temps moyen
-	// Taux de réussite
-	// Niveau préféré
+	strId := r.PathValue("id")
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "id must be a number", http.StatusBadRequest)
+		return
+	}
+
+	_, err = sudoku.GetUser(r.Context(), id)
+	if err != nil {
+		log.Printf("Error retrieving user %d: %v", id, err)
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	var userStats *types.UserStats
+
+	userStats, err = sudoku.GetUserStats(r.Context(), id)
+	if err != nil {
+		log.Printf("Error retrieving stats for user %d: %v", userStats.ID, err)
+		http.Error(w, "Failed to retrieve user stats", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(
+		map[string]string{
+			"message":      "User stats successfully retrieved",
+			"userid":       strconv.Itoa(userStats.ID),
+			"total_games":  strconv.Itoa(userStats.Total_games),
+			"total_wins":   strconv.Itoa(userStats.Total_wins),
+			"total_losses": strconv.Itoa(userStats.Total_losses),
+			"total_draws":  strconv.Itoa(userStats.Total_draws),
+			"total_time":   strconv.Itoa(userStats.Total_time),
+			"average_time": strconv.Itoa(userStats.Average_time),
+		})
+
 }
 
-func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-	// Classement des meilleurs joueurs
-	// Filtrage par difficulté et ELO
-}
+// func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+// 	// Classement des meilleurs joueurs
+// 	// Filtrage par difficulté et ELO
+// }
 
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Modification du mot de passe
-	// Mise à jour des préférences
-}
+// func GetUserHistory(w http.ResponseWriter, r *http.Request) {
+// 	// Historique des parties
+// 	// Progression
+// }
 
-func GetUserHistory(w http.ResponseWriter, r *http.Request) {
-	// Historique des parties
-	// Progression
-}
-
-func SaveGameProgress(w http.ResponseWriter, r *http.Request) {
-	// Sauvegarde l'état actuel
-	// Permet de reprendre plus tard
-}
+// func SaveGameProgress(w http.ResponseWriter, r *Request) {
+// 	// Sauvegarde l'état actuel
+// 	// Permet de reprendre plus tard
+// }
