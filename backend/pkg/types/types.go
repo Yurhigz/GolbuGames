@@ -26,11 +26,6 @@ type UserRegistration struct {
 	Password    string `json:"password"`
 }
 
-// suppression user API
-type UserDeletion struct {
-	ID int `json:"id"`
-}
-
 type User struct {
 	Username    string `json:"username"`
 	Accountname string `json:"accountname"`
@@ -44,22 +39,24 @@ type GridRequest struct {
 
 // User stats API
 type UserStats struct {
-	ID           int    `json:"id"`
-	Score        int    `json:"score"`
-	Level        string `json:"level"`
-	CreatedAt    string `json:"created_at"`
-	Total_games  int    `json:"total_games"`
-	Total_wins   int    `json:"total_wins"`
-	Total_losses int    `json:"total_losses"`
-	Total_draws  int    `json:"total_draws"`
-	Total_time   int    `json:"total_time"`
-	Average_time int    `json:"average_time"`
+	ID           int `json:"id"`
+	Total_games  int `json:"total_games"`
+	Total_wins   int `json:"total_wins"`
+	Total_losses int `json:"total_losses"`
+	Total_draws  int `json:"total_draws"`
+	Total_time   int `json:"total_time"`
+	Average_time int `json:"average_time"`
 }
 
 type Game struct {
-	UserID          int     `json:"user_id"`
-	OpponentID      *int    `json:"opponent_id,omitempty"`
-	GameMode        string  `json:"game_mode"`
-	Results         *string `json:"results,omitempty"`
-	Completion_time int     `json:"completion_time"`
+	UserID          int    `json:"user_id"`
+	OpponentID      *int   `json:"opponent_id,omitempty"`
+	GameMode        string `json:"game_mode"`
+	Results         *int   `json:"results,omitempty"`
+	Completion_time int    `json:"completion_time"`
+}
+
+type PasswordUpdate struct {
+	ID          int    `json:"id"`
+	NewPassword string `json:"new_password"`
 }
