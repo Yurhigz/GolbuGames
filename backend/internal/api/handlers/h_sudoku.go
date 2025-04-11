@@ -101,6 +101,33 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	var user types.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, "invalid data format", http.StatusBadRequest)
+		return
+	}
+	if user.ID <= 0 {
+		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+
+	err = sudoku.UpdateUserPassword(r.Context(), user.ID, user.Password)
+	if err != nil {
+		log.Printf("Error updating password for user %d: %v", user.ID, err)
+		http.Error(w, "Failed to update password", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message":  "Password updated successfully",
+		"userid":   strconv.Itoa(user.ID),
+		"username": user.Username,
+	})
+}
+
 func AddGrid(w http.ResponseWriter, r *http.Request) {
 
 	var req types.GridRequest
@@ -188,10 +215,40 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func SubmitGame(w http.ResponseWriter, r *http.Request) {
+func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
+	var game types.Game
+	err := json.NewDecoder(r.Body).Decode(&game)
+	if err != nil {
+		http.Error(w, "invalid data format", http.StatusBadRequest)
+		return
+	}
+	if game.GameMode == "1v1" || game.OpponentID != nil || game.Results != nil {
+		http.Error(w, "Invalid game mode or results for solo game", http.StatusBadRequest)
+		return
+	}
+
+	err = sudoku.SubmitSoloGame(r.Context(), game.UserID, game.Completion_time)
+	if err != nil {
+		log.Printf("Error submitting game for user %d: %v", game.UserID, err)
+		http.Error(w, "Failed to submit game", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Game submitted successfully",
+		"userId":  strconv.Itoa(game.UserID),
+		"score":   strconv.Itoa(game.Completion_time),
+	})
+
+}
+
+func SubmitMultiGame(w http.ResponseWriter, r *http.Request) {
 	// Enregistre le score final
 	// Calcule le temps
 	// Met à jour les statistiques dans la BDD
+	// Met à jour le classement
 }
 
 func GetUserStats(w http.ResponseWriter, r *http.Request) {
