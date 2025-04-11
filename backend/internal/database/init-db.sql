@@ -52,9 +52,8 @@ CREATE TABLE user_stats (
     total_draws INT DEFAULT 0,
     total_time INT DEFAULT 0, -- temps total de jeu en secondes
     average_time INT DEFAULT 0, -- temps moyen de jeu en secondes
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE leaderboard (
     id SERIAL PRIMARY KEY,
