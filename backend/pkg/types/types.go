@@ -54,6 +54,7 @@ type Game struct {
 	GameMode        string `json:"game_mode"`
 	Results         *int   `json:"results,omitempty"`
 	Completion_time int    `json:"completion_time"`
+	Difficulty      string `json:"difficulty"`
 }
 
 type PasswordUpdate struct {
