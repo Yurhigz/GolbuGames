@@ -52,6 +52,7 @@ CREATE TABLE user_stats (
     total_draws INT DEFAULT 0,
     total_time INT DEFAULT 0, -- temps total de jeu en secondes
     average_time INT DEFAULT 0, -- temps moyen de jeu en secondes
+    total_solo_games_finished INT DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
