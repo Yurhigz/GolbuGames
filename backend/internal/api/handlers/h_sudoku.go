@@ -111,24 +111,11 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
-	strId := r.PathValue("id")
-
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		log.Printf("%v", err)
-		http.Error(w, "id must be a number", http.StatusBadRequest)
-		return
-	}
 
 	var pwdUpdate types.PasswordUpdate
-	err = json.NewDecoder(r.Body).Decode(&pwdUpdate)
+	err := json.NewDecoder(r.Body).Decode(&pwdUpdate)
 	if err != nil {
 		http.Error(w, "invalid data format", http.StatusBadRequest)
-		return
-	}
-
-	if pwdUpdate.ID != id {
-		http.Error(w, "ID mismatch between URL and body", http.StatusBadRequest)
 		return
 	}
 
@@ -138,16 +125,16 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Vérifier que l'utilisateur existe
-	_, err = sudoku.GetUser(r.Context(), id)
+	_, err = sudoku.GetUser(r.Context(), pwdUpdate.ID)
 	if err != nil {
-		log.Printf("Error retrieving user %d: %v", id, err)
+		log.Printf("Error retrieving user %d: %v", pwdUpdate.ID, err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	err = sudoku.UpdateUserPassword(r.Context(), id, pwdUpdate.NewPassword)
+	err = sudoku.UpdateUserPassword(r.Context(), pwdUpdate.ID, pwdUpdate.NewPassword)
 	if err != nil {
-		log.Printf("Error updating password for user %d: %v", id, err)
+		log.Printf("Error updating password for user %d: %v", pwdUpdate.ID, err)
 		http.Error(w, "Failed to update password", http.StatusInternalServerError)
 		return
 	}
@@ -156,7 +143,7 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Password updated successfully",
-		"userid":  strconv.Itoa(id),
+		"userid":  strconv.Itoa(pwdUpdate.ID),
 	})
 }
 
@@ -269,9 +256,9 @@ func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Game submitted successfully",
-		"userId":  strconv.Itoa(game.UserID),
-		"score":   strconv.Itoa(game.Completion_time),
+		"message":         "Game submitted successfully",
+		"userId":          strconv.Itoa(game.UserID),
+		"completion_time": strconv.Itoa(game.Completion_time),
 	})
 
 }
