@@ -175,20 +175,24 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (*types.Su
 	return &sudokuGrid, nil
 }
 
-func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int) error {
+func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
         UPDATE user_stats 
-        SET total_games = total_games + 1,
+        SET total_games = total_games + $6,
             total_wins = total_wins + $1,
             total_losses = total_losses + $2,
             total_draws = total_draws + $3,
             total_time = total_time + $4,
-            average_time = (total_time + $4) / (total_games + 1)
-        WHERE user_id = $5`
+            average_time = (total_time + $4) / (total_games + 1),
+            total_solo_games = total_solo_games + $5,
+        WHERE user_id = $7`
 
 	winInt := 0
 	lossInt := 0
 	drawInt := 0
+	soloInt := 0
+	multiInt := 0
+
 	if win {
 		winInt = 1
 	}
@@ -198,8 +202,13 @@ func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw
 	if draw {
 		drawInt = 1
 	}
+	if isSolo {
+		soloInt = 1
+	} else {
+		multiInt = 1
+	}
 
-	_, err := tx.Exec(ctx, query, winInt, lossInt, drawInt, completionTime, userId)
+	_, err := tx.Exec(ctx, query, winInt, lossInt, drawInt, completionTime, soloInt, multiInt, userId)
 	if err != nil {
 		return fmt.Errorf("failed to update user stats: %w", err)
 	}
@@ -226,7 +235,7 @@ func SubmitSoloGame(parentsContext context.Context, userId, completionTime int) 
 	}
 
 	// Mettre à jour les stats (considéré comme une victoire en solo)
-	err = updateUserStats(ctx, tx, userId, true, false, false, completionTime)
+	err = updateUserStats(ctx, tx, userId, true, false, false, completionTime, true)
 	if err != nil {
 		return fmt.Errorf("[SubmitSoloGame] cannot update user stats: %w", err)
 	}
@@ -265,13 +274,13 @@ func SubmitMultiGame(parentsContext context.Context, user1, user2 int, results, 
 	isWin2 := results == 2
 
 	// Stats joueur 1
-	err = updateUserStats(ctx, tx, user1, isWin1, isWin2, isDraw, completionTime)
+	err = updateUserStats(ctx, tx, user1, isWin1, isWin2, isDraw, completionTime, false)
 	if err != nil {
 		return fmt.Errorf("[SubmitMultiGame] cannot update user1 stats: %w", err)
 	}
 
 	// Stats joueur 2
-	err = updateUserStats(ctx, tx, user2, isWin2, isWin1, isDraw, completionTime)
+	err = updateUserStats(ctx, tx, user2, isWin2, isWin1, isDraw, completionTime, false)
 	if err != nil {
 		return fmt.Errorf("[SubmitMultiGame] cannot update user2 stats: %w", err)
 	}
