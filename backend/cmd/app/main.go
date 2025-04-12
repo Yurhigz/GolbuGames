@@ -2,17 +2,16 @@ package main
 
 import (
 	"context"
-	"golbugames/backend/internal/api/handlers"
+	"golbugames/backend/internal/api/router"
 	"golbugames/backend/internal/database"
 	"log"
 	"net/http"
-	"time"
 )
 
-func timeHandler(w http.ResponseWriter, r *http.Request) {
-	tm := time.Now().Format(time.RFC1123)
-	w.Write([]byte("The time is: " + tm + "Au plaisir mon chacalito"))
-}
+// func timeHandler(w http.ResponseWriter, r *http.Request) {
+// 	tm := time.Now().Format(time.RFC1123)
+// 	w.Write([]byte("The time is: " + tm + "Au plaisir mon chacalito"))
+// }
 
 func main() {
 	// -------------- MAIN TESTS --------------
@@ -51,19 +50,12 @@ func main() {
 	// 	mux *http.ServeMux
 	// }
 
-	mux := http.NewServeMux()
+	router := router.NewRouter()
 
-	rh := http.RedirectHandler("http://example.org", 307)
-
-	th := http.HandlerFunc(timeHandler)
-	mux.Handle("/foo", rh)
-	mux.Handle("/time", th)
-	mux.HandleFunc("/create_user", handlers.CreateUser)
-	mux.HandleFunc("/time_swag", timeHandler)
-	// mux.HandleFunc("/user")
+	router.InitRoutes()
 
 	log.Print("Listening...")
-	http.ListenAndServe(":3000", mux)
+	http.ListenAndServe(":3000", router)
 
 	// -------------- TEST SERVEUR HTTP --------------
 

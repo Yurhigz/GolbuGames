@@ -12,26 +12,26 @@ Content-Type: application/json
 }
 
 ### Delete User
-DELETE  http://localhost:3000/delete_user/3
+DELETE  http://localhost:3000/delete_user/1
 Content-Type: application/json
 
 ### Get User
-GET  http://localhost:3000/user/4
+GET  http://localhost:3000/user/1
 Content-Type: application/json
 
 ### Update password user 
 
-POST  http://localhost:3000/updateuser/4
+POST  http://localhost:3000/updateuser
 Content-Type: application/json
 
 {
-    "id":4,
+    "id":1,
     "new_password": "test2"
 }
 
 ### Get user stats 
 
-GET  http://localhost:3000/user_stats/4
+GET  http://localhost:3000/user_stats/1
 Content-Type: application/json  
 
 ### ----- USER API ----- ###
@@ -45,7 +45,7 @@ POST  http://localhost:3000/add_grid
 Content-Type: application/json  
 
 {
-    "difficulty": "easy"
+    "difficulty": "advanced"
 }
 
 ### Get grid 
