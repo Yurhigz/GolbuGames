@@ -14,25 +14,50 @@ type Coordinates [2]int
 // }
 
 // // SudokuGame implémente l'interface Game
-// type SudokuGame struct {
-// 	Grid     MainGrid
-// 	Level    string
-// 	Solution MainGrid
-// }
+type SudokuGrid struct {
+	Board    string
+	Solution string
+}
 
 // Ajout user API
 type UserRegistration struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-// suppression user API
-type UserDeletion struct {
-	ID int `json:"id"`
+	Username    string `json:"username"`
+	Accountname string `json:"accountname"`
+	Password    string `json:"password"`
 }
 
 type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	ID       int    `json:"id"`
+	Username    string `json:"username"`
+	Accountname string `json:"accountname"`
+	Password    string `json:"password"`
+	ID          int    `json:"id"`
+}
+
+type GridRequest struct {
+	Difficulty string `json:"difficulty"`
+}
+
+// User stats API
+type UserStats struct {
+	ID           int `json:"id"`
+	Total_games  int `json:"total_games"`
+	Total_wins   int `json:"total_wins"`
+	Total_losses int `json:"total_losses"`
+	Total_draws  int `json:"total_draws"`
+	Total_time   int `json:"total_time"`
+	Average_time int `json:"average_time"`
+}
+
+type Game struct {
+	UserID          int    `json:"user_id"`
+	OpponentID      *int   `json:"opponent_id,omitempty"`
+	GameMode        string `json:"game_mode"`
+	Results         *int   `json:"results,omitempty"`
+	Completion_time int    `json:"completion_time"`
+	Difficulty      string `json:"difficulty"`
+}
+
+type PasswordUpdate struct {
+	ID          int    `json:"id"`
+	NewPassword string `json:"new_password"`
 }
