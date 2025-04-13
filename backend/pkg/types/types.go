@@ -15,8 +15,9 @@ type Coordinates [2]int
 
 // // SudokuGame implémente l'interface Game
 type SudokuGrid struct {
-	Board    string
-	Solution string
+	Board      string `json:"board"`
+	Solution   string `json:"solution"`
+	Difficulty string `json:"difficulty"`
 }
 
 // Ajout user API

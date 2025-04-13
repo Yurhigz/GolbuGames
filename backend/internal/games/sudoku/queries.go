@@ -162,12 +162,12 @@ func GetRandomGrid(parentsContext context.Context, difficulty string) (*types.Su
 
 	var sudokuGrid types.SudokuGrid
 	query := `
-        SELECT board, solution 
+        SELECT board, solution, difficulty
         FROM sudoku_games 
         WHERE difficulty = $1 
         LIMIT 1 OFFSET $2`
 
-	err = database.DBPool.QueryRow(ctx, query, difficulty, offset).Scan(&sudokuGrid.Board, &sudokuGrid.Solution)
+	err = database.DBPool.QueryRow(ctx, query, difficulty, offset).Scan(&sudokuGrid.Board, &sudokuGrid.Solution, &sudokuGrid.Difficulty)
 	if err != nil {
 		return nil, fmt.Errorf("[GetRandomGrid] failed to get random grid: %w", err)
 	}

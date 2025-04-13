@@ -45,11 +45,11 @@ POST  http://localhost:3000/add_grid
 Content-Type: application/json  
 
 {
-    "difficulty": "advanced"
+    "difficulty": "easy"
 }
 
 ### Get grid 
-GET  http://localhost:3000/grid
+GET  http://localhost:3000/grid?difficulty=expert
 Content-Type: application/json
 
 
