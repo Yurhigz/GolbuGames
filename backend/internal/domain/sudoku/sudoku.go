@@ -1,4 +1,4 @@
-package sudoku
+package domain
 
 import (
 	"errors"
