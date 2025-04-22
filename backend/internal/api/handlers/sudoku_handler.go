@@ -2,28 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
-	domain "golbugames/backend/internal/domain/sudoku"
-	"golbugames/backend/internal/repository/interfaces"
+	"golbugames/backend/internal/sudoku"
+	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/pkg/types"
 	"golbugames/backend/pkg/utils"
 	"log"
 	"net/http"
 )
 
-// Mettre en place un système de structures personnalisé pour utliser la fonction handle plutôt que handlefunc
-type SudokuHandler struct {
-	sudokuRepo interfaces.SudokuRepository
-}
-
-func NewSudokuHandler(sudokuRepo interfaces.SudokuRepository) *SudokuHandler {
-	return &SudokuHandler{
-		sudokuRepo: sudokuRepo,
-	}
-}
-
-// Pour tout ce qui est appel de fonction domain il faut utiliser ce qu'on appelle un Service Layer
-
-func (h *SudokuHandler) AddGrid(w http.ResponseWriter, r *http.Request) {
+func AddGrid(w http.ResponseWriter, r *http.Request) {
 
 	var req types.GridRequest
 
@@ -51,14 +38,14 @@ func (h *SudokuHandler) AddGrid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	solvedGrid, _ := domain.GenerateSolvedGrid()
+	solvedGrid, _ := sudoku.GenerateSolvedGrid()
 	savedSolvedGrid := solvedGrid
-	playableGrid, _ := domain.GeneratePlayableGrid(solvedGrid, difficulty)
+	playableGrid, _ := sudoku.GeneratePlayableGrid(solvedGrid, difficulty)
 
 	boardStr := utils.GridTransformer(playableGrid)
 	solutionStr := utils.GridTransformer(savedSolvedGrid)
 
-	err = h.sudokuRepo.AddGridDB(r.Context(), boardStr, solutionStr, difficulty)
+	err = repository.AddGridDB(r.Context(), boardStr, solutionStr, difficulty)
 	if err != nil {
 		log.Printf("Error saving grid to DB: %v", err)
 		http.Error(w, "Failed to save grid", http.StatusInternalServerError)
@@ -77,7 +64,7 @@ func (h *SudokuHandler) AddGrid(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *SudokuHandler) GetGrid(w http.ResponseWriter, r *http.Request) {
+func GetGrid(w http.ResponseWriter, r *http.Request) {
 
 	difficulty := r.URL.Query().Get("difficulty")
 	if difficulty == "" {
@@ -96,7 +83,7 @@ func (h *SudokuHandler) GetGrid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sudokuGrid, err := h.sudokuRepo.GetRandomGridDB(r.Context(), difficulty)
+	sudokuGrid, err := repository.GetRandomGridDB(r.Context(), difficulty)
 
 	if err != nil {
 		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)

@@ -2,24 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"golbugames/backend/internal/repository/interfaces"
+	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/pkg/types"
 	"log"
 	"net/http"
 	"strconv"
 )
 
-type UserHandler struct {
-	userRepo interfaces.UserRepository
-}
-
-func NewUserHandler(userRepo interfaces.UserRepository) *UserHandler {
-	return &UserHandler{
-		userRepo: userRepo,
-	}
-}
-
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var userReg types.UserRegistration
 	err := json.NewDecoder(r.Body).Decode(&userReg)
 	if err != nil {
@@ -32,7 +22,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.userRepo.AddUserDB(r.Context(), userReg.Username, userReg.Accountname, userReg.Password)
+	err = repository.AddUserDB(r.Context(), userReg.Username, userReg.Accountname, userReg.Password)
 	// Vérifier les duplicatas d'utilisateurs
 	if err != nil {
 		log.Printf("%v", err)
@@ -48,7 +38,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
@@ -63,14 +53,14 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.userRepo.GetUserDB(r.Context(), id)
+	_, err = repository.GetUserDB(r.Context(), id)
 	if err != nil {
 		log.Printf("Error retrieving user %d: %v", id, err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	err = h.userRepo.DeleteUserDB(r.Context(), id)
+	err = repository.DeleteUserDB(r.Context(), id)
 
 	if err != nil {
 		log.Printf("Error deleting user %d: %v", id, err)
@@ -85,7 +75,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	var user *types.User
 
@@ -98,7 +88,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err = h.userRepo.GetUserDB(r.Context(), id)
+	user, err = repository.GetUserDB(r.Context(), id)
 
 	if err != nil {
 		log.Printf("%v", err)
@@ -117,7 +107,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *UserHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 
 	var pwdUpdate types.PasswordUpdate
 	err := json.NewDecoder(r.Body).Decode(&pwdUpdate)
@@ -132,14 +122,14 @@ func (h *UserHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Vérifier que l'utilisateur existe
-	_, err = h.userRepo.GetUserDB(r.Context(), pwdUpdate.ID)
+	_, err = repository.GetUserDB(r.Context(), pwdUpdate.ID)
 	if err != nil {
 		log.Printf("Error retrieving user %d: %v", pwdUpdate.ID, err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	err = h.userRepo.UpdateUserPasswordDB(r.Context(), pwdUpdate.ID, pwdUpdate.NewPassword)
+	err = repository.UpdateUserPasswordDB(r.Context(), pwdUpdate.ID, pwdUpdate.NewPassword)
 	if err != nil {
 		log.Printf("Error updating password for user %d: %v", pwdUpdate.ID, err)
 		http.Error(w, "Failed to update password", http.StatusInternalServerError)
@@ -154,7 +144,7 @@ func (h *UserHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request)
 	})
 }
 
-func (h *UserHandler) GetUserStats(w http.ResponseWriter, r *http.Request) {
+func GetUserStats(w http.ResponseWriter, r *http.Request) {
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -163,7 +153,7 @@ func (h *UserHandler) GetUserStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.userRepo.GetUserDB(r.Context(), id)
+	_, err = repository.GetUserDB(r.Context(), id)
 	if err != nil {
 		log.Printf("Error retrieving user %d: %v", id, err)
 		http.Error(w, "User not found", http.StatusNotFound)
@@ -172,7 +162,7 @@ func (h *UserHandler) GetUserStats(w http.ResponseWriter, r *http.Request) {
 
 	var userStats *types.UserStats
 
-	userStats, err = h.userRepo.GetUserStatsDB(r.Context(), id)
+	userStats, err = repository.GetUserStatsDB(r.Context(), id)
 	if err != nil {
 		log.Printf("Error retrieving stats for user %d: %v", userStats.ID, err)
 		http.Error(w, "Failed to retrieve user stats", http.StatusInternalServerError)

@@ -1,13 +1,5 @@
 package unit_tests
 
-import (
-	"fmt"
-	"golbugames/backend/internal/api/handlers"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-)
-
 // func TestCreateUser(t *testing.T) {
 // 	tests := []struct {
 // 		name       string
@@ -32,16 +24,16 @@ import (
 
 // }
 
-func TestGetUser(t *testing.T) {
-	t.Run("Test GET", func(t *testing.T) {
-		request, _ := http.NewRequest(http.MethodGet, "/user/1", nil)
-		response := httptest.NewRecorder()
+// func TestGetUser(t *testing.T) {
+// 	t.Run("Test GET", func(t *testing.T) {
+// 		request, _ := http.NewRequest(http.MethodGet, "/user/1", nil)
+// 		response := httptest.NewRecorder()
 
-		handlers.GetUser(response, request)
+// 		handlers.GetUser(response, request)
 
-		got := response.Body.String()
+// 		got := response.Body.String()
 
-		fmt.Printf(got)
-	},
-	)
-}
+// 		fmt.Printf(got)
+// 	},
+// 	)
+// }

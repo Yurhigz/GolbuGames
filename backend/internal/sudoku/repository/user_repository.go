@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"context"
@@ -7,19 +7,9 @@ import (
 	"golbugames/backend/pkg/types"
 	"log"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PostgresUserRepository struct {
-	db *pgxpool.Pool
-}
-
-func NewPostgresUserRepository(db *pgxpool.Pool) *PostgresUserRepository {
-	return &PostgresUserRepository{db: db}
-}
-
-func (r *PostgresUserRepository) AddUserDB(parentsContext context.Context, username, accountname, password string) error {
+func AddUserDB(parentsContext context.Context, username, accountname, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -68,7 +58,7 @@ func (r *PostgresUserRepository) AddUserDB(parentsContext context.Context, usern
 	return nil
 }
 
-func (r *PostgresUserRepository) DeleteUserDB(parentsContext context.Context, id_user int) error {
+func DeleteUserDB(parentsContext context.Context, id_user int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -84,7 +74,7 @@ func (r *PostgresUserRepository) DeleteUserDB(parentsContext context.Context, id
 	return nil
 }
 
-func (r *PostgresUserRepository) GetUserDB(parentsContext context.Context, id_user int) (*types.User, error) {
+func GetUserDB(parentsContext context.Context, id_user int) (*types.User, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -100,7 +90,7 @@ func (r *PostgresUserRepository) GetUserDB(parentsContext context.Context, id_us
 	return &user, nil
 }
 
-func (r *PostgresUserRepository) UpdateUserPasswordDB(parentsContext context.Context, id_user int, password string) error {
+func UpdateUserPasswordDB(parentsContext context.Context, id_user int, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -117,11 +107,11 @@ func (r *PostgresUserRepository) UpdateUserPasswordDB(parentsContext context.Con
 
 }
 
-func (r *PostgresUserRepository) GetUserStatsDB(parentsContext context.Context, id_user int) (*types.UserStats, error) {
+func GetUserStatsDB(parentsContext context.Context, id_user int) (*types.UserStats, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
-	_, err := r.GetUserDB(parentsContext, id_user)
+	_, err := GetUserDB(parentsContext, id_user)
 	if err != nil {
 		return nil, fmt.Errorf("[GetUserStats] the user id does not exist %w", err)
 	}

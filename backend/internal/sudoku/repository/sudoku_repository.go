@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"context"
@@ -8,19 +8,9 @@ import (
 	"log"
 	"math/rand/v2"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PostgresSudokuRepository struct {
-	db *pgxpool.Pool
-}
-
-func NewPostgresSudokuRepository(db *pgxpool.Pool) *PostgresSudokuRepository {
-	return &PostgresSudokuRepository{db: db}
-}
-
-func (r *PostgresSudokuRepository) AddGridDB(parentsContext context.Context, board, solution, difficulty string) error {
+func AddGridDB(parentsContext context.Context, board, solution, difficulty string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -36,7 +26,7 @@ func (r *PostgresSudokuRepository) AddGridDB(parentsContext context.Context, boa
 	return nil
 }
 
-func (r *PostgresSudokuRepository) GetGridDB(parentsContext context.Context, id int) (string, string, error) {
+func GetGridDB(parentsContext context.Context, id int) (string, string, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -52,7 +42,7 @@ func (r *PostgresSudokuRepository) GetGridDB(parentsContext context.Context, id 
 	return board, solution, nil
 }
 
-func (r *PostgresSudokuRepository) GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.SudokuGrid, error) {
+func GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.SudokuGrid, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 

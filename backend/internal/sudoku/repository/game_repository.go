@@ -1,28 +1,14 @@
-package postgres
+package repository
 
 import (
 	"context"
 	"fmt"
 	"golbugames/backend/internal/database"
-	"golbugames/backend/internal/repository/interfaces"
 	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type PostgresGameRepository struct {
-	db       *pgxpool.Pool
-	userRepo interfaces.UserRepository
-}
-
-func NewPostgresGameRepository(db *pgxpool.Pool, userRepo interfaces.UserRepository) *PostgresGameRepository {
-	return &PostgresGameRepository{
-		db:       db,
-		userRepo: userRepo,
-	}
-}
 
 func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
@@ -64,7 +50,7 @@ func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw
 	return nil
 }
 
-func (r *PostgresGameRepository) SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int) error {
+func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête
@@ -98,7 +84,7 @@ func (r *PostgresGameRepository) SubmitSoloGameDB(parentsContext context.Context
 	return nil
 }
 
-func (r *PostgresGameRepository) SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, results, completionTime int) error {
+func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, results, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête

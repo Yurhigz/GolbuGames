@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/pkg/types"
 	"log"
 	"net/http"
@@ -20,7 +21,7 @@ func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sudoku.SubmitSoloGameDB(r.Context(), game.UserID, game.Completion_time)
+	err = repository.SubmitSoloGameDB(r.Context(), game.UserID, game.Completion_time)
 	if err != nil {
 		log.Printf("Error submitting game for user %d: %v", game.UserID, err)
 		http.Error(w, "Failed to submit game", http.StatusInternalServerError)
@@ -48,7 +49,7 @@ func SubmitMultiGame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid game mode or results for multiplayer game", http.StatusBadRequest)
 		return
 	}
-	err = sudoku.SubmitMultiGameDB(r.Context(), game.UserID, *game.OpponentID, *game.Results, game.Completion_time)
+	err = repository.SubmitMultiGameDB(r.Context(), game.UserID, *game.OpponentID, *game.Results, game.Completion_time)
 	if err != nil {
 		log.Printf("Error submitting game for user %d: %v", game.UserID, err)
 		http.Error(w, "Failed to submit game", http.StatusInternalServerError)
