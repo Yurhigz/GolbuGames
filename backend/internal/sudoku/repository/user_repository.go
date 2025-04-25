@@ -90,6 +90,22 @@ func GetUserDB(parentsContext context.Context, id_user int) (*types.User, error)
 	return &user, nil
 }
 
+func GetUserIdDB(parentsContext context.Context, username, accountname string) (*types.User, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	var user types.User
+	query := `SELECT username,accountname,password,id FROM users WHERE username = $1 AND accountname = $2`
+
+	err := database.DBPool.QueryRow(ctx, query, username, accountname).Scan(&user.Username, &user.Accountname, &user.Password, &user.ID)
+
+	if err != nil {
+		return nil, fmt.Errorf("[GetUserId] Error retrieving user %v : %v", username, err)
+	}
+
+	return &user, nil
+}
+
 func UpdateUserPasswordDB(parentsContext context.Context, id_user int, password string) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()

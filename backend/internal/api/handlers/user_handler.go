@@ -107,6 +107,34 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func GetUserId(w http.ResponseWriter, r *http.Request) {
+	username := r.URL.Query().Get("username")
+	accountname := r.URL.Query().Get("accountname")
+
+	if username == "" || accountname == "" {
+		http.Error(w, "username and accountname are required", http.StatusBadRequest)
+		return
+	}
+
+	var user *types.User
+
+	user, err := repository.GetUserIdDB(r.Context(), username, accountname)
+
+	if err != nil {
+		log.Printf("%v", err)
+		http.Error(w, "username or accountname are invalid", http.StatusBadRequest)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(
+		map[string]string{
+			"message": "User succesfully retrieved",
+			"userid":  strconv.Itoa(user.ID),
+		})
+
+}
+
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 
 	var pwdUpdate types.PasswordUpdate
