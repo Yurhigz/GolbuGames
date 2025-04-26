@@ -90,6 +90,22 @@ func GetUserDB(parentsContext context.Context, id_user int) (*types.User, error)
 	return &user, nil
 }
 
+func UserLoginDB(parentsContext context.Context, username, password string) (bool, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND password = $2)`
+
+	err := database.DBPool.QueryRow(ctx, query, username, password)
+
+	if err != nil {
+		return false, fmt.Errorf("[UserLogin] Error checking user %v : %v", username, err)
+	}
+
+	return true, nil
+
+}
+
 func GetUserIdDB(parentsContext context.Context, username, accountname string) (*types.User, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
