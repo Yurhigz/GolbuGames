@@ -172,6 +172,6 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func Login(w http.Response, r *http.Request) {
+func UserSignin(w http.Response, r *http.Request) {
 
 }
