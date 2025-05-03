@@ -4,11 +4,18 @@ import (
 	"context"
 	"fmt"
 	"golbugames/backend/internal/database"
+	"golbugames/backend/internal/sudoku"
 	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 )
+
+type leaderboard struct {
+	UserID   int `json:"userid"`
+	eloScore int `json:"elo_score"`
+	rank     int `json:"rank"`
+}
 
 func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
@@ -66,7 +73,7 @@ func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int
 		 VALUES ($1, 'solo', $2)`,
 		userId, completionTime)
 	if err != nil {
-		return fmt.Errorf("[SubmitSoloGame] cannot submit the game results: %w", err)
+		return fmt.Errorf("[SubmitSoloGame] cannot submit the game result: %w", err)
 	}
 
 	// Mettre à jour les stats (considéré comme une victoire en solo)
@@ -84,7 +91,7 @@ func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int
 	return nil
 }
 
-func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, results, completionTime int) error {
+func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, result, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête
@@ -96,17 +103,17 @@ func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, results
 
 	// Insérer le score
 	_, err = tx.Exec(ctx,
-		`INSERT INTO games_scores (user_id, opponent_id, game_mode, results, completion_time) 
+		`INSERT INTO games_scores (user_id, opponent_id, game_mode, result, completion_time) 
 		 VALUES ($1, $2, '1v1', $3, $4)`,
-		user1, user2, results, completionTime)
+		user1, user2, result, completionTime)
 	if err != nil {
-		return fmt.Errorf("[SubmitMultiGame] cannot submit the game results: %w", err)
+		return fmt.Errorf("[SubmitMultiGame] cannot submit the game result: %w", err)
 	}
 
 	// Mettre à jour les stats des deux joueurs selon le résultat
-	isWin1 := results == 0
-	isDraw := results == 1
-	isWin2 := results == 2
+	isWin1 := result == 0
+	isDraw := result == 1
+	isWin2 := result == 2
 
 	// Stats joueur 1
 	err = updateUserStats(ctx, tx, user1, isWin1, isWin2, isDraw, completionTime, false)
@@ -128,3 +135,78 @@ func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, results
 	log.Printf("Multi game successfully submitted and stats updated")
 	return nil
 }
+
+func GetEloDB(parentsContext context.Context, userId int) (int, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `SELECT elo_score FROM leaderboard WHERE id = $1`
+
+	var eloScore int
+	err := database.DBPool.QueryRow(ctx, query, userId).Scan(&eloScore)
+	if err != nil {
+		return 0, fmt.Errorf("[GetElo] Error retrieving Elo for user (ID: %d): %v", userId, err)
+	}
+
+	log.Printf("Elo retrieved successfully for user (ID: %d)", userId)
+	return eloScore, nil
+}
+
+func UpdateEloDB(parentsContext context.Context, userId1, userId2 int, result string) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	userElo1, err := GetEloDB(ctx, userId1)
+	if err != nil {
+		return fmt.Errorf("[UpdateElo] Error retrieving Elo for user (ID: %d): %v", userId1, err)
+	}
+	userElo2, err := GetEloDB(ctx, userId2)
+	if err != nil {
+		return fmt.Errorf("[UpdateElo] Error retrieving Elo for user (ID: %d): %v", userId2, err)
+	}
+
+	NewElo1, NewElo2 := sudoku.EloCalculation(userElo1, userElo2, result)
+
+	query := `UPDATE leaderboard SET elo_score = $1 WHERE id = $2`
+
+	_, err = database.DBPool.Exec(ctx, query, NewElo1, userId1)
+	if err != nil {
+		return fmt.Errorf("[UpdateElo] Error updating Elo for user (ID: %d): %v", userId1, err)
+	}
+	_, err = database.DBPool.Exec(ctx, query, NewElo2, userId2)
+	if err != nil {
+		return fmt.Errorf("[UpdateElo] Error updating Elo for user (ID: %d): %v", userId1, err)
+	}
+
+	log.Printf("Elo updated successfully for both users (ID: %d, %d)", userId1, userId2)
+	return nil
+}
+
+func GetLeaderboard(parentsContext context.Context) (*[]leaderboard, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	var leaderboardList []leaderboard
+
+	query := `SELECT user_id, elo_score, RANK() OVER (ORDER BY elo_score DESC) AS rank FROM leaderboard`
+
+	rows, _ := database.DBPool.Query(ctx, query)
+	leaderboardList, err := pgx.CollectRows(rows, pgx.RowToStructByName[leaderboard])
+	if err != nil {
+		return nil, fmt.Errorf("[GetLeaderboard] Error retrieving leaderboard: %v", err)
+	}
+
+	return &leaderboardList, nil
+	// Classement des meilleurs joueurs
+	// Filtrage par difficulté et ELO
+}
+
+// func GetUserHistory(w http.ResponseWriter, r *http.Request) {
+// 	// Historique des parties
+// 	// Progression
+// }
+
+// func SaveGameProgress(w http.ResponseWriter, r *http.Request) {
+// 	// Sauvegarde l'état actuel
+// 	// Permet de reprendre plus tard
+// }

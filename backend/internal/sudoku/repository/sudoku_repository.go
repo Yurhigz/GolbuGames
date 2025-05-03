@@ -74,18 +74,3 @@ func GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.
 
 	return &sudokuGrid, nil
 }
-
-// func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-// 	// Classement des meilleurs joueurs
-// 	// Filtrage par difficulté et ELO
-// }
-
-// func GetUserHistory(w http.ResponseWriter, r *http.Request) {
-// 	// Historique des parties
-// 	// Progression
-// }
-
-// func SaveGameProgress(w http.ResponseWriter, r *http.Request) {
-// 	// Sauvegarde l'état actuel
-// 	// Permet de reprendre plus tard
-// }

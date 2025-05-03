@@ -59,7 +59,6 @@ CREATE TABLE user_stats (
 CREATE TABLE leaderboard (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
-    rank INT NOT NULL,
     elo_score INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
