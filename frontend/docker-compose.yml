@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  react-dev:
+    image: node:22-alpine
+    container_name: react_dev_env
+    working_dir: /app
+    volumes:
+      - ./my-app:/app
+    ports:
+      - "3000:3000"    
+    stdin_open: true
+    tty: true
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
