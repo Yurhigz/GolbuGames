@@ -11,12 +11,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type leaderboard struct {
-	UserID   int `json:"userid"`
-	eloScore int `json:"elo_score"`
-	rank     int `json:"rank"`
-}
-
 func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
         UPDATE user_stats 
@@ -182,31 +176,34 @@ func UpdateEloDB(parentsContext context.Context, userId1, userId2 int, result st
 	return nil
 }
 
-func GetLeaderboard(parentsContext context.Context) (*[]leaderboard, error) {
+func GetLeaderboard(parentsContext context.Context) (*[]sudoku.Leaderboard, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
-	var leaderboardList []leaderboard
-
+	var leaderboardList []sudoku.Leaderboard
 	query := `SELECT user_id, elo_score, RANK() OVER (ORDER BY elo_score DESC) AS rank FROM leaderboard`
 
 	rows, _ := database.DBPool.Query(ctx, query)
-	leaderboardList, err := pgx.CollectRows(rows, pgx.RowToStructByName[leaderboard])
+	leaderboardList, err := pgx.CollectRows(rows, pgx.RowToStructByName[sudoku.Leaderboard])
 	if err != nil {
 		return nil, fmt.Errorf("[GetLeaderboard] Error retrieving leaderboard: %v", err)
 	}
 
 	return &leaderboardList, nil
-	// Classement des meilleurs joueurs
-	// Filtrage par difficulté et ELO
 }
 
-// func GetUserHistory(w http.ResponseWriter, r *http.Request) {
-// 	// Historique des parties
-// 	// Progression
-// }
+func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameScore, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
 
-// func SaveGameProgress(w http.ResponseWriter, r *http.Request) {
-// 	// Sauvegarde l'état actuel
-// 	// Permet de reprendre plus tard
-// }
+	var gameHistory []sudoku.GameScore
+	query := `SELECT id as game_id, user_id, opponent_id, game_mode, results, completion_time FROM games_scores WHERE user_id = $1`
+
+	rows, _ := database.DBPool.Query(ctx, query, userId)
+	gameHistory, err := pgx.CollectRows(rows, pgx.RowToStructByName[sudoku.GameScore])
+	if err != nil {
+		return nil, fmt.Errorf("[GetUserHistory] Error retrieving game history for user (ID: %d): %v", userId, err)
+	}
+
+	return &gameHistory, nil
+}
