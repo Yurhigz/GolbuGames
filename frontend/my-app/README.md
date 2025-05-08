@@ -13,3 +13,8 @@ npm start    # Pour lancer l'app
 
 # Pour arrêter le conteneur
 docker-compose down
+
+# Dépendances à installer 
+```
+npm install react-icons
+```
