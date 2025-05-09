@@ -13,8 +13,7 @@ const Home = () => {
                             <div key={row} className="preview-row">
                                 {[...Array(9)].map((_, col) => (
                                     <div key={`${row}-${col}`} className="preview-cell">
-                                        {/* Vous pouvez ajouter quelques chiffres fixes ici */}
-                                        {Math.random() > 0.7 ? Math.floor(Math.random() * 9) + 1 : ""}
+                                        {}
                                     </div>
                                 ))}
                             </div>

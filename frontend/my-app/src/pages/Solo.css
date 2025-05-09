@@ -1,0 +1,105 @@
+.solo-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.background-grid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.1;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+}
+
+.background-grid.hidden {
+    opacity: 0;
+}
+
+.background-grid .sudoku-grid {
+    transform: scale(1.5);
+    opacity: 1;
+}
+
+.sudoku-grid.background {
+    transform: scale(1.5);
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.sudoku-grid.active {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    transition: all 0.3s ease;
+}
+
+.game-grid {
+    position: relative;
+    z-index: 1;
+}
+
+.game-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.sudoku-grid {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.grid-row {
+    display: flex;
+}
+
+.grid-cell {
+    width: 50px;
+    height: 50px;
+    border: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.grid-row:nth-child(3n) .grid-cell {
+    border-bottom: 2px solid #333;
+}
+
+.grid-row:first-child .grid-cell {
+    border-top: 2px solid #333;
+}
+
+.grid-cell:nth-child(3n) {
+    border-right: 2px solid #333;
+}
+
+.grid-cell:first-child {
+    border-left: 2px solid #333;
+}
+
+.grid-cell:hover {
+    background-color: #f0f0f0;
+}
+
+.active-grid {
+    position: relative;
+    z-index: 2;
+}
