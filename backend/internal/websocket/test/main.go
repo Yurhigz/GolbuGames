@@ -4,42 +4,44 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"log"
-	"net"
 	"net/http"
 	"strings"
 )
 
 func main() {
 
-	http.HandleFunc("GET /websocket", websocketHandler)
+	http.HandleFunc("/websocket", websocketHandler)
 	fmt.Printf("Listening on port %v ...", 3005)
+
 	http.ListenAndServe(":3005", nil)
-	go testWebSocketClient()
+	// time.Sleep(100 * time.Millisecond)
+	// testWebSocketClient()
 
+	// select {}
 }
-func testWebSocketClient() {
-	conn, err := net.Dial("tcp", "localhost:3005")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
 
-	// Envoyer la requête d'upgrade
-	request := "GET /websocket HTTP/1.1\r\n" +
-		"Host: localhost:3005\r\n" +
-		"Upgrade: websocket\r\n" +
-		"Connection: Upgrade\r\n" +
-		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-		"Sec-WebSocket-Version: 13\r\n\r\n"
+// func testWebSocketClient() {
+// 	conn, err := net.Dial("tcp", "localhost:3005")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer conn.Close()
 
-	conn.Write([]byte(request))
+// 	// Envoyer la requête d'upgrade
+// 	request := "GET /websocket HTTP/1.1\r\n" +
+// 		"Host: localhost:3005\r\n" +
+// 		"Upgrade: websocket\r\n" +
+// 		"Connection: Upgrade\r\n" +
+// 		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+// 		"Sec-WebSocket-Version: 13\r\n\r\n"
 
-	// Lire la réponse
-	buffer := make([]byte, 1024)
-	n, _ := conn.Read(buffer)
-	fmt.Println(string(buffer[:n]))
-}
+// 	conn.Write([]byte(request))
+
+// 	// Lire la réponse
+// 	buffer := make([]byte, 1024)
+// 	n, _ := conn.Read(buffer)
+// 	fmt.Println(string(buffer[:n]))
+// }
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
@@ -77,9 +79,26 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 	fmt.Println("WebSocket connection established!")
+	buf := make([]byte, 1024)
+	for {
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("Error reading:", err)
+			break
+		}
+		fmt.Printf("Received: %s\n", string(buf[:n]))
+		firstByte := buf[0]
+		secondByte := buf[1]
+
+		fmt.Printf("BIT FIRSTBYTE : %d", firstByte)
+		fmt.Printf("BIT FIRSTBYTE : %d", secondByte)
+		// fmt.Printf("Ceci est le premier byte %b", buf[0])
+		// fmt.Printf("Ceci est le premier byte en version string %s", string(buf[0]))
+	}
 
 }
 
+//  1 octect = 1 byte = 8 bits
 // Bonsoir !
 // Apprendre les WebSockets en Go est un excellent choix pour enrichir vos compétences. Votre approche d'utiliser une IA pour obtenir des exemples est valable, mais je peux vous proposer une stratégie d'apprentissage plus complète.
 // Méthodes efficaces pour apprendre les WebSockets en Go

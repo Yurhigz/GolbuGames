@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test WebSocket</title>
+</head>
+<body>
+  <h1>Client WebSocket Test</h1>
+  <button id="connectBtn">Connecter</button>
+  <button id="sendBtn" disabled>Envoyer Message</button>
+  <pre id="log"></pre>
+
+  <script>
+    let ws;
+    const log = document.getElementById("log");
+    const connectBtn = document.getElementById("connectBtn");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function logMessage(msg) {
+      log.textContent += msg + "\n";
+    }
+
+    connectBtn.onclick = () => {
+      ws = new WebSocket("ws://localhost:3005/websocket");
+      ws.onopen = () => {
+        logMessage("Connecté au serveur WebSocket");
+        sendBtn.disabled = false;
+      };
+      ws.onmessage = (event) => {
+        logMessage("Message reçu : " + event.data);
+      };
+      ws.onerror = (err) => {
+        logMessage("Erreur WebSocket : " + err.message);
+      };
+      ws.onclose = () => {
+        logMessage("Connexion fermée");
+        sendBtn.disabled = true;
+      };
+    };
+
+    sendBtn.onclick = () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send("Bonjour depuis le client !");
+        logMessage("Message envoyé");
+      }
+    };
+  </script>
+</body>
+</html>
