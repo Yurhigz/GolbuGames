@@ -10,38 +10,57 @@ import (
 
 func main() {
 
-	http.HandleFunc("/websocket", websocketHandler)
-	fmt.Printf("Listening on port %v ...", 3005)
+	// http.HandleFunc("/websocket", websocketHandler)
+	// fmt.Printf("Listening on port %v ...", 3005)
 
-	http.ListenAndServe(":3005", nil)
+	// http.ListenAndServe(":3005", nil)
 	// time.Sleep(100 * time.Millisecond)
 	// testWebSocketClient()
 
 	// select {}
+	b := byte(0b00001011)
+
+	fmt.Println(isFinalFrame(b))
+	fmt.Println(getOpcode(b))
+	fmt.Println(hasAnyRSVSet(b))
+	fmt.Println(buildControlByte(true, false, false, false, 0x1))
 }
 
-// func testWebSocketClient() {
-// 	conn, err := net.Dial("tcp", "localhost:3005")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer conn.Close()
+func isFinalFrame(b byte) bool {
+	if b&(1<<7) != 0 {
+		return true
+	}
+	return false
+}
 
-// 	// Envoyer la requête d'upgrade
-// 	request := "GET /websocket HTTP/1.1\r\n" +
-// 		"Host: localhost:3005\r\n" +
-// 		"Upgrade: websocket\r\n" +
-// 		"Connection: Upgrade\r\n" +
-// 		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-// 		"Sec-WebSocket-Version: 13\r\n\r\n"
+func getOpcode(b byte) byte {
+	return b & 0b00001111
+}
 
-// 	conn.Write([]byte(request))
+func hasAnyRSVSet(b byte) bool {
+	if (b&0b01110000)>>4 > 0 {
+		return true
+	}
+	return false
+}
 
-// 	// Lire la réponse
-// 	buffer := make([]byte, 1024)
-// 	n, _ := conn.Read(buffer)
-// 	fmt.Println(string(buffer[:n]))
-// }
+func buildControlByte(fin bool, rsv1, rsv2, rsv3 bool, opcode byte) byte {
+	b := byte(0b00000000)
+	if fin {
+		b |= (1 << 7)
+	}
+	if rsv1 {
+		b |= (1 << 6)
+	}
+	if rsv2 {
+		b |= (1 << 5)
+
+	}
+	if rsv3 {
+		b |= (1 << 4)
+	}
+	return b | opcode
+}
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
@@ -98,21 +117,25 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//  1 octect = 1 byte = 8 bits
-// Bonsoir !
-// Apprendre les WebSockets en Go est un excellent choix pour enrichir vos compétences. Votre approche d'utiliser une IA pour obtenir des exemples est valable, mais je peux vous proposer une stratégie d'apprentissage plus complète.
-// Méthodes efficaces pour apprendre les WebSockets en Go
+// func testWebSocketClient() {
+// 	conn, err := net.Dial("tcp", "localhost:3005")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer conn.Close()
 
-// Comprendre les fondamentaux : Avant de coder, assurez-vous de bien comprendre ce que sont les WebSockets et pourquoi ils sont utiles (communication bidirectionnelle en temps réel)
-// Documentation officielle : La bibliothèque standard net/http de Go offre un support limité pour WebSockets, mais la bibliothèque gorilla/websocket est très populaire et bien documentée
-// Approche progressive :
+// 	// Envoyer la requête d'upgrade
+// 	request := "GET /websocket HTTP/1.1\r\n" +
+// 		"Host: localhost:3005\r\n" +
+// 		"Upgrade: websocket\r\n" +
+// 		"Connection: Upgrade\r\n" +
+// 		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+// 		"Sec-WebSocket-Version: 13\r\n\r\n"
 
-// Commencez par un exemple simple de serveur/client
-// Puis complexifiez avec la gestion des erreurs, des déconnexions, etc.
-// Enfin, construisez une application plus complète
+// 	conn.Write([]byte(request))
 
-// Apprendre par la pratique : Codez vous-même les exemples que vous trouvez, ne vous contentez pas de les copier
-// Projets personnels : Créez un petit projet concret (chat, tableau de bord en temps réel, jeu simple)
-
-// L'apprentissage auprès d'une IA est utile pour obtenir des explications claires et des exemples adaptés à votre niveau, mais rien ne remplace la pratique et l'expérimentation personnelle.
-// Souhaitez-vous que je vous montre un exemple simple de WebSocket en Go pour commencer ?
+// 	// Lire la réponse
+// 	buffer := make([]byte, 1024)
+// 	n, _ := conn.Read(buffer)
+// 	fmt.Println(string(buffer[:n]))
+// }
