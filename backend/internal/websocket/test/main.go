@@ -6,24 +6,24 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func main() {
 
-	// http.HandleFunc("/websocket", websocketHandler)
-	// fmt.Printf("Listening on port %v ...", 3005)
+	http.HandleFunc("/websocket", websocketHandler)
+	fmt.Printf("Listening on port %v ...", 3005)
 
-	// http.ListenAndServe(":3005", nil)
-	// time.Sleep(100 * time.Millisecond)
-	// testWebSocketClient()
+	http.ListenAndServe(":3005", nil)
+	time.Sleep(100 * time.Millisecond)
 
 	// select {}
-	b := byte(0b00001011)
+	// b := byte(0b00001011)
 
-	fmt.Println(isFinalFrame(b))
-	fmt.Println(getOpcode(b))
-	fmt.Println(hasAnyRSVSet(b))
-	fmt.Println(buildControlByte(true, false, false, false, 0x1))
+	// // fmt.Println(isFinalFrame(b))
+	// // fmt.Println(getOpcode(b))
+	// // fmt.Println(hasAnyRSVSet(b))
+	// // fmt.Println(buildControlByte(true, false, false, false, 0x1))
 }
 
 func isFinalFrame(b byte) bool {
@@ -31,6 +31,10 @@ func isFinalFrame(b byte) bool {
 		return true
 	}
 	return false
+}
+
+func isMaskSet(b byte) bool {
+	return b&(1<<7) != 0
 }
 
 func getOpcode(b byte) byte {
@@ -105,12 +109,26 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Error reading:", err)
 			break
 		}
-		fmt.Printf("Received: %s\n", string(buf[:n]))
-		firstByte := buf[0]
-		secondByte := buf[1]
+		fmt.Printf("%08b", buf[0])
+		if isFinalFrame(buf[0]) {
+			fmt.Println("This is the end of the message")
+		}
 
-		fmt.Printf("BIT FIRSTBYTE : %d", firstByte)
-		fmt.Printf("BIT FIRSTBYTE : %d", secondByte)
+		if !isMaskSet(buf[1]) {
+			fmt.Println("Mask is not set")
+		}
+
+		if buf[1]&0b0111111 < 126 {
+			fmt.Println("Payload lenght : short ")
+			maskKey := buf[2:5]
+		} else if buf[1]&0b0111111 == 127 {
+			fmt.Println("Payload lenght : mid ")
+		} else {
+			fmt.Println("Payload lenght : long ")
+		}
+
+		fmt.Println(n)
+
 		// fmt.Printf("Ceci est le premier byte %b", buf[0])
 		// fmt.Printf("Ceci est le premier byte en version string %s", string(buf[0]))
 	}
