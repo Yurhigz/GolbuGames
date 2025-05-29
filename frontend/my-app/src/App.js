@@ -5,6 +5,7 @@ import Footer from "./components/footer";
 import Home from "./pages/homepage";
 import Solo from "./pages/Solo";
 import Multi from "./pages/Multi";
+import Invite from "./pages/Invite";
 import Tournament from "./pages/Tournament";
 import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/legal/About";
@@ -20,6 +21,7 @@ function App() {
         <SideNav />
         <div className="main-content">
           <Routes>
+            <Route path="/multiplayer/invite/:id" element={<Invite />} />
             <Route path="/" element={<Home />} />
             <Route path="/solo" element={<Solo />} />
             <Route path="/multi" element={<Multi />} />
