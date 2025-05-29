@@ -9,7 +9,7 @@ services:
       - ./my-app:/app
       - /app/node_modules
     ports:
-      - "3000:3000"    
+      - "3000:3000"
     environment:
       - NODE_OPTIONS=--openssl-legacy-provider
       - CHOKIDAR_USEPOLLING=true
@@ -18,3 +18,4 @@ services:
       - WDS_SOCKET_PORT=3000
     stdin_open: true
     tty: true
+    command: sh -c "npm install && npm start"

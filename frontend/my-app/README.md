@@ -5,7 +5,7 @@ docker-compose build
 docker-compose up -d
 
 # Se connecter au shell
-docker-compose exec react-app sh
+docker exec -it react_dev_env sh
 
 # Dans le shell du conteneur
 npm install  # Si nécessaire
