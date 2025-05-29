@@ -18,6 +18,5 @@ body {
 
 .main-content {
     flex: 1;
-    margin-left: 250px; /* Largeur de la SideNav */
     padding: 20px;
 }
