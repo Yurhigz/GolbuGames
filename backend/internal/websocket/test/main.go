@@ -5,10 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"math"
 	"net/http"
 	"strings"
 	"time"
+)
+
+const (
+	smallPayloadHeaderLen  = 6
+	mediumPayloadHeaderLen = 8
+	largePayloadHeaderLen  = 14
 )
 
 func main() {
@@ -19,13 +24,6 @@ func main() {
 	http.ListenAndServe(":3005", nil)
 	time.Sleep(100 * time.Millisecond)
 
-	// select {}
-	// b := byte(0b00001011)
-
-	// // fmt.Println(isFinalFrame(b))
-	// // fmt.Println(getOpcode(b))
-	// // fmt.Println(hasAnyRSVSet(b))
-	// // fmt.Println(buildControlByte(true, false, false, false, 0x1))
 }
 
 func isFinalFrame(b byte) bool {
@@ -50,26 +48,15 @@ func hasAnyRSVSet(b byte) bool {
 	return false
 }
 
-// func decode() {
+func parseFrame(buf []byte) (payload []byte, frameLen int, isFinal bool, ok bool) {
 
-// }
+}
 
-func buildControlByte(fin bool, rsv1, rsv2, rsv3 bool, opcode byte) byte {
-	b := byte(0b00000000)
-	if fin {
-		b |= (1 << 7)
+func unmaskPayload(mask []byte, data []byte) []byte {
+	for i := 0; i < len(data); i++ {
+		data[i] ^= mask[i%4]
 	}
-	if rsv1 {
-		b |= (1 << 6)
-	}
-	if rsv2 {
-		b |= (1 << 5)
-
-	}
-	if rsv3 {
-		b |= (1 << 4)
-	}
-	return b | opcode
+	return data
 }
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -108,71 +95,63 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 	fmt.Println("WebSocket connection established!")
-	buf := make([]byte, 1024)
+	tmpbuf := make([]byte, 1024)
+	var buf []byte
 	for {
-		_, err := conn.Read(buf)
+		n, err := conn.Read(tmpbuf)
 		if err != nil {
 			fmt.Println("Error reading:", err)
 			break
 		}
-		if isFinalFrame(buf[0]) {
-			fmt.Println("This is the end of the message")
-		}
+		buf = append(buf, tmpbuf[:n]...)
 
-		if !isMaskSet(buf[1]) {
-			fmt.Println("Mask is not set")
-		}
-		//  Vider le buf utilisé : buf = buf[n:] mais attention allocation mémoire
+		//  Lire les deux premiers bytes du buf pour savoir s'il contient une frame complète
 
 		payloadLenIndicator := buf[1] & 0b01111111
-		fmt.Println(int(payloadLenIndicator))
+
 		switch {
 		case payloadLenIndicator < 125:
 			payloadLen := int(payloadLenIndicator)
-			if len(buf) < 6+payloadLen {
-				continue
+			frameLen := int(smallPayloadHeaderLen + payloadLen)
+			if len(buf) >= frameLen {
+				maskKey := buf[2:6]
+				payload := buf[smallPayloadHeaderLen : payloadLen+smallPayloadHeaderLen]
+				unmaskedPayload := unmaskPayload(maskKey, payload)
+				fmt.Println(string(unmaskedPayload))
+				buf = buf[frameLen:]
 			}
-			maskKey := buf[2:6]
-			payload := buf[6 : payloadLen+6]
-			for i := 0; i < len(payload); i++ {
-				payload[i] ^= maskKey[i%4]
-			}
-			fmt.Println(string(payload))
+			continue
 
 		case payloadLenIndicator == 126:
 			if len(buf) < 8 {
 				continue
 			}
 			payloadLen := int(binary.BigEndian.Uint16(buf[2:4]))
-			if len(buf) < 8+payloadLen {
-				continue
+			frameLen := int(mediumPayloadHeaderLen + payloadLen)
+			if len(buf) >= frameLen {
+				maskKey := buf[4:8]
+				payload := buf[mediumPayloadHeaderLen : mediumPayloadHeaderLen+payloadLen]
+				unmaskedPayload := unmaskPayload(maskKey, payload)
+				fmt.Println(string(unmaskedPayload))
+				buf = buf[frameLen:]
 			}
-
-			maskKey := buf[4:8]
-			payload := buf[8 : 8+payloadLen]
-			for i := 0; i < len(payload); i++ {
-				payload[i] ^= maskKey[i%4]
-			}
-			fmt.Println(string(payload))
 
 		case payloadLenIndicator == 127:
 			if len(buf) < 14 {
 				continue
 			}
-			payloadLen64 := binary.BigEndian.Uint64(buf[2:10])
-			if payloadLen64 > math.MaxInt32 {
-				continue
+			payloadLen64 := int(binary.BigEndian.Uint64(buf[2:10]))
+			frameLen := int(largePayloadHeaderLen + payloadLen64)
+			if len(buf) >= frameLen {
+				payloadLen := int(payloadLen64)
+				maskKey := buf[10:14]
+				payload := buf[largePayloadHeaderLen : largePayloadHeaderLen+payloadLen]
+				unmaskedPayload := unmaskPayload(maskKey, payload)
+				fmt.Println(string(unmaskedPayload))
+				buf = buf[frameLen:]
 			}
-			payloadLen := int(payloadLen64)
-			if len(buf) < 14+payloadLen {
-				continue
-			}
-			maskKey := buf[10:14]
-			payload := buf[14 : 14+payloadLen]
-			for i := 0; i < len(payload); i++ {
-				payload[i] ^= maskKey[i%4]
-			}
-			fmt.Println(string(payload))
+			continue
+
 		}
 
 	}
