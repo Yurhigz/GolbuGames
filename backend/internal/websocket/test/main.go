@@ -3,7 +3,9 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -47,6 +49,10 @@ func hasAnyRSVSet(b byte) bool {
 	}
 	return false
 }
+
+// func decode() {
+
+// }
 
 func buildControlByte(fin bool, rsv1, rsv2, rsv3 bool, opcode byte) byte {
 	b := byte(0b00000000)
@@ -104,12 +110,11 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("WebSocket connection established!")
 	buf := make([]byte, 1024)
 	for {
-		n, err := conn.Read(buf)
+		_, err := conn.Read(buf)
 		if err != nil {
 			fmt.Println("Error reading:", err)
 			break
 		}
-		fmt.Printf("%08b", buf[0])
 		if isFinalFrame(buf[0]) {
 			fmt.Println("This is the end of the message")
 		}
@@ -117,43 +122,59 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 		if !isMaskSet(buf[1]) {
 			fmt.Println("Mask is not set")
 		}
+		//  Vider le buf utilisé : buf = buf[n:] mais attention allocation mémoire
 
-		if buf[1]&0b0111111 < 126 {
-			fmt.Println("Payload lenght : short ")
-			maskKey := buf[2:5]
-		} else if buf[1]&0b0111111 == 127 {
-			fmt.Println("Payload lenght : mid ")
-		} else {
-			fmt.Println("Payload lenght : long ")
+		payloadLenIndicator := buf[1] & 0b01111111
+		fmt.Println(int(payloadLenIndicator))
+		switch {
+		case payloadLenIndicator < 125:
+			payloadLen := int(payloadLenIndicator)
+			if len(buf) < 6+payloadLen {
+				continue
+			}
+			maskKey := buf[2:6]
+			payload := buf[6 : payloadLen+6]
+			for i := 0; i < len(payload); i++ {
+				payload[i] ^= maskKey[i%4]
+			}
+			fmt.Println(string(payload))
+
+		case payloadLenIndicator == 126:
+			if len(buf) < 8 {
+				continue
+			}
+			payloadLen := int(binary.BigEndian.Uint16(buf[2:4]))
+			if len(buf) < 8+payloadLen {
+				continue
+			}
+
+			maskKey := buf[4:8]
+			payload := buf[8 : 8+payloadLen]
+			for i := 0; i < len(payload); i++ {
+				payload[i] ^= maskKey[i%4]
+			}
+			fmt.Println(string(payload))
+
+		case payloadLenIndicator == 127:
+			if len(buf) < 14 {
+				continue
+			}
+			payloadLen64 := binary.BigEndian.Uint64(buf[2:10])
+			if payloadLen64 > math.MaxInt32 {
+				continue
+			}
+			payloadLen := int(payloadLen64)
+			if len(buf) < 14+payloadLen {
+				continue
+			}
+			maskKey := buf[10:14]
+			payload := buf[14 : 14+payloadLen]
+			for i := 0; i < len(payload); i++ {
+				payload[i] ^= maskKey[i%4]
+			}
+			fmt.Println(string(payload))
 		}
 
-		fmt.Println(n)
-
-		// fmt.Printf("Ceci est le premier byte %b", buf[0])
-		// fmt.Printf("Ceci est le premier byte en version string %s", string(buf[0]))
 	}
 
 }
-
-// func testWebSocketClient() {
-// 	conn, err := net.Dial("tcp", "localhost:3005")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer conn.Close()
-
-// 	// Envoyer la requête d'upgrade
-// 	request := "GET /websocket HTTP/1.1\r\n" +
-// 		"Host: localhost:3005\r\n" +
-// 		"Upgrade: websocket\r\n" +
-// 		"Connection: Upgrade\r\n" +
-// 		"Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
-// 		"Sec-WebSocket-Version: 13\r\n\r\n"
-
-// 	conn.Write([]byte(request))
-
-// 	// Lire la réponse
-// 	buffer := make([]byte, 1024)
-// 	n, _ := conn.Read(buffer)
-// 	fmt.Println(string(buffer[:n]))
-// }
