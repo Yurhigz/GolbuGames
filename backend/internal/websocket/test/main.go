@@ -26,39 +26,6 @@ func main() {
 
 }
 
-func isFinalFrame(b byte) bool {
-	if b&(1<<7) != 0 {
-		return true
-	}
-	return false
-}
-
-func isMaskSet(b byte) bool {
-	return b&(1<<7) != 0
-}
-
-func getOpcode(b byte) byte {
-	return b & 0b00001111
-}
-
-func hasAnyRSVSet(b byte) bool {
-	if (b&0b01110000)>>4 > 0 {
-		return true
-	}
-	return false
-}
-
-func parseFrame(buf []byte) (payload []byte, frameLen int, isFinal bool, ok bool) {
-
-}
-
-func unmaskPayload(mask []byte, data []byte) []byte {
-	for i := 0; i < len(data); i++ {
-		data[i] ^= mask[i%4]
-	}
-	return data
-}
-
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
 		http.Error(w, "Invalid upgrade request", http.StatusBadRequest)
