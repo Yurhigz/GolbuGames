@@ -71,20 +71,44 @@ func (f Frame) unmaskPayload() {
 
 // Fonction de décodage des messages clients
 func parseFrame(buf []byte) (Frame, int, error) {
+	bufLength := len(buf)
+	if bufLength < 2 {
+		return Frame{}, 0, ErrIncompleteFrame
+	}
+
 	firstByte := buf[0]
 	secondByte := buf[1]
+
+	if !isMaskSet(secondByte) {
+		return Frame{}, 0, ErrMissingMask
+	}
+
 	payloadLen := payloadLen(secondByte)
+
+	// Check if len buf > headerlen + payloadlen (incorporer fonction pour déterminer au préalable longueur du payload)
 
 	switch {
 	case payloadLen < 126:
-		mask := buf[smallIndicatorHeader:smallPayloadHeaderLen]
-		payload := buf[smallPayloadHeaderLen : smallPayloadHeaderLen+payloadLen]
+		if bufLength >= smallPayloadHeaderLen {
+			mask := buf[smallIndicatorHeader:smallPayloadHeaderLen]
+			payload := buf[smallPayloadHeaderLen : smallPayloadHeaderLen+payloadLen]
+		}
+		return Frame{}, 0, ErrIncompleteFrame
+
 	case payloadLen == 126:
-		mask := buf[mediumIndicatorHeader:mediumPayloadHeaderLen]
-		payload := buf[mediumPayloadHeaderLen : mediumPayloadHeaderLen+payloadLen]
+		if bufLength >= mediumPayloadHeaderLen {
+			mask := buf[mediumIndicatorHeader:mediumPayloadHeaderLen]
+			payload := buf[mediumPayloadHeaderLen : mediumPayloadHeaderLen+payloadLen]
+		}
+		return Frame{}, 0, ErrIncompleteFrame
+
 	case payloadLen > 126:
-		mask := buf[largeIndicatorHeader:largePayloadHeaderLen]
-		payload := buf[largePayloadHeaderLen : largePayloadHeaderLen+payloadLen]
+		if bufLength >= largePayloadHeaderLen {
+			mask := buf[largeIndicatorHeader:largePayloadHeaderLen]
+			payload := buf[largePayloadHeaderLen : largePayloadHeaderLen+payloadLen]
+		}
+
+		return Frame{}, 0, ErrIncompleteFrame
 	}
 
 	frame := Frame{
