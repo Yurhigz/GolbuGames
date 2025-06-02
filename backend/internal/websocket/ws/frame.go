@@ -1,5 +1,7 @@
 package ws
 
+import "encoding/binary"
+
 // Ensemble des fonctions de lecture, écriture et parsing des frames websockets RFC6455
 
 type Frame struct {
@@ -63,64 +65,82 @@ func payloadLen(b byte) byte {
 	return b & 0b01111111
 }
 
-func (f Frame) unmaskPayload() {
-	for i := 0; i < len(f.Payload); i++ {
-		f.Payload[i] ^= f.Mask[i%4]
+func unmaskPayload(payload []byte, mask []byte) []byte {
+	results := make([]byte, len(payload))
+	for i := 0; i < len(payload); i++ {
+		results[i] = payload[i] ^ mask[i%4]
 	}
+	return results
 }
 
 // Fonction de décodage des messages clients
 func parseFrame(buf []byte) (Frame, int, error) {
 	bufLength := len(buf)
+	frame := Frame{}
 	if bufLength < 2 {
-		return Frame{}, 0, ErrIncompleteFrame
+		return frame, 0, ErrIncompleteFrame
 	}
 
 	firstByte := buf[0]
 	secondByte := buf[1]
 
+	frame.FIN = isFinalFrame(firstByte)
+	frame.Opcode = getOpcode(firstByte)
+	frame.Masked = isMaskSet(secondByte)
+
 	if !isMaskSet(secondByte) {
-		return Frame{}, 0, ErrMissingMask
+		return frame, 0, ErrMissingMask
 	}
 
-	payloadLen := payloadLen(secondByte)
-
+	payloadLenIndicator := payloadLen(secondByte)
+	var payloadLen int
+	var headerLen int
 	// Check if len buf > headerlen + payloadlen (incorporer fonction pour déterminer au préalable longueur du payload)
 
 	switch {
-	case payloadLen < 126:
-		if bufLength >= smallPayloadHeaderLen {
-			mask := buf[smallIndicatorHeader:smallPayloadHeaderLen]
-			payload := buf[smallPayloadHeaderLen : smallPayloadHeaderLen+payloadLen]
-		}
-		return Frame{}, 0, ErrIncompleteFrame
+	case payloadLenIndicator < 126:
+		payloadLen = int(payloadLenIndicator)
+		headerLen = 6 // 2 (base) + 4 (mask)
 
-	case payloadLen == 126:
-		if bufLength >= mediumPayloadHeaderLen {
-			mask := buf[mediumIndicatorHeader:mediumPayloadHeaderLen]
-			payload := buf[mediumPayloadHeaderLen : mediumPayloadHeaderLen+payloadLen]
+	case payloadLenIndicator == 126:
+		if len(buf) < 4 {
+			return frame, 0, ErrIncompleteFrame
 		}
-		return Frame{}, 0, ErrIncompleteFrame
+		payloadLen = int(binary.BigEndian.Uint16(buf[2:4]))
+		headerLen = 8 // 2 (base) + 2 (extended) + 4 (mask)
 
-	case payloadLen > 126:
-		if bufLength >= largePayloadHeaderLen {
-			mask := buf[largeIndicatorHeader:largePayloadHeaderLen]
-			payload := buf[largePayloadHeaderLen : largePayloadHeaderLen+payloadLen]
+	case payloadLenIndicator > 126:
+		if len(buf) < 10 {
+			return frame, 0, ErrIncompleteFrame
 		}
-
-		return Frame{}, 0, ErrIncompleteFrame
+		payloadLen64 := binary.BigEndian.Uint64(buf[2:10])
+		if payloadLen64 > uint64(MaxPayloadSize) {
+			return frame, 0, ErrPayloadTooLarge
+		}
+		payloadLen = int(payloadLen64)
+		headerLen = 14 // 2 + 8 + 4
 	}
 
-	frame := Frame{
-		FIN:    isFinalFrame(firstByte),
-		Opcode: getOpcode(firstByte),
-		Masked: isMaskSet(secondByte),
+	totalLen := headerLen + payloadLen
+	if len(buf) < totalLen {
+		return frame, 0, ErrIncompleteFrame
 	}
+
+	maskStart := headerLen - 4
+	mask := buf[maskStart:headerLen]
+	frame.Mask = [4]byte{mask[0], mask[1], mask[2], mask[3]}
+	frame.Payload = make([]byte, payloadLen)
+
+	frame.Payload = unmaskPayload(frame.Payload, mask)
 
 	return frame, frame.Length, nil
 }
 
 //  Fonction de construction des réponses côté serveur vers les clients
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
+	var firstByte byte = 0b0000000
+	if fin {
+		firstByte ^ (1 << 7)
+	}
 
 }
