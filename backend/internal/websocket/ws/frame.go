@@ -138,9 +138,32 @@ func parseFrame(buf []byte) (Frame, int, error) {
 
 //  Fonction de construction des réponses côté serveur vers les clients
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
+	var frame []byte
 	var firstByte byte = 0b0000000
 	if fin {
-		firstByte ^ (1 << 7)
+		firstByte |= 1 << 7
+	}
+	firstByte |= opcode
+	frame = append(frame, firstByte)
+
+	payloadLength := len(payload)
+
+	switch {
+	case payloadLength < 126:
+		frame = append(frame, byte(payloadLength))
+	case payloadLength <= 65535:
+		frame = append(frame, byte(126))
+		extraBytes := make([]byte, 2)
+		binary.BigEndian.PutUint16(extraBytes, uint16(payloadLength))
+		frame = append(frame, extraBytes...)
+	default:
+		frame = append(frame, 127)
+		extraBytes := make([]byte, 8)
+		binary.BigEndian.PutUint64(extraBytes, uint64(payloadLength))
+		frame = append(frame, extraBytes...)
 	}
 
+	frame = append(frame, payload...)
+
+	return frame
 }
