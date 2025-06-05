@@ -167,3 +167,5 @@ func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 
 	return frame
 }
+
+// Gestion des frames fragmentés
