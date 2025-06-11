@@ -21,7 +21,7 @@ const Home = () => {
                     </div>
                 </div>
                 <div className="welcome-section">
-                    <h1 className="title">GolbuGames</h1>
+                    <h1>GolbuGames</h1>
                     <p className="subtitle">Jouer au Sudoku en Ligne</p>
                     <div className="game-modes">
                         <Link to="/multi" className="mode-button">Mode Multijoueur</Link>
