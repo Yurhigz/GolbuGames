@@ -85,8 +85,8 @@ html {
 
 .welcome-section h1 {
     font-size: 2rem;
-    color: #ff00cc;
-    text-shadow: 0 0 10px #ff00cc;
+    color: #ffffff;
+    text-shadow: 0 0 10px #000000;
     margin-bottom: 1rem;
 }
 
@@ -94,7 +94,7 @@ html {
     font-size: 1rem;
     color: #00ffe7;
     margin-bottom: 2rem;
-    text-shadow: 0 0 5px #00ffe7;
+    text-shadow: 0 0 5px #001211;
 }
 
 .game-modes {
