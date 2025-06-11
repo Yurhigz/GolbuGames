@@ -1,19 +1,40 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./homepage.css";
 
 const Home = () => {
+    const [grid, setGrid] = useState(
+        Array(9).fill(null).map(() => Array(9).fill(null))
+    );
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setGrid((prevGrid) => {
+                const newGrid = prevGrid.map((row) => [...row]);
+                const row = Math.floor(Math.random() * 9);
+                const col = Math.floor(Math.random() * 9);
+
+                newGrid[row][col] = newGrid[row][col]
+                    ? null
+                    : Math.floor(Math.random() * 9) + 1;
+
+                return newGrid;
+            });
+        }, 300);
+
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className="home-container">
             <div className="main-content-home">
                 <div className="grid-preview">
-                    {/* Exemple statique de grille */}
                     <div className="sudoku-preview">
-                        {[...Array(9)].map((_, row) => (
-                            <div key={row} className="preview-row">
-                                {[...Array(9)].map((_, col) => (
-                                    <div key={`${row}-${col}`} className="preview-cell">
-                                        {}
+                        {grid.map((row, rowIndex) => (
+                            <div key={rowIndex} className="preview-row">
+                                {row.map((cell, colIndex) => (
+                                    <div key={`${rowIndex}-${colIndex}`} className="preview-cell">
+                                        {cell || ""}
                                     </div>
                                 ))}
                             </div>
