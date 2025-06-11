@@ -18,5 +18,18 @@ body {
 
 .main-content {
     flex: 1;
+    margin-left: 0px; /* Largeur de la SideNav */
     padding: 20px;
+}
+
+.title {
+    font-family: 'Alegreya', cursive !important;
+}
+
+.subtitle {
+    font-weight: 600 !important;
+}
+
+body {
+    font-family: 'Imprima', sans-serif;
 }

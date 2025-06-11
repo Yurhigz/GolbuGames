@@ -30,13 +30,13 @@ const Multi = () => {
 
   return (
     <div className="multi-container">
-      <h1 className="multi-title">Multijoueur Sudoku</h1>
+      <h1 className="multi-title title">Multijoueur Sudoku</h1>
 
       <div className="multi-options">
         {/* Matchmaking */}
         <Card>
           <CardContent>
-            <h2 className="option-title">Matchmaking</h2>
+            <h2 className="option-title subtitle">Matchmaking</h2>
             <p className="option-description">
               Rejoignez une partie aléatoire contre un autre joueur en ligne.
             </p>
@@ -47,7 +47,7 @@ const Multi = () => {
         {/* Inviter un ami */}
         <Card>
           <CardContent>
-            <h2 className="option-title">Inviter un ami</h2>
+            <h2 className="option-title subtitle">Inviter un ami</h2>
             <p className="option-description">
               Créez un lien d'invitation à partager.
             </p>
