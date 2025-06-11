@@ -1,3 +1,16 @@
+.hamburger {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 500;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: black;
+}
+
 .sidenav {
     height: 100vh;
     width: 250px;
@@ -6,7 +19,8 @@
     top: 0;
     background-color: #1a1a1a;
     padding-top: 20px;
-    transition: 0.3s;
+    transition: transform 0.3s ease;
+    z-index: -1;
 }
 
 .nav-item {
@@ -30,4 +44,19 @@
 
 .nav-item span {
     font-size: 1.1rem;
+}
+
+@media (max-width: 1500px) {
+    .sidenav {
+        transform: translateX(-100%);
+    }
+
+    .sidenav.open {
+        transform: translateX(0);
+        z-index: 1000 !important;
+    }
+
+    .hamburger {
+        display: block;
+    }
 }

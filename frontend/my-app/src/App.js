@@ -1,7 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import SideNav from "./components/SideNav";
-import SideNavUser from "./components/SideNavUser";
 import Footer from "./components/footer";
 import Home from "./pages/homepage";
 import Solo from "./pages/Solo";
@@ -23,7 +22,6 @@ function App() {
     <Router>
       <div className="app">
         <SideNav />
-        <SideNavUser />
         <div className="main-content">
           <Routes>
             <Route path="/multiplayer/invite/:id" element={<Invite />} />
