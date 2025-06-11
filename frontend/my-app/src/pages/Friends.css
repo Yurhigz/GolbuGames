@@ -1,0 +1,110 @@
+.friends-container {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem;
+    margin-left: 230px;
+    margin-right: 130px;
+    font-family: 'Imprima', sans-serif;
+}
+
+.friends-left,
+.friends-right {
+    flex: 1;
+    background: #f8f8f8;
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+}
+
+.invite-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.invite-form input {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.invite-form button {
+    padding: 0.5rem 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.section {
+    margin-bottom: 1.5rem;
+}
+
+.section h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.section ul,
+.friends-right ul {
+    list-style: none;
+    padding: 0;
+}
+
+.section li,
+.friend-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.6rem;
+    border: 1px solid #ccc;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actions button {
+    border: none;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.accept {
+    background-color: #28a745;
+    color: white;
+}
+
+.decline {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status {
+    font-weight: 500;
+}
+
+.online {
+    color: green;
+}
+
+.offline {
+    color: gray;
+}
+
+.empty-msg {
+    font-style: italic;
+    color: #888;
+}
+
+.friends-container h3 {
+    margin-bottom: 1rem; /* ou la valeur que tu souhaites */
+}

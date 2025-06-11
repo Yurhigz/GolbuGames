@@ -21,7 +21,7 @@ const Leaderboard = () => {
 
   return (
     <div className="leaderboard-container">
-      <h1 className="leaderboard-title">Classement</h1>
+      <h1 className="leaderboard-title title">Classement</h1>
       <div className="leaderboard-wrapper">
         <Card className="leaderboard-card">
           <CardContent>

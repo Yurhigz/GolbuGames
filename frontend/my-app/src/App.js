@@ -16,6 +16,7 @@ import Help from "./pages/legal/Help";
 import FAQ from "./pages/legal/FAQ";
 import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
+import Friends from "./pages/Friends";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <Route path="/multi" element={<Multi />} />
             <Route path="/tournament" element={<Tournament />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/friends" element={<Friends />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/about" element={<About />} />

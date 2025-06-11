@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AiFillHome } from 'react-icons/ai';
 import { GiPerspectiveDiceSixFacesRandom } from 'react-icons/gi';
 import { IoGameController } from 'react-icons/io5';
-import { FaTrophy, FaChartLine } from 'react-icons/fa';
+import { FaTrophy, FaChartLine, FaUserPlus } from 'react-icons/fa';
 import './SideNav.css';
 
 const SideNav = () => {
@@ -28,6 +28,10 @@ const SideNav = () => {
             <Link to="/leaderboard" className="nav-item">
                 <FaChartLine className="nav-icon" />
                 <span>Classement</span>
+            </Link>
+            <Link to="/friends" className="nav-item">
+                <FaUserPlus className="nav-icon" />
+                <span>Friends</span>
             </Link>
         </nav>
     );
