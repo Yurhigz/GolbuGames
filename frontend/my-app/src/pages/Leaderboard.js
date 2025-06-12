@@ -1,4 +1,3 @@
-// pages/Leaderboard.jsx
 import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "../components/Card";
 import "./Leaderboard.css";
