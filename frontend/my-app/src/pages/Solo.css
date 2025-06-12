@@ -116,43 +116,14 @@
     display: flex;
     flex-direction: column;
 }
-  
-  .quit-button,
-  .submit-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-  
-  .quit-button {
-    background-color: #e74c3c;
-    color: white;
-  }
-  
-  .quit-button:hover {
-    background-color: #c0392b;
-  }
-  
-  .submit-button {
-    background-color: #2ecc71;
-    color: white;
-  }
-  
-  .submit-button:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-  }
-  
+
   .game-result {
     margin-top: 15px;
     font-size: 18px;
     font-weight: bold;
     text-align: center;
   }
-  
+
   .selected-cell {
     border: 2px solid #3498db;
     background-color: #ecf0f1;
@@ -215,4 +186,64 @@
     background: #111;
     border-radius: 12px;
     box-shadow: 0 0 20px #00ffe7;
+}
+
+.quit-button,
+.submit-button {
+    padding: 14px 28px;
+    font-size: 1rem;
+    font-family: 'Press Start 2P', cursive;
+    text-transform: uppercase;
+    /*border-radius: 12px;*/
+    /*border: none;*/
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 0px;
+    margin-right: 0px;
+    border-radius: 8px;
+}
+
+.quit-button {
+    border: none;
+    background-color: #ff0044;
+    box-shadow: 0 0 12px #ff0044, inset 0 0 6px #ff0044;
+}
+
+.quit-button:hover {
+    background-color: red;
+    box-shadow: 0 0 16px darkred, inset 0 0 8px darkred;
+}
+
+.submit-button {
+    border: none;
+    background-color: palegreen;
+    box-shadow: 0 0 12px green, inset 0 0 6px green;
+}
+
+.submit-button:disabled {
+    background-color: #555;
+    color: #aaa;
+    cursor: not-allowed;
+    box-shadow: none;
+    border: none;
+}
+
+@media (max-width: 1100px) {
+    .game-content {
+        flex-direction: column;
+    }
+    .number-selector {
+        flex-direction: row;
+        max-width: 95vw;
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    .game-actions {
+        flex-direction: row;
+    }
+
+    .sudoku-grid {
+        width: 95vw;
+    }
 }

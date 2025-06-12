@@ -139,4 +139,9 @@ html {
         width: 30px;
         height: 30px;
     }
+
+    .game-actions {
+        display: flex;
+        flex-direction: row;
+    }
 }
