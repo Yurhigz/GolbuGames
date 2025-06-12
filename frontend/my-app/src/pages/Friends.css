@@ -1,56 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+body {
+    color: #00ffe7;
+    font-family: 'Press Start 2P', cursive;
+    margin: 0;
+    padding: 0;
+    background-color: #000; /* si tu veux garder un fond noir de base */
+}
+
 .friends-container {
     display: flex;
     gap: 2rem;
     padding: 2rem;
     margin-left: 230px;
     margin-right: 130px;
-    font-family: 'Imprima', sans-serif;
+    flex-wrap: wrap;
 }
 
 .friends-left,
 .friends-right {
     flex: 1;
-    background: #f8f8f8;
+    background: #111;
     padding: 1.5rem;
-    border-radius: 10px;
-    border: 1px solid #ddd;
+    border-radius: 16px;
+    border: 6px solid #8a2be2;
+    box-shadow: 0 0 20px #8a2be2;
+    color: #00ffe7;
+}
+
+h3,
+h4 {
+    color: #ffcc00;
+    font-size: 1rem;
+    margin-bottom: 10px;
 }
 
 .invite-form {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
 }
 
 .invite-form input {
     flex: 1;
     padding: 0.5rem;
     border-radius: 6px;
-    border: 1px solid #ccc;
+    border: 1px solid #00ffe7;
+    background: #000;
+    color: #00ffe7;
+    font-family: inherit;
+    font-size: 0.6rem;
+    box-shadow: 0 0 5px #00ffe7 inset;
+}
+
+.invite-form input::placeholder {
+    color: #888;
 }
 
 .invite-form button {
     padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
+    background-color: #00ffe7;
+    color: #000;
+    border: 2px solid #ff00cc;
     border-radius: 6px;
     cursor: pointer;
+    font-size: 0.6rem;
+    box-shadow: 0 0 10px #00ffe7;
+    transition: 0.3s;
+}
+
+.invite-form button:hover {
+    background-color: #ff00cc;
+    color: #fff;
+    box-shadow: 0 0 20px #ff00cc, 0 0 30px #ff00cc;
 }
 
 .section {
-    margin-bottom: 1.5rem;
-}
-
-.section h4 {
-    margin-bottom: 0.5rem;
-    font-weight: 600;
+    margin-bottom: 2rem;
 }
 
 .section ul,
 .friends-right ul {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .section li,
@@ -58,53 +91,143 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fff;
-    padding: 0.7rem 1rem;
-    border-radius: 8px;
+    background: #1a1a1a;
+    padding: 0.8rem;
+    border-radius: 10px;
     margin-bottom: 0.6rem;
-    border: 1px solid #ccc;
+    border: 1px solid #00ffe7;
+    box-shadow: 0 0 8px #00ffe7;
+    font-size: 0.6rem;
 }
 
 .actions {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.3rem;
 }
 
 .actions button {
     border: none;
     border-radius: 4px;
     padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
+    font-size: 0.6rem;
     cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.3s ease;
 }
 
 .accept {
-    background-color: #28a745;
-    color: white;
+    background-color: #00ff88;
+    color: #000;
+    box-shadow: 0 0 5px #00ff88;
+}
+
+.accept:hover {
+    background-color: #00cc6a;
+    color: #fff;
 }
 
 .decline {
-    background-color: #dc3545;
-    color: white;
+    background-color: #ff0044;
+    color: #fff;
+    box-shadow: 0 0 5px #ff0044;
+}
+
+.decline:hover {
+    background-color: #cc0033;
+}
+
+.friend-card .friend-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.friend-name {
+    font-weight: bold;
+    color: #00ffe7;
 }
 
 .status {
-    font-weight: 500;
+    font-size: 0.5rem;
+    opacity: 0.8;
 }
 
 .online {
-    color: green;
+    color: #00ff88;
 }
 
 .offline {
-    color: gray;
+    color: #888;
 }
 
 .empty-msg {
     font-style: italic;
     color: #888;
+    font-size: 0.5rem;
+    padding: 0.3rem;
+    text-align: center;
 }
 
-.friends-container h3 {
-    margin-bottom: 1rem; /* ou la valeur que tu souhaites */
+/* 🔧 Responsive arcade fix */
+@media (max-width: 768px) {
+    .friends-container {
+        flex-direction: column;
+        padding: 1rem;
+        margin: 0;
+    }
+
+    .friends-left,
+    .friends-right {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .invite-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .invite-form input,
+    .invite-form button {
+        width: 100%;
+    }
+
+    .section li,
+    .friend-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+/* 🌌 Fond pixelisé animé */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(#00ffe740 1px, transparent 1px),
+        radial-gradient(#ff00cc40 1px, transparent 1px);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+    animation: pixel-glow 4s linear infinite;
+    z-index: -1;
+    opacity: 0.3;
+}
+
+@keyframes pixel-glow {
+    0% {
+        background-position: 0 0, 5px 5px;
+    }
+    100% {
+        background-position: 10px 10px, 15px 15px;
+    }
 }
