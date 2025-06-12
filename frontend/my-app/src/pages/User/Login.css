@@ -3,17 +3,19 @@
     max-width: 600px;
     margin: 5rem auto;
     padding: 3rem;
-    border-radius: 12px;
-    background-color: #ffffff;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    font-family: Arial, sans-serif;
+    border-radius: 16px;
+    background-color: #111;
+    box-shadow: 0 0 20px #8a2be2;
+    font-family: 'Press Start 2P', cursive;
+    border: 6px solid #8a2be2;
+    color: #00ffe7;
 }
 
 .login-title {
     text-align: center;
     margin-bottom: 2rem;
-    font-size: 2rem;
-    color: #333;
+    font-size: 1.2rem;
+    color: #ffcc00;
 }
 
 .input-group {
@@ -23,41 +25,49 @@
 .input-field {
     width: 100%;
     padding: 0.75rem;
-    font-size: 1rem;
-    border: 1px solid #ccc;
+    font-size: 0.7rem;
+    border: 1px solid #00ffe7;
     border-radius: 6px;
+    background-color: #000;
+    color: #00ffe7;
+    box-shadow: 0 0 5px #00ffe7 inset;
+    font-family: inherit;
 }
 
 .btn-green {
     width: 100%;
     padding: 0.75rem;
-    font-size: 1rem;
-    background-color: #4caf50;
-    color: white;
-    border: none;
+    font-size: 0.7rem;
+    background-color: #00ffe7;
+    color: #000;
+    border: 2px solid #ff00cc;
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.2s;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    font-family: inherit;
 }
 
 .btn-green:hover {
-    background-color: #45a049;
+    background-color: #ff00cc;
+    color: #fff;
+    box-shadow: 0 0 20px #ff00cc, 0 0 30px #ff00cc;
 }
 
 .register-link {
     margin-top: 1.5rem;
     text-align: center;
-    font-size: 0.95rem;
-    color: #666;
+    font-size: 0.6rem;
+    color: #888;
 }
 
 .register-link a {
-    color: #4caf50;
+    color: #00ffe7;
     text-decoration: none;
     font-weight: bold;
 }
 
 .register-link a:hover {
     text-decoration: underline;
+    color: #ffcc00;
 }
