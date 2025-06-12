@@ -27,19 +27,25 @@
 }
 
 .difficulty-buttons button {
-    padding: 1rem;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 4px;
-    background-color: #4CAF50;
-    color: white;
+    all: unset;
+    padding: 16px;
+    font-size: 0.85rem;
+    font-family: 'Press Start 2P', cursive;
+    border: 3px solid #8a2be2;
+    background: #1d1d1d;
+    color: #fff;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background-color 0.3s;
-}
+    text-align: center;
+    transition: transform 0.3s, background 0.3s;
+    box-shadow: 0 0 10px #8a2be2;
+  }
+  
+  .difficulty-buttons button:hover {
+    transform: scale(1.05);
+    background: #a950ff;
+  }
 
-.difficulty-buttons button:hover {
-    background-color: #45a049;
-}
 
 .close-button {
     position: absolute;

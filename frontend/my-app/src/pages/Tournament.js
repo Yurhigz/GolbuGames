@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Card } from "../components/Card";
 import "./Tournament.css";
@@ -36,7 +35,8 @@ const Tournament = () => {
       <h1 className="tournament-title">Tournois</h1>
 
       <div className="tournament-create">
-        <Button onClick={handleCreateClick}>Créer un tournoi</Button>
+      <button onClick={handleCreateClick} className="mode-button button">Créer un tournoi</button>
+
       </div>
 
       <div className="tournament-list">
@@ -49,47 +49,47 @@ const Tournament = () => {
                   {t.maxPlayers} joueurs max
                 </div>
               </div>
-              <Button size="sm">Rejoindre</Button>
+              <button size="sm" className="mode-button button">Rejoindre</button>
+
             </div>
           </Card>
         ))}
       </div>
 
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Créer un tournoi</h2>
-            <Input
-              name="name"
-              placeholder="Nom du tournoi"
-              value={newTournament.name}
-              onChange={handleChange}
-              className="modal-input"
-            />
-            <Input
-              name="description"
-              placeholder="Description"
-              value={newTournament.description}
-              onChange={handleChange}
-              className="modal-input"
-            />
-            <Input
-              name="maxPlayers"
-              type="number"
-              placeholder="Nombre de joueurs"
-              value={newTournament.maxPlayers}
-              onChange={handleChange}
-              className="modal-input"
-            />
-            <div className="modal-actions">
-              <Button onClick={handleCreateTournament}>Créer</Button>
-              <Button variant="outline" onClick={handleCloseModal}>
-                Annuler
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+  <div className="modal-overlay">
+    <div className="modal">
+      <h2>Créer un tournoi</h2>
+      <Input
+        name="name"
+        placeholder="Nom du tournoi"
+        value={newTournament.name}
+        onChange={handleChange}
+        className="modal-input"
+      />
+      <Input
+        name="description"
+        placeholder="Description"
+        value={newTournament.description}
+        onChange={handleChange}
+        className="modal-input"
+      />
+      <Input
+        name="maxPlayers"
+        type="number"
+        placeholder="Nombre de joueurs"
+        value={newTournament.maxPlayers}
+        onChange={handleChange}
+        className="modal-input"
+      />
+      <div className="modal-actions">
+        <button onClick={handleCreateTournament} className="mode-button button">Créer</button>
+        <button variant="outline" onClick={handleCloseModal} className="mode-button button">Annuler</button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
