@@ -151,4 +151,62 @@
     border: 2px solid #3498db;
     background-color: #ecf0f1;
   }
-  
+
+.sudoku-grid {
+    background: #111;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 0 20px #00ffe7;
+    /*width: fit-content;*/
+}
+
+.grid-row {
+    display: flex;
+}
+
+.grid-cell, .number-button {
+    border: 1px solid #555;
+    background: #1a1a1a;
+    color: #00ffe7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 4px #00ffe7;
+    cursor: pointer;
+    font-size: 15px !important;
+}
+
+/* Style pour les sous-grilles 3x3 */
+.grid-row:nth-child(3n) {
+    border-bottom: 2px solid #00ffe7;
+}
+
+.grid-row:first-child {
+    border-top: 2px solid #00ffe7;
+}
+
+.grid-cell:nth-child(3n) {
+    border-right: 2px solid #00ffe7;
+}
+
+.grid-cell:first-child {
+    border-left: 2px solid #00ffe7;
+}
+
+/* Cellule sélectionnée (mode actif uniquement) */
+.selected-cell {
+    background-color: #00ffe733;
+    box-shadow: 0 0 8px #ff00cc;
+}
+
+.number-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 1rem;
+    background: #111;
+    border-radius: 12px;
+    box-shadow: 0 0 20px #00ffe7;
+}

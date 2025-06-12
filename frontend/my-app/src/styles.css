@@ -44,3 +44,24 @@ body {
 body {
     font-family: 'Imprima', sans-serif;
 }
+
+.mode-button {
+    padding: 1rem 2rem;
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: #000;
+    background: #00ffe7;
+    border: 2px solid #ff00cc;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px #00ffe7;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.mode-button:hover {
+    background: #ff00cc;
+    color: #fff;
+    box-shadow: 0 0 15px #ff00cc, 0 0 25px #ff00cc;
+}

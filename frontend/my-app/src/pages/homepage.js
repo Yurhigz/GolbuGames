@@ -44,11 +44,15 @@ const Home = () => {
                 <div className="welcome-section">
                     <h1>GolbuGames</h1>
                     <p className="subtitle">Jouer au Sudoku en Ligne</p>
-                    <div className="game-modes">
-                        <Link to="/multi" className="mode-button">Mode Multijoueur</Link>
-                        <Link to="/solo" className="mode-button">Mode Solo</Link>
-                    </div>
+                    {/*<div className="game-modes">*/}
+                    {/*    <Link to="/multi" className="mode-button">Mode Multijoueur</Link>*/}
+                    {/*    <Link to="/solo" className="mode-button">Mode Solo</Link>*/}
+                    {/*</div>*/}
                 </div>
+            </div>
+            <div className="game-modes">
+                <Link to="/multi" className="mode-button">Mode Multijoueur</Link>
+                <Link to="/solo" className="mode-button">Mode Solo</Link>
             </div>
         </div>
     );

@@ -42,7 +42,7 @@ const Multi = () => {
           {renderCard(
               "Matchmaking",
               "Rejoignez une partie aléatoire contre un autre joueur en ligne.",
-              <button className="button" onClick={handleMatchmaking}>
+              <button className="button mode-button" onClick={handleMatchmaking}>
                 Trouver un joueur
               </button>
           )}
@@ -51,7 +51,7 @@ const Multi = () => {
               "Inviter un ami",
               "Créez un lien d'invitation à partager.",
               <>
-                <button className="button" onClick={handleInvite}>
+                <button className="button mode-button" onClick={handleInvite}>
                   Générer un lien
                 </button>
 
@@ -63,7 +63,7 @@ const Multi = () => {
                           value={inviteLink}
                           readOnly
                       />
-                      <button className="button" onClick={handleCopy}>
+                      <button className="button mode-button" onClick={handleCopy}>
                         Copier
                       </button>
                     </div>

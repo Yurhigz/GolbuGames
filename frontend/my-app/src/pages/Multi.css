@@ -56,20 +56,10 @@
 }
 
 .button {
-  background: #ff00ff;
-  color: white;
-  border: none;
   padding: 16px;
   font-family: 'Press Start 2P', cursive;
   font-size: 0.85rem;
   cursor: pointer;
-  border-radius: 10px;
-  box-shadow: 0 0 10px #ff00ff;
-  transition: background 0.2s ease;
-}
-
-.button:hover {
-  background: #e600e6;
 }
 
 .input {

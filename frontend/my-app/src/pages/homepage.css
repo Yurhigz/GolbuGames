@@ -84,14 +84,18 @@ html {
 }
 
 .welcome-section h1 {
-    font-size: 2rem;
+    font-size: xxx-large;
     color: #ffffff;
-    text-shadow: 0 0 10px #000000;
+    text-shadow: -4px -4px 0 #ff00cc,
+                  4px -4px 0 #ff00cc,
+                -4px 4px 0 #652091FF,
+                 4px 4px 0 #652091FF;
     margin-bottom: 1rem;
+
 }
 
 .subtitle {
-    font-size: 1rem;
+    font-size: medium;
     color: #00ffe7;
     margin-bottom: 2rem;
     text-shadow: 0 0 5px #001211;
@@ -100,27 +104,11 @@ html {
 .game-modes {
     display: flex;
     gap: 1rem;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-}
-
-.mode-button {
-    padding: 1rem 2rem;
-    font-size: 0.9rem;
-    text-decoration: none;
-    color: #000;
-    background: #00ffe7;
-    border: 2px solid #ff00cc;
-    border-radius: 8px;
-    text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 10px #00ffe7;
-}
-
-.mode-button:hover {
-    background: #ff00cc;
-    color: #fff;
-    box-shadow: 0 0 15px #ff00cc, 0 0 25px #ff00cc;
+    margin-top: 100px;
+    width: calc(100vw - 315px);
+    justify-content: center;
 }
 
 /* Responsive */
