@@ -109,7 +109,13 @@
     justify-content: center;
     gap: 20px;
     margin-top: 20px;
+    flex-direction: column;
   }
+
+.actions-button-number {
+    display: flex;
+    flex-direction: column;
+}
   
   .quit-button,
   .submit-button {

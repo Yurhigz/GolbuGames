@@ -111,6 +111,20 @@ html {
     justify-content: center;
 }
 
+@media (max-width: 1100px) {
+    .game-modes {
+        width:  calc(100vw - 100px);
+    }
+
+    .welcome-section h1 {
+        font-size: xx-large;
+    }
+
+    .subtitle {
+        font-size: medium;
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .main-content-home {

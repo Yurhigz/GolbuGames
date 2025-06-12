@@ -105,20 +105,22 @@ const Solo = () => {
       {!isModalOpen && difficulty && (
         <div className="game-content">
           <SudokuGrid isBackground={false} />
-          <NumberSelector
-            onNumberSelect={setSelectedNumber}
-            selectedNumber={selectedNumber}
-          />
+          <div className="actions-button-number">
+            <NumberSelector
+              onNumberSelect={setSelectedNumber}
+              selectedNumber={selectedNumber}
+            />
 
-          <div className="game-actions">
-            <button className="quit-button" onClick={handleQuit}>Quitter</button>
-            <button
-              className="submit-button"
-              onClick={handleSubmit}
-              disabled={!isGridComplete()}
-            >
-              Soumettre
-            </button>
+            <div className="game-actions">
+              <button className="quit-button" onClick={handleQuit}>Quitter</button>
+              <button
+                className="submit-button"
+                onClick={handleSubmit}
+                disabled={!isGridComplete()}
+              >
+                Soumettre
+              </button>
+            </div>
           </div>
 
           {result && <div className="game-result">{result}</div>}
