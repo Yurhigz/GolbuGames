@@ -1,7 +1,4 @@
 import React, { useState } from "react";
-import { Button } from "../components/Button";
-import { Card, CardContent } from "../components/Card";
-import { Input } from "../components/Input";
 import "./Multi.css";
 
 const Multi = () => {
@@ -10,7 +7,6 @@ const Multi = () => {
 
   const handleMatchmaking = () => {
     console.log("Recherche de joueur...");
-    // À connecter à ton backend de matchmaking
   };
 
   const handleInvite = () => {
@@ -28,43 +24,56 @@ const Multi = () => {
     setCopied(true);
   };
 
-  return (
-    <div className="multi-container">
-      <h1 className="multi-title title">Multijoueur Sudoku</h1>
-
-      <div className="multi-options">
-        {/* Matchmaking */}
-        <Card>
-          <CardContent>
-            <h2 className="option-title subtitle">Matchmaking</h2>
-            <p className="option-description">
-              Rejoignez une partie aléatoire contre un autre joueur en ligne.
-            </p>
-            <Button onClick={handleMatchmaking}>Trouver un joueur</Button>
-          </CardContent>
-        </Card>
-
-        {/* Inviter un ami */}
-        <Card>
-          <CardContent>
-            <h2 className="option-title subtitle">Inviter un ami</h2>
-            <p className="option-description">
-              Créez un lien d'invitation à partager.
-            </p>
-            <Button onClick={handleInvite}>Générer un lien</Button>
-
-            {inviteLink && (
-              <div className="invite-link-wrapper">
-                <Input value={inviteLink} readOnly />
-                <Button onClick={handleCopy}>Copier</Button>
-              </div>
-            )}
-
-            {copied && <p className="copied-message">Lien copié !</p>}
-          </CardContent>
-        </Card>
+  const renderCard = (title, description, content) => (
+      <div className="card">
+        <div className="card-inner">
+          <h2 className="option-title">{title}</h2>
+          <p className="option-description">{description}</p>
+          {content}
+        </div>
       </div>
-    </div>
+  );
+
+  return (
+      <div className="multi-container">
+        <h1 className="multi-title">Multijoueur Sudoku</h1>
+
+        <div className="multi-options">
+          {renderCard(
+              "Matchmaking",
+              "Rejoignez une partie aléatoire contre un autre joueur en ligne.",
+              <button className="button" onClick={handleMatchmaking}>
+                Trouver un joueur
+              </button>
+          )}
+
+          {renderCard(
+              "Inviter un ami",
+              "Créez un lien d'invitation à partager.",
+              <>
+                <button className="button" onClick={handleInvite}>
+                  Générer un lien
+                </button>
+
+                {inviteLink && (
+                    <div className="invite-link-wrapper">
+                      <input
+                          type="text"
+                          className="input"
+                          value={inviteLink}
+                          readOnly
+                      />
+                      <button className="button" onClick={handleCopy}>
+                        Copier
+                      </button>
+                    </div>
+                )}
+
+                {copied && <p className="copied-message">Lien copié !</p>}
+              </>
+          )}
+        </div>
+      </div>
   );
 };
 

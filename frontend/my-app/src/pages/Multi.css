@@ -1,50 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 .multi-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  min-height: 100vh;
-  background-color: #f2f2f2;
+  padding: 60px 30px;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
 }
 
 .multi-title {
   font-size: 2.5rem;
-  font-weight: bold;
-  margin-bottom: 40px;
-  color: #333;
+  margin-bottom: 60px;
+  text-shadow: 3px 3px #ff00ff;
+  text-align: center;
 }
 
 .multi-options {
   display: flex;
-  gap: 40px;
   flex-wrap: wrap;
   justify-content: center;
+  gap: 60px;
+}
+
+.card {
+  background: #1a1a1a;
+  border: 6px solid #8a2be2;
+  padding: 50px 40px;
+  width: 420px;
+  box-shadow: 0 0 20px #8a2be2;
+  border-radius: 16px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 .option-title {
   font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  color: #222;
+  color: #ffcc00;
 }
 
 .option-description {
   font-size: 1rem;
-  color: #555;
-  margin-bottom: 20px;
+  color: #ddd;
+  line-height: 1.6;
+}
+
+.button {
+  background: #ff00ff;
+  color: white;
+  border: none;
+  padding: 16px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #ff00ff;
+  transition: background 0.2s ease;
+}
+
+.button:hover {
+  background: #e600e6;
+}
+
+.input {
+  width: 100%;
+  padding: 14px;
+  font-size: 0.85rem;
+  border: 3px solid #8a2be2;
+  background: #222;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  border-radius: 6px;
 }
 
 .invite-link-wrapper {
   display: flex;
-  gap: 10px;
-  width: 100%;
-  margin-top: 10px;
   flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
 }
 
 .copied-message {
-  color: #28a745;
-  font-size: 0.9rem;
-  margin-top: 8px;
+  color: #00ff00;
+  font-size: 0.8rem;
+  margin-top: 10px;
+  font-style: italic;
 }

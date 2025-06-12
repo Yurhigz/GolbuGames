@@ -8,6 +8,11 @@ body {
     font-family: sans-serif;
     min-height: 100vh;
     background-color: #f0f0f0;
+    background-image: url('../public/test.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    /*height: 100vh;*/
 }
 
 .app {
@@ -18,8 +23,14 @@ body {
 
 .main-content {
     flex: 1;
-    margin-left: 0px; /* Largeur de la SideNav */
+    margin-left: 250px; /* Largeur de la SideNav */
     padding: 20px;
+}
+
+@media (max-width: 1500px) {
+    .main-content {
+        margin-left: 0px !important; /* Largeur de la SideNav */
+    }
 }
 
 .title {

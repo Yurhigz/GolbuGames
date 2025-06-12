@@ -58,11 +58,11 @@ const SideNav = () => {
                 </Link>
                 <Link to="/friends" className="nav-item" onClick={handleLinkClick}>
                     <FaUserPlus className="nav-icon" />
-                    <span>Friends</span>
+                    <span>Amis</span>
                 </Link>
                 <Link to="/login" className="nav-item" onClick={handleLinkClick}>
                     <FaUserPlus className="nav-icon" />
-                    <span>Login</span>
+                    <span>Connexion</span>
                 </Link>
             </nav>
         </>
