@@ -244,6 +244,6 @@
     }
 
     .sudoku-grid {
-        width: 95vw;
+        max-width: 95vw;
     }
 }
