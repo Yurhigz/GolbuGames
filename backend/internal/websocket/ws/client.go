@@ -11,6 +11,7 @@ type Client struct {
 	mu       sync.Mutex
 	send     chan []byte
 	hub      *Hub
+	matchId  string
 }
 
 // Représente une connexion WebSocket
@@ -29,3 +30,6 @@ func (c *Client) writePump() {
 func (c *Client) readPump() {
 
 }
+
+//  Implémenter l'attribution du matchmaking
+//  l'attribution des ID et la création des hubs en conséquence
