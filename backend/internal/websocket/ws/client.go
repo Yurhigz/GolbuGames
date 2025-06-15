@@ -19,8 +19,12 @@ type Client struct {
 // Maintient la connexion active ping récurrent
 // Gère la déconnexion
 
-func newClient() *Client {
-	return &Client{}
+func newClient(conn net.Conn, hub *Hub) *Client {
+	return &Client{
+		Conn: conn,
+		send: make(chan []byte, 256),
+		hub:  hub,
+	}
 }
 
 func (c *Client) writePump() {
