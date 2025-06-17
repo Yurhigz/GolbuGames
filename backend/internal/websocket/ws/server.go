@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
 //  Gestion des opcodes :
@@ -45,14 +46,32 @@ func websocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("WebSocket connection established!")
 
-	incoming := make(chan Frame)
-	go handleWebSocketConnection(conn, incoming)
+	matchID := fmt.Sprintf("match_%d", time.Now().UnixNano())
+	hubManager := NewHubManager()
 
-	go func() {
-		for frame := range incoming {
-			fmt.Println("Received frame:", string(frame.Payload))
-		}
-	}()
+	var hub *Hub
+	hub = hubManager.GetHub(matchID)
+
+	if hub == nil {
+		hub = hubManager.CreateHub(matchID)
+	}
+
+	client := newClient(conn, hub)
+	hub.register <- client
+
+	go client.writePump()
+	go client.readPump()
+
+	log.Printf("Nouveau client connecté au hub %s", matchID)
+
+	// incoming := make(chan Frame)
+	// go handleWebSocketConnection(conn, incoming)
+
+	// go func() {
+	// 	for frame := range incoming {
+	// 		fmt.Println("Received frame:", string(frame.Payload))
+	// 	}
+	// }()
 
 }
 
