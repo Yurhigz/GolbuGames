@@ -73,8 +73,59 @@ func unmaskPayload(payload []byte, mask []byte) []byte {
 	return results
 }
 
+func Ping(payload []byte) []byte {
+	return BuildFrame(payload, OpcodePing, true)
+}
+
+func Pong(payload []byte) []byte {
+	return BuildFrame(payload, OpcodePong, true)
+}
+
+func opcodeToString(opcode byte) string {
+	switch opcode {
+	case OpcodeContinuation:
+		return "Continuation"
+	case OpcodeText:
+		return "Text"
+	case OpcodeBinary:
+		return "Binary"
+	case OpcodeClose:
+		return "Close"
+	case OpcodePing:
+		return "Ping"
+	case OpcodePong:
+		return "Pong"
+	default:
+		return "Unknown"
+	}
+}
+
+func extractPayload(buf []byte) []byte {
+	if len(buf) < 2 {
+		return nil
+	}
+
+	payloadLenIndicator := payloadLen(buf[1])
+	var payloadStart int
+
+	switch {
+	case payloadLenIndicator < 126:
+		payloadStart = 2 // 2 bytes for header
+	case payloadLenIndicator == 126:
+		payloadStart = 4 // 2 bytes for extended length
+	case payloadLenIndicator > 126:
+		payloadStart = 10 // 8 bytes for extended length
+	}
+
+	if len(buf) < payloadStart {
+		return nil
+	}
+
+	return buf[payloadStart:]
+}
+
 // Fonction de décodage des messages clients
-func parseFrame(buf []byte) (Frame, int, error) {
+func (c *Client) parseFrame(buf []byte) (Frame, int, error) {
 	bufLength := len(buf)
 	frame := Frame{}
 	if bufLength < 2 {
@@ -130,8 +181,13 @@ func parseFrame(buf []byte) (Frame, int, error) {
 	mask := buf[maskStart:headerLen]
 	frame.Mask = [4]byte{mask[0], mask[1], mask[2], mask[3]}
 	frame.Payload = make([]byte, payloadLen)
+	copy(frame.Payload, buf[headerLen:totalLen])
 
 	frame.Payload = unmaskPayload(frame.Payload, mask)
+
+	frame.Length = totalLen
+	frame.RawFrame = make([]byte, totalLen)
+	copy(frame.RawFrame, buf[:totalLen])
 
 	return frame, frame.Length, nil
 }
