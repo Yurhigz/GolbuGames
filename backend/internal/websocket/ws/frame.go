@@ -125,7 +125,7 @@ func extractPayload(buf []byte) []byte {
 }
 
 // Fonction de décodage des messages clients
-func (c *Client) parseFrame(buf []byte) (Frame, int, error) {
+func parseFrame(buf []byte) (Frame, int, error) {
 	bufLength := len(buf)
 	frame := Frame{}
 	if bufLength < 2 {
@@ -180,6 +180,7 @@ func (c *Client) parseFrame(buf []byte) (Frame, int, error) {
 	maskStart := headerLen - 4
 	mask := buf[maskStart:headerLen]
 	frame.Mask = [4]byte{mask[0], mask[1], mask[2], mask[3]}
+
 	frame.Payload = make([]byte, payloadLen)
 	copy(frame.Payload, buf[headerLen:totalLen])
 
