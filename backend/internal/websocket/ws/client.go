@@ -40,6 +40,13 @@ func (c *Client) resetFragmentation() {
 	c.currentOpcode = 0
 }
 
+// Ajouter une logique de traitement de messages si nécessaire
+// processMessage traite les messages reçus des clients
+// Il peut être utilisé pour gérer les messages de jeu, les commandes, etc...
+func (c *Client) processMessage(payload []byte) {
+
+}
+
 func (c *Client) handleFrame(frame Frame) {
 	switch frame.Opcode {
 	case OpcodeClose:
@@ -69,7 +76,8 @@ func (c *Client) handleFrame(frame Frame) {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s",
 				opcodeToString(frame.Opcode), c.clientId)
-			c.parseFrame(frame.Payload)
+			c.send <- frame.Payload
+			c.resetFragmentation()
 		} else {
 			// Début d'un message fragmenté
 			log.Printf("Received first frame of fragmented %s message from client %s",
@@ -104,7 +112,7 @@ func (c *Client) handleFrame(frame Frame) {
 		if frame.FIN {
 			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.clientId)
-			c.parseFrame(c.frameBuffer)
+			c.send <- frame.Payload
 			c.resetFragmentation()
 		} else {
 			log.Printf("Received continuation frame from client %s", c.clientId)
@@ -193,6 +201,3 @@ func (c *Client) readPump() {
 		}
 	}
 }
-
-//  Implémenter l'attribution du matchmaking
-//  l'attribution des ID et la création des hubs en conséquence
