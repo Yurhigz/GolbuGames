@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  react-dev:
+    image: node:22-alpine
+    container_name: react_dev_env
+    working_dir: /app
+    volumes:
+      - ./my-app:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - FAST_REFRESH=true
+      - WDS_SOCKET_PORT=3000
+    stdin_open: true
+    tty: true
+    command: sh -c "npm install && npm start"

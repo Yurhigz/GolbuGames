@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+.tournament-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 30px;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  min-height: 100vh;
+}
+
+.tournament-title {
+  font-size: 2.5rem;
+  margin-bottom: 60px;
+  text-shadow: 3px 3px #ff00ff;
+  text-align: center;
+}
+
+.tournament-create {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.tournament-input {
+  width: 320px;
+  padding: 14px;
+  font-size: 0.85rem;
+  border: 3px solid #8a2be2;
+  background: #222;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  border-radius: 6px;
+}
+
+.tournament-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.tournament-card {
+  background: #1d1d1d;
+  border: 4px solid #8a2be2;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 0 20px #8a2be2;
+  font-family: 'Press Start 2P', cursive;
+}
+
+.tournament-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.tournament-name {
+  font-size: 1rem;
+  color: #ffcc00;
+}
+
+.tournament-players {
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+.button {
+  padding: 16px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.button:hover {
+  transform: scale(1.05);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #1a1a1a;
+  padding: 40px;
+  border: 4px solid #8a2be2;
+  box-shadow: 0 0 20px #8a2be2;
+  border-radius: 16px;
+  max-width: 450px;
+  width: 90%;
+  font-family: 'Press Start 2P', cursive;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #fff;
+}
+
+.modal h2 {
+  font-size: 1.25rem;
+  color: #ffcc00;
+  text-align: center;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 14px;
+  font-size: 0.85rem;
+  border: 3px solid #8a2be2;
+  background: #222;
+  color: #fff;
+  font-family: 'Press Start 2P', cursive;
+  border-radius: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
