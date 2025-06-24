@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgresgg
+    environment:
+      POSTGRES_USER: ${BDD_USER}
+      POSTGRES_PASSWORD: ${BDD_PWD}
+    ports:
+      - "${BDD_PORT_IN}:${BDD_PORT_OUT}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/internal/database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+volumes:
+  postgres-data:

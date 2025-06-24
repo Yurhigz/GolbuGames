@@ -1,0 +1,83 @@
+### HTTP REQUEST
+
+### ----- USER API ----- ###
+### Create User
+POST  http://localhost:3000/create_user
+Content-Type: application/json
+
+{
+    "username": "FefLaRage92",
+    "accountname": "fefounet",
+    "password": "testpass1"
+}
+
+### Delete User
+DELETE  http://localhost:3000/delete_user/1
+Content-Type: application/json
+
+### Get User
+GET  http://localhost:3000/user/1
+Content-Type: application/json
+
+### Update password user 
+
+POST  http://localhost:3000/updateuser
+Content-Type: application/json
+
+{
+    "id":1,
+    "new_password": "test2"
+}
+
+### Get user stats 
+
+GET  http://localhost:3000/user_stats/1
+Content-Type: application/json  
+
+### ----- USER API ----- ###
+
+
+
+### ----- SUDOKU API ----- ###
+### Post grid
+
+POST  http://localhost:3000/add_grid
+Content-Type: application/json  
+
+{
+    "difficulty": "easy"
+}
+
+### Get grid 
+GET  http://localhost:3000/grid?difficulty=expert
+Content-Type: application/json
+
+
+
+### ----- SUDOKU API ----- ###
+
+
+
+### ----- GAME API ----- ###
+### Submit solo game 
+POST  http://localhost:3000/submit_solo_game
+Content-Type: application/json
+
+{
+    "user_id": 4,
+    "game_mode": "solo",
+    "completion_tion": 1200
+}
+
+### Submit multi game
+POST  http://localhost:3000/submit_multi_game
+Content-Type: application/json
+
+{
+    "user_id": 1,
+    "grid_id": 1,
+    "time": 1200,
+    "results": 1000,
+    "difficulty": "easy",
+    "mode": "1v1"
+}

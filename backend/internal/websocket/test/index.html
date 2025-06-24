@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Test WebSocket</title>
+    <style>
+        .message-input {
+            margin: 10px 0;
+            padding: 8px;
+            width: 300px;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Client WebSocket Test</h1>
+    <button id="connectBtn">Connecter</button>
+    <div>
+        <input type="text" id="messageInput" class="message-input" placeholder="Écrivez votre message..." disabled>
+        <button id="sendBtn" disabled>Envoyer Message</button>
+    </div>
+    <pre id="log"></pre>
+
+    <script>
+        let ws;
+        const log = document.getElementById("log");
+        const connectBtn = document.getElementById("connectBtn");
+        const sendBtn = document.getElementById("sendBtn");
+        const messageInput = document.getElementById("messageInput");
+
+        function logMessage(msg) {
+            log.textContent += msg + "\n";
+        }
+
+        connectBtn.onclick = () => {
+            ws = new WebSocket("ws://localhost:3005/websocket");
+            ws.onopen = () => {
+                logMessage("Connecté au serveur WebSocket");
+                sendBtn.disabled = false;
+                messageInput.disabled = false;
+            };
+            ws.onmessage = (event) => {
+                logMessage("Message reçu : " + event.data);
+            };
+            ws.onerror = (err) => {
+                logMessage("Erreur WebSocket : " + err.message);
+            };
+            ws.onclose = () => {
+                logMessage("Connexion fermée");
+                sendBtn.disabled = true;
+                messageInput.disabled = true;
+            };
+        };
+
+        sendBtn.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const message = messageInput.value;
+                if (message.trim() !== "") {
+                    ws.send(message);
+                    logMessage("Message envoyé: " + message);
+                    messageInput.value = ""; // Vide le champ après envoi
+                }
+            }
+        };
+
+        // Permet d'envoyer avec la touche Entrée
+        messageInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter" && !sendBtn.disabled) {
+                sendBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

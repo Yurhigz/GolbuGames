@@ -1,0 +1,62 @@
+.leaderboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  min-height: 100vh;
+  /*background-color: #000;*/
+  font-family: 'Press Start 2P', cursive;
+  color: #00ffe7;
+}
+
+.leaderboard-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 50px;
+  color: #ffcc00;
+  /*text-shadow: 0 0 5px #ffcc00;*/
+}
+
+.leaderboard-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.leaderboard-card {
+  max-width: 600px;
+  width: 100%;
+  background-color: #111;
+  border: 6px solid #8a2be2;
+  box-shadow: 0 0 20px #8a2be2;
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  color: #00ffe7;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #00ffe7;
+  text-align: left;
+}
+
+.leaderboard-table th {
+  background-color: #1a1a1a;
+  color: #ffcc00;
+  /*text-shadow: 0 0 3px #ffcc00;*/
+}
+
+.leaderboard-table tr:nth-child(even) {
+  background-color: #1a1a1a;
+}
+
+.leaderboard-table tr:nth-child(odd) {
+  background-color: #000;
+}

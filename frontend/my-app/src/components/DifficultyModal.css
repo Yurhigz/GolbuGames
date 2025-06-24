@@ -1,0 +1,58 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    position: relative;
+    min-width: 300px;
+}
+
+.difficulty-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.difficulty-buttons button {
+    all: unset;
+    padding: 16px;
+    font-size: 0.85rem;
+    font-family: 'Press Start 2P', cursive;
+    border: 3px solid #8a2be2;
+    background: #1d1d1d;
+    color: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.3s, background 0.3s;
+    box-shadow: 0 0 10px #8a2be2;
+  }
+  
+  .difficulty-buttons button:hover {
+    transform: scale(1.05);
+    background: #a950ff;
+  }
+
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    background: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
