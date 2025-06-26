@@ -7,10 +7,14 @@
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
   width: 100%;
+  font-family: 'Press Start 2P', cursive;
+  box-shadow: 0 0 10px #ff00cc, 0 0 20px #ff00cc;
+  transition: background-color 0.1s ease, box-shadow 0.1s ease, transform 0.2s;
 }
 
 .btn-green:hover {
-  background-color: #ff00cc;
+  background-color: #ff33dd;
+  box-shadow: 0 0 20px #ff00cc, 0 0 40px #ff00cc, 0 0 60px #ff00cc;
+  transform: scale(0.1);
 }
