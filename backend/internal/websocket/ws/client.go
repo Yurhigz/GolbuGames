@@ -9,6 +9,7 @@ import (
 
 type Client struct {
 	clientId      string
+	nickname      string
 	conn          net.Conn
 	mu            sync.Mutex
 	send          chan []byte

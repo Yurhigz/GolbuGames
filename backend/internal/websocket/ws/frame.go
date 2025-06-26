@@ -74,11 +74,11 @@ func unmaskPayload(payload []byte, mask []byte) []byte {
 }
 
 func Ping(payload []byte) []byte {
-	return BuildFrame(payload, OpcodePing, true)
+	return buildFrame(payload, OpcodePing, true)
 }
 
 func Pong(payload []byte) []byte {
-	return BuildFrame(payload, OpcodePong, true)
+	return buildFrame(payload, OpcodePong, true)
 }
 
 func opcodeToString(opcode byte) string {
@@ -194,7 +194,7 @@ func parseFrame(buf []byte) (Frame, int, error) {
 }
 
 //  Fonction de construction des réponses côté serveur vers les clients
-func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
+func buildFrame(payload []byte, opcode byte, fin bool) []byte {
 	var frame []byte
 	var firstByte byte = 0b0000000
 	if fin {

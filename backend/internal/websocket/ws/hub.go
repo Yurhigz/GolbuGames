@@ -4,17 +4,30 @@ package ws
 // A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer
 // à une room, et on l'associera à la même room que son adversaire
 // On crée un hubmanager qui n'est ni plus ni moins qu'une liste des rooms
+const (
+	gameWaiting  = 0
+	gamesOngoing = 1
+	gameFinished = 2
+	gameAborted  = 3
+	gamePaused   = 4
+)
+
+type GameStatus int
 
 type HubManager struct {
-	hubs map[string]*Hub
+	hubs        map[string]*Hub
+	ClientQueue chan *Client
 }
 
+// Pas d'intégration de la différence d'élo entre les joueurs pour le moment,
+// on se concentre sur la gestion des rooms et des clients avec un matchmaking basique
 type Hub struct {
 	clients    [2]*Client
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan []byte
 	hubId      string
+	gameState  GameStatus
 }
 
 func NewHubManager() *HubManager {
@@ -42,6 +55,15 @@ func (hm *HubManager) CreateHub(matchId string) *Hub {
 
 func (hm *HubManager) GetHub(matchId string) *Hub {
 	return hm.hubs[matchId]
+}
+
+func (hm *HubManager) RemoveHub(matchId string) {
+	if hub, exists := hm.hubs[matchId]; exists {
+		close(hub.register)
+		close(hub.unregister)
+		close(hub.broadcast)
+		delete(hm.hubs, matchId)
+	}
 }
 
 func (h *Hub) run() {
