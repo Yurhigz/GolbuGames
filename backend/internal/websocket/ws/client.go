@@ -2,6 +2,7 @@ package ws
 
 import (
 	"log"
+	"math"
 	"net"
 	"sync"
 	"time"
@@ -14,9 +15,12 @@ type Client struct {
 	mu            sync.Mutex
 	send          chan []byte
 	hub           *Hub
+	hubManager    *HubManager
 	matchId       string
 	frameBuffer   []byte
 	currentOpcode byte
+	elo           int
+	queueTime     time.Time
 }
 
 const (
@@ -28,12 +32,16 @@ const (
 	MaxMessageSize = 1024 * 1024
 )
 
-func newClient(conn net.Conn, hub *Hub) *Client {
+func newClient(conn net.Conn, hubmanager *HubManager) *Client {
 	return &Client{
-		conn: conn,
-		send: make(chan []byte, 256),
-		hub:  hub,
+		conn:       conn,
+		send:       make(chan []byte, 256),
+		hubManager: hubmanager,
 	}
+}
+
+func (c *Client) compatibleRanking(other *Client) bool {
+	return math.Abs(float64(c.elo)-float64(other.elo)) <= 100
 }
 
 func (c *Client) resetFragmentation() {

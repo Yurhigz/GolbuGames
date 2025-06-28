@@ -36,7 +36,7 @@ func secretKeyVerification(clientKey string) (string, error) {
 }
 
 // Fonction de coordination/service
-func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
+func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubManager) {
 
 	conn, err := upgradeConnection(w, r)
 
@@ -47,23 +47,16 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("WebSocket connection established!")
 
-	matchID := fmt.Sprintf("match_%d", time.Now().UnixNano())
-	hubManager := NewHubManager()
+	client := newClient(conn, hubManager)
+	client.queueTime = time.Now()
+	hubManager.mu.Lock()
+	hubManager.ClientQueue = append(hubManager.ClientQueue, client)
+	hubManager.mu.Unlock()
 
-	var hub *Hub
-	hub = hubManager.GetHub(matchID)
+	// go client.writePump()
+	// go client.readPump()
 
-	if hub == nil {
-		hub = hubManager.CreateHub(matchID)
-	}
-
-	client := newClient(conn, hub)
-	hub.register <- client
-
-	go client.writePump()
-	go client.readPump()
-
-	log.Printf("Nouveau client connecté au hub %s", matchID)
+	// log.Printf("Nouveau client connecté au hub %s", matchID)
 
 	// incoming := make(chan Frame)
 	// go handleWebSocketConnection(conn, incoming)
