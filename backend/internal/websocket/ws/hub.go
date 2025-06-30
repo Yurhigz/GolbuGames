@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -79,14 +80,21 @@ func (h *Hub) run() {
 		case client := <-h.register:
 			if h.clients[0] == nil {
 				h.clients[0] = client
+				client.hub = h
+				go client.writePump()
+				go client.readPump()
 				client.send <- []byte("Waiting for opponent...")
 			} else if h.clients[1] == nil {
 				h.clients[1] = client
-
+				client.hub = h
+				go client.writePump()
+				go client.readPump()
+				h.gameState = gamesOngoing
 				message := []byte("Opponent found... Game starting!")
 				h.clients[0].send <- message
 				h.clients[1].send <- message
 			}
+
 		case client := <-h.unregister:
 			if h.clients[0] == client {
 				h.clients[0] = nil
@@ -108,6 +116,10 @@ func (h *Hub) run() {
 				h.clients[1].send <- message
 			}
 		}
+		if h.clients[0] == nil && h.clients[1] == nil {
+			h.gameState = gameFinished
+			return
+		}
 	}
 }
 
@@ -126,6 +138,8 @@ func (hm *HubManager) RemoveClientFromQueue(client *Client) {
 // je filtre en fonction d'abord du temps d'attente puis ensuite de l'élo des joueurs
 // Il faut également que je trouve un moyen de mettre à jour soit le temps d'attente, soit j'utilise
 // un calcul du durée en fonction de l'heure actuelle pour éviter de faire des appels trop fréquents
+
+// refactoriser avec deux fonctions pour les deux cas d'usage
 func (hm *HubManager) MatchmakingLoop() {
 	for {
 		time.Sleep(5 * time.Second) // Ajuster la fréquence de vérification si nécessaire
@@ -135,19 +149,24 @@ func (hm *HubManager) MatchmakingLoop() {
 		hm.mu.Unlock()
 		// vérifier si un hub est déjà en cours et qu'il y a une place pour un nouveau client ainsi que des clients
 		// dans la queue
-		if len(hm.hubs) > 0 && len(hm.ClientQueue) > 0 {
-			hm.mu.Lock()
+		fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
+		fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
+		if len(hm.hubs) > 0 && len(queue) > 0 {
+			fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
+			fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
 			for _, hub := range hm.hubs {
 				if hub.gameState == gameWaiting {
 					if len(hub.clients) < 2 {
 						// Si le hub a moins de 2 clients, on peut essayer de les associer
 						for _, client := range hm.ClientQueue {
 							if client.matchId == "" { // Si le client n'est pas déjà associé à une room
+								hm.mu.Lock()
 								hub.register <- client
 								client.matchId = hub.hubId
-								hub.clients[1] = client
 								hm.RemoveClientFromQueue(client)
 								hub.gameState = gamesOngoing
+								hm.mu.Unlock()
+								client.send <- []byte("You have been matched with an opponent!")
 								break
 							}
 						}
@@ -163,19 +182,12 @@ func (hm *HubManager) MatchmakingLoop() {
 				}
 			}
 			if longestWaitingTime != nil {
-				hm.mu.Lock()
 				longestWaitingTime.matchId = longestWaitingTime.clientId + "_room"
 				hub := hm.CreateHub(longestWaitingTime.matchId)
 				hub.register <- longestWaitingTime
+				hm.mu.Lock()
 				hm.RemoveClientFromQueue(longestWaitingTime)
 				hm.mu.Unlock()
-			}
-
-			hm.mu.Lock()
-			copy(queue, hm.ClientQueue)
-			hm.mu.Unlock()
-			if len(queue) > 0 {
-
 			}
 
 		}

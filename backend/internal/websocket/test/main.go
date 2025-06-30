@@ -15,6 +15,7 @@ const (
 
 func main() {
 	HubManager := ws.NewHubManager()
+	go HubManager.MatchmakingLoop()
 	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
 		ws.WebsocketHandler(w, r, HubManager)
 	})
