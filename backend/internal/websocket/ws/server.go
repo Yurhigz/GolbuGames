@@ -42,6 +42,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Erreur d'upgrade WebSocket: %v", err), http.StatusInternalServerError)
+		fmt.Printf("<websocket handler><upgrade connexion> Erreur d'upgrade connection")
 		return
 	}
 
@@ -56,7 +57,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 	// go client.writePump()
 	// go client.readPump()
 
-	// log.Printf("Nouveau client connecté au hub %s", matchID)
+	log.Printf("Nouveau client connecté au hubManager")
 
 	// incoming := make(chan Frame)
 	// go handleWebSocketConnection(conn, incoming)
@@ -84,6 +85,7 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 
 	w.Header().Set("Upgrade", "websocket")
 	w.Header().Set("Connection", "Upgrade")
+	w.Header().Set("Sec-WebSocket-Extensions", "")
 	w.Header().Set("Sec-WebSocket-Accept", acceptKey)
 	w.WriteHeader(http.StatusSwitchingProtocols)
 

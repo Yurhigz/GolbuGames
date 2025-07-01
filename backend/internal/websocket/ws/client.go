@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"net"
@@ -57,9 +58,11 @@ func (c *Client) processMessage(payload []byte) {
 }
 
 func (c *Client) handleFrame(frame Frame) {
+	log.Printf("Opcode reçu: 0x%x", frame.Opcode)
 	switch frame.Opcode {
 	case OpcodeClose:
 		log.Printf("Client %s closed the connection", c.clientId)
+		fmt.Printf("Fermeture du client")
 		c.hub.unregister <- c
 		return
 
@@ -144,6 +147,7 @@ func (c *Client) writePump() {
 		select {
 		case message, ok := <-c.send:
 			if !ok {
+				log.Printf("send channel closed for client %s", c.clientId)
 				return
 			}
 			c.mu.Lock()
@@ -151,6 +155,7 @@ func (c *Client) writePump() {
 			c.mu.Unlock()
 
 			if err != nil {
+				fmt.Printf("Erreur dans le select du writepump - message")
 				return
 			}
 		case <-ticker.C:
@@ -160,6 +165,7 @@ func (c *Client) writePump() {
 			c.mu.Unlock()
 
 			if err != nil {
+				fmt.Printf("Erreur dans le select du writepump - ticker")
 				return
 			}
 		}
@@ -168,8 +174,9 @@ func (c *Client) writePump() {
 }
 
 func (c *Client) readPump() {
-
+	log.Printf("readPump started for client %s", c.clientId)
 	defer func() {
+		log.Printf("readPump closing for client %s", c.clientId)
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
@@ -181,6 +188,7 @@ func (c *Client) readPump() {
 		n, err := c.conn.Read(temp)
 		if err != nil {
 			log.Printf("Error reading from client %s: %v", c.clientId, err)
+			fmt.Printf("Erreur dans le readpump")
 			return
 		}
 
@@ -194,6 +202,7 @@ func (c *Client) readPump() {
 		for len(buffer) > 0 {
 			frame, frameLen, err := parseFrame(buffer)
 			if err != nil {
+				log.Printf("parseFrame error: %v", err)
 				if err == ErrIncompleteFrame {
 					// Frame incomplète, attendre plus de données
 					break

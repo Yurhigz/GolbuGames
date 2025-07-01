@@ -83,6 +83,8 @@ func (h *Hub) run() {
 				client.hub = h
 				go client.writePump()
 				go client.readPump()
+				time.Sleep(1000 * time.Millisecond)
+				fmt.Printf("<hub run> client waiting for opponent")
 				client.send <- []byte("Waiting for opponent...")
 			} else if h.clients[1] == nil {
 				h.clients[1] = client
@@ -90,6 +92,7 @@ func (h *Hub) run() {
 				go client.writePump()
 				go client.readPump()
 				h.gameState = gamesOngoing
+				time.Sleep(1000 * time.Millisecond)
 				message := []byte("Opponent found... Game starting!")
 				h.clients[0].send <- message
 				h.clients[1].send <- message
@@ -142,7 +145,7 @@ func (hm *HubManager) RemoveClientFromQueue(client *Client) {
 // refactoriser avec deux fonctions pour les deux cas d'usage
 func (hm *HubManager) MatchmakingLoop() {
 	for {
-		time.Sleep(5 * time.Second) // Ajuster la fréquence de vérification si nécessaire
+		time.Sleep(10 * time.Second) // Ajuster la fréquence de vérification si nécessaire
 		hm.mu.Lock()
 		queue := make([]*Client, len(hm.ClientQueue))
 		copy(queue, hm.ClientQueue)
