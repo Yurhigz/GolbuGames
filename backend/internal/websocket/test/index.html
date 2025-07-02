@@ -38,11 +38,13 @@
         }
 
         connectBtn.onclick = () => {
-            ws = new WebSocket("ws://localhost:3005/websocket");
+            ws = new WebSocket("ws://localhost:3005/websocket", []);
             ws.onopen = () => {
                 logMessage("Connecté au serveur WebSocket");
                 sendBtn.disabled = false;
                 messageInput.disabled = false;
+
+                ws.send("Hello from client!");
             };
             ws.onmessage = (event) => {
                 logMessage("Message reçu : " + event.data);

@@ -81,16 +81,16 @@ func (h *Hub) run() {
 			if h.clients[0] == nil {
 				h.clients[0] = client
 				client.hub = h
-				go client.writePump()
-				go client.readPump()
+				// go client.writePump()
+				// go client.readPump()
 				time.Sleep(1000 * time.Millisecond)
 				fmt.Printf("<hub run> client waiting for opponent")
 				client.send <- []byte("Waiting for opponent...")
 			} else if h.clients[1] == nil {
 				h.clients[1] = client
 				client.hub = h
-				go client.writePump()
-				go client.readPump()
+				// go client.writePump()
+				// go client.readPump()
 				h.gameState = gamesOngoing
 				time.Sleep(1000 * time.Millisecond)
 				message := []byte("Opponent found... Game starting!")
@@ -165,6 +165,7 @@ func (hm *HubManager) MatchmakingLoop() {
 							if client.matchId == "" { // Si le client n'est pas déjà associé à une room
 								hm.mu.Lock()
 								hub.register <- client
+								client.hub = hub
 								client.matchId = hub.hubId
 								hm.RemoveClientFromQueue(client)
 								hub.gameState = gamesOngoing
@@ -188,6 +189,7 @@ func (hm *HubManager) MatchmakingLoop() {
 				longestWaitingTime.matchId = longestWaitingTime.clientId + "_room"
 				hub := hm.CreateHub(longestWaitingTime.matchId)
 				hub.register <- longestWaitingTime
+				longestWaitingTime.hub = hub
 				hm.mu.Lock()
 				hm.RemoveClientFromQueue(longestWaitingTime)
 				hm.mu.Unlock()

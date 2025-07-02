@@ -50,12 +50,11 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 
 	client := newClient(conn, hubManager)
 	client.queueTime = time.Now()
+	go client.writePump()
+	go client.readPump()
 	hubManager.mu.Lock()
 	hubManager.ClientQueue = append(hubManager.ClientQueue, client)
 	hubManager.mu.Unlock()
-
-	// go client.writePump()
-	// go client.readPump()
 
 	log.Printf("Nouveau client connecté au hubManager")
 
@@ -71,6 +70,17 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 }
 
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
+	log.Printf("=== HANDSHAKE DEBUG ===")
+	log.Printf("Method: %s", r.Method)
+	log.Printf("URL: %s", r.URL.String())
+
+	// Log tous les headers reçus
+	log.Printf("Headers received:")
+	for name, values := range r.Header {
+		for _, value := range values {
+			log.Printf("  %s: %s", name, value)
+		}
+	}
 
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
 
@@ -82,11 +92,21 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 	if err != nil {
 		return nil, err
 	}
-
+	w.Header().Set("Sec-WebSocket-Version", "13")
 	w.Header().Set("Upgrade", "websocket")
 	w.Header().Set("Connection", "Upgrade")
-	w.Header().Set("Sec-WebSocket-Extensions", "")
+	// w.Header().Set("Sec-WebSocket-Extensions", "")
 	w.Header().Set("Sec-WebSocket-Accept", acceptKey)
+
+	log.Printf("Response headers being sent:")
+	for name, values := range w.Header() {
+		for _, value := range values {
+			log.Printf("  %s: %s", name, value)
+		}
+	}
+
+	log.Printf("Sending HTTP 101 Switching Protocols...")
+
 	w.WriteHeader(http.StatusSwitchingProtocols)
 
 	hj, ok := w.(http.Hijacker)
@@ -97,6 +117,9 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("Connection hijacked successfully")
+	log.Printf("=== HANDSHAKE COMPLETE ===")
 	return conn, nil
 }
 
