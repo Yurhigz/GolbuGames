@@ -33,6 +33,14 @@ const (
 	MaxPayloadSize         = 1024 * 1024
 )
 
+func NewTextFrame(msg string) *Frame {
+	return &Frame{
+		FIN:     true,
+		Opcode:  OpcodeText,
+		Payload: []byte(msg),
+	}
+}
+
 func isFinalFrame(b byte) bool {
 	return b&(1<<7) != 0
 }
