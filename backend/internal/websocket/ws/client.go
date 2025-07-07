@@ -14,7 +14,7 @@ type Client struct {
 	nickname      string
 	conn          net.Conn
 	mu            sync.Mutex
-	send          chan []byte
+	send          chan *Frame
 	hub           *Hub
 	hubManager    *HubManager
 	matchId       string
@@ -36,7 +36,7 @@ const (
 func newClient(conn net.Conn, hubmanager *HubManager) *Client {
 	return &Client{
 		conn:       conn,
-		send:       make(chan []byte, 256),
+		send:       make(chan *Frame, 256),
 		hubManager: hubmanager,
 	}
 }
@@ -54,9 +54,6 @@ func (c *Client) resetFragmentation() {
 // processMessage traite les messages reçus des clients
 // Il peut être utilisé pour gérer les messages de jeu, les commandes, etc...
 // créer une frame à partir des messages reçus dans le channel car sinon cela créé des erreurs protocoles car le message est mal formaté
-func (c *Client) writeMessage(payload []byte) {
-
-}
 
 func (c *Client) handleFrame(frame Frame) {
 	log.Printf("=== FRAME RECEIVED ===")
@@ -103,7 +100,7 @@ func (c *Client) handleFrame(frame Frame) {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s",
 				opcodeToString(frame.Opcode), c.clientId)
-			c.send <- frame.Payload
+			c.send <- &frame
 			c.resetFragmentation()
 		} else {
 			// Début d'un message fragmenté
@@ -139,7 +136,7 @@ func (c *Client) handleFrame(frame Frame) {
 		if frame.FIN {
 			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.clientId)
-			c.send <- frame.Payload
+			c.send <- &frame
 			c.resetFragmentation()
 		} else {
 			log.Printf("Received continuation frame from client %s", c.clientId)
@@ -167,13 +164,13 @@ func (c *Client) writePump() {
 
 	for {
 		select {
-		case message, ok := <-c.send:
+		case frame, ok := <-c.send:
 			if !ok {
 				log.Printf("send channel closed for client %s", c.clientId)
 				return
 			}
 			c.mu.Lock()
-			_, err := c.conn.Write(message)
+			_, err := c.conn.Write(frame.ToBytes())
 			c.mu.Unlock()
 
 			if err != nil {
