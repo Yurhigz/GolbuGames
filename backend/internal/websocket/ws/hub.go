@@ -32,7 +32,7 @@ type Hub struct {
 	clients    [2]*Client
 	register   chan *Client
 	unregister chan *Client
-	broadcast  chan []byte
+	broadcast  chan *Frame
 	hubId      string
 	gameState  GameStatus
 }
@@ -45,7 +45,7 @@ func NewHubManager() *HubManager {
 
 func newHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
+		broadcast:  make(chan *Frame),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    [2]*Client{nil, nil},
@@ -85,7 +85,7 @@ func (h *Hub) run() {
 				// go client.readPump()
 				time.Sleep(1000 * time.Millisecond)
 				fmt.Printf("<hub run> client waiting for opponent")
-				client.send <- []byte("Waiting for opponent...")
+				client.send <- NewTextFrame("Waiting for opponent...")
 			} else if h.clients[1] == nil {
 				h.clients[1] = client
 				client.hub = h
@@ -93,24 +93,24 @@ func (h *Hub) run() {
 				// go client.readPump()
 				h.gameState = gamesOngoing
 				time.Sleep(1000 * time.Millisecond)
-				message := []byte("Opponent found... Game starting!")
-				h.clients[0].send <- message
-				h.clients[1].send <- message
+				message := "Opponent found... Game starting!"
+				h.clients[0].send <- NewTextFrame(message)
+				h.clients[1].send <- NewTextFrame(message)
 			}
 
 		case client := <-h.unregister:
 			if h.clients[0] == client {
 				h.clients[0] = nil
 				if h.clients[1] != nil {
-					h.clients[1].send <- []byte("Opponent disconnected")
+					h.clients[1].send <- NewTextFrame("Opponent disconnected")
 				}
 			} else if h.clients[1] == client {
 				h.clients[1] = nil
 				if h.clients[0] != nil {
-					h.clients[0].send <- []byte("Opponent disconnected")
+					h.clients[0].send <- NewTextFrame("Opponent disconnected")
 				}
 			}
-
+		// vérifier pour le broadcast si les clients envoies des messages chiffrés
 		case message := <-h.broadcast:
 			if h.clients[0] != nil {
 				h.clients[0].send <- message
@@ -170,7 +170,7 @@ func (hm *HubManager) MatchmakingLoop() {
 								hm.RemoveClientFromQueue(client)
 								hub.gameState = gamesOngoing
 								hm.mu.Unlock()
-								client.send <- []byte("You have been matched with an opponent!")
+								client.send <- NewTextFrame("You have been matched with an opponent!")
 								break
 							}
 						}
