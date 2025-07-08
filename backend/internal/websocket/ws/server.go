@@ -70,17 +70,17 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 }
 
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
-	log.Printf("=== HANDSHAKE DEBUG ===")
-	log.Printf("Method: %s", r.Method)
-	log.Printf("URL: %s", r.URL.String())
+	// log.Printf("=== HANDSHAKE DEBUG ===")
+	// log.Printf("Method: %s", r.Method)
+	// log.Printf("URL: %s", r.URL.String())
 
 	// Log tous les headers reçus
-	log.Printf("Headers received:")
-	for name, values := range r.Header {
-		for _, value := range values {
-			log.Printf("  %s: %s", name, value)
-		}
-	}
+	// log.Printf("Headers received:")
+	// for name, values := range r.Header {
+	// 	for _, value := range values {
+	// 		log.Printf("  %s: %s", name, value)
+	// 	}
+	// }
 
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
 
@@ -98,14 +98,14 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 	// w.Header().Set("Sec-WebSocket-Extensions", "")
 	w.Header().Set("Sec-WebSocket-Accept", acceptKey)
 
-	log.Printf("Response headers being sent:")
-	for name, values := range w.Header() {
-		for _, value := range values {
-			log.Printf("  %s: %s", name, value)
-		}
-	}
+	// log.Printf("Response headers being sent:")
+	// for name, values := range w.Header() {
+	// 	for _, value := range values {
+	// 		log.Printf("  %s: %s", name, value)
+	// 	}
+	// }
 
-	log.Printf("Sending HTTP 101 Switching Protocols...")
+	// log.Printf("Sending HTTP 101 Switching Protocols...")
 
 	w.WriteHeader(http.StatusSwitchingProtocols)
 
@@ -118,7 +118,7 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 		return nil, err
 	}
 
-	log.Printf("Connection hijacked successfully")
+	// log.Printf("Connection hijacked successfully")
 	log.Printf("=== HANDSHAKE COMPLETE ===")
 	return conn, nil
 }

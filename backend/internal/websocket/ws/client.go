@@ -152,6 +152,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		if c.hub != nil {
+			log.Printf("writePump closing for client %s", c.clientId)
 			c.hub.unregister <- c
 		} else {
 			c.hubManager.mu.Lock()
@@ -170,7 +171,9 @@ func (c *Client) writePump() {
 				return
 			}
 			c.mu.Lock()
+			// fmt.Printf("WritePump: about to write frame for client %s", c.clientId)
 			_, err := c.conn.Write(frame.ToBytes())
+			// fmt.Printf("WritePump: finished writing frame for client %s", c.clientId)
 			c.mu.Unlock()
 
 			if err != nil {
@@ -212,14 +215,14 @@ func (c *Client) readPump() {
 
 	for {
 		temp := make([]byte, 1024)
-		log.Printf("📖 Attempting to read from client %s (read #%d)", c.clientId, readCount+1)
+		// log.Printf("📖 Attempting to read from client %s (read #%d)", c.clientId, readCount+1)
 
 		n, err := c.conn.Read(temp)
 		readCount++
 		if err != nil {
-			log.Printf("❌ Error reading from client %s (read #%d): %v", c.clientId, readCount, err)
-			log.Printf("📊 Total successful reads before error: %d", readCount-1)
-			log.Printf("<readpump> Error reading from client %s: %v", c.clientId, err)
+			// log.Printf("❌ Error reading from client %s (read #%d): %v", c.clientId, readCount, err)
+			// log.Printf("📊 Total successful reads before error: %d", readCount-1)
+			log.Printf("❌ <readpump> Error reading from client %s: %v", c.clientId, err)
 			return
 		}
 
@@ -230,13 +233,13 @@ func (c *Client) readPump() {
 		}
 
 		buffer = append(buffer, temp[:n]...)
-		log.Printf("📝 Buffer now contains %d bytes", len(buffer))
+		// log.Printf("📝 Buffer now contains %d bytes", len(buffer))
 
 		// Traiter toutes les frames complètes dans le buffer
 		frameCount := 0
 		for len(buffer) > 0 {
 			frameCount++
-			log.Printf("🔍 Parsing frame #%d from buffer (%d bytes available)", frameCount, len(buffer))
+			// log.Printf("🔍 Parsing frame #%d from buffer (%d bytes available)", frameCount, len(buffer))
 			frame, frameLen, err := parseFrame(buffer)
 			if err != nil {
 				log.Printf("parseFrame error: %v", err)
@@ -248,13 +251,13 @@ func (c *Client) readPump() {
 				log.Printf("Error parsing frame from client %s: %v", c.clientId, err)
 				return
 			}
-			log.Printf("✅ Parsed frame #%d: opcode=0x%x, length=%d bytes", frameCount, frame.Opcode, frameLen)
+			// log.Printf("✅ Parsed frame #%d: opcode=0x%x, length=%d bytes", frameCount, frame.Opcode, frameLen)
 			// Traiter la frame parsée
 			c.handleFrame(frame)
 
 			// Retirer la frame traitée du buffer
 			buffer = buffer[frameLen:]
-			log.Printf("📝 Removed %d bytes from buffer, %d bytes remaining", frameLen, len(buffer))
+			// log.Printf("📝 Removed %d bytes from buffer, %d bytes remaining", frameLen, len(buffer))
 		}
 	}
 }
