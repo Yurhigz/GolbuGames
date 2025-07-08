@@ -112,11 +112,7 @@ cf CONTRIBUTING.md
 
 ## 📝 Licence
 
-[À DÉFINIR]
-
-## 📞 Contact
-
-[À DÉFINIR]
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
 
 ---
 
