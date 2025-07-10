@@ -75,6 +75,7 @@ func (c *Client) handleFrame(frame Frame) {
 			}
 			log.Printf("Close code: %d, reason: %s", closeCode, reason)
 		}
+		fmt.Printf("[DEBUG] Fermeture du client %s", c.clientId)
 		c.hub.unregister <- c
 		return
 
@@ -100,7 +101,10 @@ func (c *Client) handleFrame(frame Frame) {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s",
 				opcodeToString(frame.Opcode), c.clientId)
-			c.send <- &frame
+			if c.hub != nil {
+				c.hub.broadcast <- &frame
+			}
+			// c.send <- &frame
 			c.resetFragmentation()
 		} else {
 			// Début d'un message fragmenté
@@ -136,7 +140,10 @@ func (c *Client) handleFrame(frame Frame) {
 		if frame.FIN {
 			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.clientId)
-			c.send <- &frame
+			if c.hub != nil {
+				c.hub.broadcast <- &frame
+			}
+			// c.send <- &frame
 			c.resetFragmentation()
 		} else {
 			log.Printf("Received continuation frame from client %s", c.clientId)
@@ -148,6 +155,7 @@ func (c *Client) handleFrame(frame Frame) {
 }
 
 func (c *Client) writePump() {
+	log.Printf("writePump started for client %s", c.clientId)
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
@@ -192,7 +200,6 @@ func (c *Client) writePump() {
 			}
 		}
 	}
-
 }
 
 func (c *Client) readPump() {

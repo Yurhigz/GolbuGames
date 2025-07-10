@@ -35,6 +35,8 @@ type Hub struct {
 	broadcast  chan *Frame
 	hubId      string
 	gameState  GameStatus
+	//tmp test
+	ready chan struct{}
 }
 
 func NewHubManager() *HubManager {
@@ -49,6 +51,8 @@ func newHub() *Hub {
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    [2]*Client{nil, nil},
+		//tmp test
+		ready: make(chan struct{}),
 	}
 }
 
@@ -58,6 +62,8 @@ func (hm *HubManager) CreateHub(matchId string) *Hub {
 	hub.hubId = matchId
 	hm.hubs[matchId] = hub
 	go hub.run()
+	//tmp test
+	<-hub.ready
 	fmt.Printf("[DEBUG] New hub created with ID: %s\n", matchId)
 	return hub
 }
@@ -77,22 +83,23 @@ func (hm *HubManager) RemoveHub(matchId string) {
 
 func (h *Hub) run() {
 	fmt.Printf("[DEBUG] Hub %s run() started\n", h.hubId)
+	close(h.ready)
 	for {
-		fmt.Printf("[DEBUG] Hub %s about to enter select\n", h.hubId)
 		select {
-
 		case client := <-h.register:
-
+			fmt.Printf("[DEBUG] Hub %s received client in register\n", h.hubId)
 			if h.clients[0] == nil {
 				h.clients[0] = client
 				client.hub = h
+				client.matchId = h.hubId
 				time.Sleep(1000 * time.Millisecond)
 				fmt.Printf("<hub run> client waiting for opponent")
 				client.send <- NewTextFrame("Waiting for opponent...")
 				fmt.Printf("<hub run> client connected to game room")
-			} else if h.clients[1] == nil {
+			} else {
 				h.clients[1] = client
 				client.hub = h
+				client.matchId = h.hubId
 				fmt.Printf("<hub run> client connected to game room")
 				time.Sleep(100 * time.Millisecond)
 				message := "Opponent found... Game starting!"
@@ -101,7 +108,7 @@ func (h *Hub) run() {
 			}
 
 		case client := <-h.unregister:
-			fmt.Println("Processing unregister...")
+			fmt.Printf("[DEBUG] Hub %s received client in unregister\n", h.hubId)
 			if h.clients[0] == client {
 				h.clients[0] = nil
 				if h.clients[1] != nil {
@@ -115,7 +122,7 @@ func (h *Hub) run() {
 			}
 		// vérifier pour le broadcast si les clients envoies des messages chiffrés
 		case message := <-h.broadcast:
-			fmt.Println("Processing broadcast...")
+			fmt.Printf("[DEBUG] Hub %s received message in broadcast\n", h.hubId)
 			if h.clients[0] != nil {
 				h.clients[0].send <- message
 			}
@@ -126,10 +133,10 @@ func (h *Hub) run() {
 			// 	fmt.Println("Hub register channel is blocked!")
 			// 	return
 		}
-		if h.clients[0] == nil && h.clients[1] == nil {
-			h.gameState = gameFinished
-			return
-		}
+		// if h.clients[0] == nil && h.clients[1] == nil {
+		// 	h.gameState = gameFinished
+		// 	return
+		// }
 	}
 }
 
@@ -159,6 +166,11 @@ func (h *Hub) clientCount() int {
 // Il faut également que je trouve un moyen de mettre à jour soit le temps d'attente, soit j'utilise
 // un calcul du durée en fonction de l'heure actuelle pour éviter de faire des appels trop fréquents
 
+// wip pour la création d'un hubId unique
+func createId() string {
+	return fmt.Sprintf("hub_%d", time.Now().UnixNano())
+}
+
 // refactoriser avec deux fonctions pour les deux cas d'usage
 func (hm *HubManager) MatchmakingLoop() {
 	for {
@@ -186,8 +198,8 @@ func (hm *HubManager) MatchmakingLoop() {
 								fmt.Printf("[DEBUG] Avant hub.register <- client (%s)\n", client.clientId)
 								hub.register <- client
 								fmt.Printf("[DEBUG] Après hub.register <- client (%s)\n", client.clientId)
-								client.hub = hub
-								client.matchId = hub.hubId
+								// client.hub = hub
+								// client.matchId = hub.hubId
 								hm.mu.Lock()
 								hm.RemoveClientFromQueue(client)
 								hm.mu.Unlock()
@@ -195,7 +207,7 @@ func (hm *HubManager) MatchmakingLoop() {
 								fmt.Printf("[DEBUG] Client %s envoyé dans hub %s\n", client.clientId, hub.hubId)
 								fmt.Printf("[DEBUG] hub.clientCount() = %d\n", hub.clientCount())
 								fmt.Printf("[DEBUG] hub.gameState = %d\n", hub.gameState)
-								client.send <- NewTextFrame("You have been matched with an opponent!")
+								// client.send <- NewTextFrame("You have been matched with an opponent!")
 								fmt.Printf("A match has been made\n")
 
 							}
@@ -218,11 +230,12 @@ func (hm *HubManager) MatchmakingLoop() {
 				}
 			}
 			if longestWaitingTime != nil {
-				longestWaitingTime.matchId = longestWaitingTime.clientId + "_room"
-				hub := hm.CreateHub(longestWaitingTime.matchId)
+				// longestWaitingTime.matchId = longestWaitingTime.clientId + "_room"
+				hub := hm.CreateHub(createId())
 				time.Sleep(1000 * time.Millisecond)
+
 				hub.register <- longestWaitingTime
-				longestWaitingTime.hub = hub
+				// longestWaitingTime.hub = hub
 				fmt.Printf("[DEBUG] Client %s ajouté à la queue\n", longestWaitingTime.clientId)
 				hm.mu.Lock()
 				hm.RemoveClientFromQueue(longestWaitingTime)
