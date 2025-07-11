@@ -182,8 +182,8 @@ func (hm *HubManager) MatchmakingLoop() {
 		// vérifier si un hub est déjà en cours et qu'il y a une place pour un nouveau client ainsi que des clients
 		// dans la queue
 		fmt.Println("[DEBUG] Matchmaking loop tick")
-		fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
-		fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
+		fmt.Printf("[DEBUG] Current matchmaking queue length: %d\n", len(queue))
+		fmt.Printf("[DEBUG] Current hubs count: %d\n", len(hm.hubs))
 		if len(hm.hubs) > 0 && len(queue) > 0 {
 			fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
 			fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
@@ -230,16 +230,12 @@ func (hm *HubManager) MatchmakingLoop() {
 				}
 			}
 			if longestWaitingTime != nil {
-				// longestWaitingTime.matchId = longestWaitingTime.clientId + "_room"
 				hub := hm.CreateHub(createId())
 				time.Sleep(1000 * time.Millisecond)
-
 				hub.register <- longestWaitingTime
-				// longestWaitingTime.hub = hub
+
 				fmt.Printf("[DEBUG] Client %s ajouté à la queue\n", longestWaitingTime.clientId)
-				hm.mu.Lock()
 				hm.RemoveClientFromQueue(longestWaitingTime)
-				hm.mu.Unlock()
 				fmt.Printf("[DEBUG] Client %s envoyé dans hub %s\n", longestWaitingTime.clientId, hub.hubId)
 			}
 
