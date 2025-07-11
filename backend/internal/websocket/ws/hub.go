@@ -181,32 +181,31 @@ func (hm *HubManager) MatchmakingLoop() {
 		hm.mu.Unlock()
 		// vérifier si un hub est déjà en cours et qu'il y a une place pour un nouveau client ainsi que des clients
 		// dans la queue
-		fmt.Println("[DEBUG] Matchmaking loop tick")
-		fmt.Printf("[DEBUG] Current matchmaking queue length: %d\n", len(queue))
-		fmt.Printf("[DEBUG] Current hubs count: %d\n", len(hm.hubs))
+		// fmt.Println("[DEBUG] Matchmaking loop tick")
+		// fmt.Printf("[DEBUG] Current matchmaking queue length: %d\n", len(queue))
+		// fmt.Printf("[DEBUG] Current hubs count: %d\n", len(hm.hubs))
 		if len(hm.hubs) > 0 && len(queue) > 0 {
-			fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
-			fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
+			// fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
+			// fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
+
+			// réfléchir à un moyen d'intégrer les hubs disponibles pour ajouter des hubs au fil de l'eau
+			// availableHubs
 			for _, hub := range hm.hubs {
-				fmt.Printf("[DEBUG] Checking hub %s with state %d\n", hub.hubId, hub.gameState)
+				// fmt.Printf("[DEBUG] Checking hub %s with state %d\n", hub.hubId, hub.gameState)
 				if hub.gameState == gameWaiting {
-					fmt.Printf("[DEBUG] Hub %s is waiting for clients\n", hub.hubId)
+					// fmt.Printf("[DEBUG] Hub %s is waiting for clients\n", hub.hubId)
 					if hub.clientCount() < 2 {
 						// Si le hub a moins de 2 clients, on peut essayer de les associer
 						for _, client := range hm.ClientQueue {
-							if client.matchId == "" { // Si le client n'est pas déjà associé à une room
-								fmt.Printf("[DEBUG] Avant hub.register <- client (%s)\n", client.clientId)
+							if client.matchId == "" {
+								// fmt.Printf("[DEBUG] Avant hub.register <- client (%s)\n", client.clientId)
 								hub.register <- client
-								fmt.Printf("[DEBUG] Après hub.register <- client (%s)\n", client.clientId)
-								// client.hub = hub
-								// client.matchId = hub.hubId
-								hm.mu.Lock()
+								// fmt.Printf("[DEBUG] Après hub.register <- client (%s)\n", client.clientId)
 								hm.RemoveClientFromQueue(client)
-								hm.mu.Unlock()
-								fmt.Printf("[DEBUG] Client %s ajouté à la queue\n", client.clientId)
-								fmt.Printf("[DEBUG] Client %s envoyé dans hub %s\n", client.clientId, hub.hubId)
-								fmt.Printf("[DEBUG] hub.clientCount() = %d\n", hub.clientCount())
-								fmt.Printf("[DEBUG] hub.gameState = %d\n", hub.gameState)
+								// fmt.Printf("[DEBUG] Client %s ajouté à la queue\n", client.clientId)
+								// fmt.Printf("[DEBUG] Client %s envoyé dans hub %s\n", client.clientId, hub.hubId)
+								// fmt.Printf("[DEBUG] hub.clientCount() = %d\n", hub.clientCount())
+								// fmt.Printf("[DEBUG] hub.gameState = %d\n", hub.gameState)
 								// client.send <- NewTextFrame("You have been matched with an opponent!")
 								fmt.Printf("A match has been made\n")
 
