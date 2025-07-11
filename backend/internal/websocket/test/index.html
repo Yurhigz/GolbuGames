@@ -20,6 +20,7 @@
 <body>
     <h1>Client WebSocket Test</h1>
     <button id="connectBtn">Connecter</button>
+    <button id="disconnectBtn" disabled>Quitter</button>
     <div>
         <input type="text" id="messageInput" class="message-input" placeholder="Écrivez votre message..." disabled>
         <button id="sendBtn" disabled>Envoyer Message</button>
@@ -30,6 +31,7 @@
         let ws;
         const log = document.getElementById("log");
         const connectBtn = document.getElementById("connectBtn");
+        const disconnectBtn = document.getElementById("disconnectBtn");
         const sendBtn = document.getElementById("sendBtn");
         const messageInput = document.getElementById("messageInput");
 
@@ -43,7 +45,7 @@
                 logMessage("Connecté au serveur WebSocket");
                 sendBtn.disabled = false;
                 messageInput.disabled = false;
-
+                disconnectBtn.disabled = false;
                 ws.send("Hello from client!");
             };
             ws.onmessage = (event) => {
@@ -56,7 +58,14 @@
                 logMessage("Connexion fermée");
                 sendBtn.disabled = true;
                 messageInput.disabled = true;
+                disconnectBtn.disabled = true;
             };
+        };
+
+        disconnectBtn.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
         };
 
         sendBtn.onclick = () => {
