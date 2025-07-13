@@ -56,12 +56,12 @@ func (c *Client) resetFragmentation() {
 // créer une frame à partir des messages reçus dans le channel car sinon cela créé des erreurs protocoles car le message est mal formaté
 
 func (c *Client) handleFrame(frame Frame) {
-	log.Printf("=== FRAME RECEIVED ===")
-	log.Printf("Client: %s", c.clientId)
-	log.Printf("Opcode: 0x%x (%s)", frame.Opcode, opcodeToString(frame.Opcode))
-	log.Printf("FIN: %t", frame.FIN)
-	log.Printf("Payload length: %d", len(frame.Payload))
-	log.Printf("Opcode reçu: 0x%x", frame.Opcode)
+	// log.Printf("=== FRAME RECEIVED ===")
+	// log.Printf("Client: %s", c.clientId)
+	// log.Printf("Opcode: 0x%x (%s)", frame.Opcode, opcodeToString(frame.Opcode))
+	// log.Printf("FIN: %t", frame.FIN)
+	// log.Printf("Payload length: %d", len(frame.Payload))
+	// log.Printf("Opcode reçu: 0x%x", frame.Opcode)
 	switch frame.Opcode {
 	case OpcodeClose:
 		log.Printf("Client %s closed the connection", c.clientId)
@@ -179,9 +179,7 @@ func (c *Client) writePump() {
 				return
 			}
 			c.mu.Lock()
-			// fmt.Printf("WritePump: about to write frame for client %s", c.clientId)
 			_, err := c.conn.Write(frame.ToBytes())
-			// fmt.Printf("WritePump: finished writing frame for client %s", c.clientId)
 			c.mu.Unlock()
 
 			if err != nil {
@@ -222,49 +220,39 @@ func (c *Client) readPump() {
 
 	for {
 		temp := make([]byte, 1024)
-		// log.Printf("📖 Attempting to read from client %s (read #%d)", c.clientId, readCount+1)
 
 		n, err := c.conn.Read(temp)
 		readCount++
 		if err != nil {
-			// log.Printf("❌ Error reading from client %s (read #%d): %v", c.clientId, readCount, err)
-			// log.Printf("📊 Total successful reads before error: %d", readCount-1)
-			log.Printf("❌ <readpump> Error reading from client %s: %v", c.clientId, err)
+			log.Printf("[ERR] <readPump> Error reading from client %s: %v", c.clientId, err)
 			return
 		}
 
-		log.Printf("✅ Read %d bytes from client %s (read #%d)", n, c.clientId, readCount)
+		log.Printf("[INFO] Read %d bytes from client %s (read #%d)", n, c.clientId, readCount)
 		if n == 0 {
-			log.Printf("⚠️ Read 0 bytes from client %s, continuing...", c.clientId)
+			log.Printf("[WARN] Read 0 bytes from client %s, continuing...", c.clientId)
 			continue
 		}
 
 		buffer = append(buffer, temp[:n]...)
-		// log.Printf("📝 Buffer now contains %d bytes", len(buffer))
 
 		// Traiter toutes les frames complètes dans le buffer
 		frameCount := 0
 		for len(buffer) > 0 {
 			frameCount++
-			// log.Printf("🔍 Parsing frame #%d from buffer (%d bytes available)", frameCount, len(buffer))
 			frame, frameLen, err := parseFrame(buffer)
 			if err != nil {
 				log.Printf("parseFrame error: %v", err)
 				if err == ErrIncompleteFrame {
 					// Frame incomplète, attendre plus de données
-					log.Printf("⏳ Incomplete frame, waiting for more data...")
+					log.Printf("[INFO] Incomplete frame, waiting for more data...")
 					break
 				}
-				log.Printf("Error parsing frame from client %s: %v", c.clientId, err)
+				log.Printf("[ERR] Error parsing frame from client %s: %v", c.clientId, err)
 				return
 			}
-			// log.Printf("✅ Parsed frame #%d: opcode=0x%x, length=%d bytes", frameCount, frame.Opcode, frameLen)
-			// Traiter la frame parsée
 			c.handleFrame(frame)
-
-			// Retirer la frame traitée du buffer
 			buffer = buffer[frameLen:]
-			// log.Printf("📝 Removed %d bytes from buffer, %d bytes remaining", frameLen, len(buffer))
 		}
 	}
 }
