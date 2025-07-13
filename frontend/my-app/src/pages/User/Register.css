@@ -73,3 +73,9 @@
     text-decoration: underline;
     color: #ffcc00;
 }
+
+.register-error {
+    color: red;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
