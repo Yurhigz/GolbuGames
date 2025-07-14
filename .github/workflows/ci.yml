@@ -76,13 +76,17 @@ jobs:
         with:
           go-version: '1.23.4'
 
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
       - name: Run gosec scanner
         run: |
           cd backend
-          gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
+          $HOME/go/bin/gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: backend/gosec-results.sarif
+
