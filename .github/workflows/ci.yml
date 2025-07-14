@@ -79,7 +79,7 @@ jobs:
       - name: Run gosec scanner
         uses: securego/gosec@master/gosec-results.sarif ./backend/...'
         with:
-          args: '-no-fail -fmt sarif -out backend/gosec-results.sarif ./backend/...'3
+          args: '-no-fail -fmt sarif -out backend/gosec-results.sarif ./backend/...'
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
