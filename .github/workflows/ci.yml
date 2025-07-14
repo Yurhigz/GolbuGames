@@ -1,0 +1,88 @@
+name: CI Pipeline – Tests, Lint & Sécurité
+
+on:
+  push: {}
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.4'
+
+      - name: Download dependencies
+        run: |
+          cd backend
+          go mod download
+
+      - name: Run unit tests
+        run: |
+          cd backend
+          go test ./tests/... -coverprofile=coverage.out
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/coverage.out
+
+  lint:
+    name: Lint (golangci-lint)
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.4'
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          go-version: '1.23'
+          working-directory: backend
+          cache-invalidation-interval: 7
+          problem-matchers: true
+
+  security:
+    name: Sécurité – gosec
+    runs-on: ubuntu-latest
+    needs: build-test
+    env:
+      GO111MODULE: on
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.4'
+
+      - name: Run gosec scanner
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt sarif -out backend/gosec-results.sarif ./backend/...'
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: backend/gosec-results.sarif
