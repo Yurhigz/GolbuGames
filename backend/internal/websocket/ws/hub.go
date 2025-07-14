@@ -2,14 +2,18 @@ package ws
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
 
-// Le fonctionnement avec un système de hubmanager va permettre de créer des rooms de communication.
-// A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer
-// à une room, et on l'associera à la même room que son adversaire
-// On crée un hubmanager qui n'est ni plus ni moins qu'une liste des rooms
+// HubManager gère les hubs de communication entre les clients.
+// Il permet de créer des hubs, d'enregistrer des clients, de les associer à des hubs,
+// et de gérer le matchmaking entre les clients.
+// Il maintient une liste de hubs et une file d'attente de clients en attente de matchmaking.
+// Les clients sont associés à des hubs en fonction de leur disponibilité et de l'état du jeu.
+// Chaque hub gère deux clients, leur envoi de messages et leur état de jeu.
+
 const (
 	gameWaiting  = 0
 	gamesOngoing = 1
@@ -63,7 +67,7 @@ func (hm *HubManager) CreateHub(matchId string) *Hub {
 	go hub.run()
 	//tmp test
 	<-hub.ready
-	fmt.Printf("[INFO] New hub created with ID: %s\n", matchId)
+	log.Printf("[INFO] New hub created with ID: %s\n", matchId)
 	return hub
 }
 
@@ -81,12 +85,12 @@ func (hm *HubManager) RemoveHub(matchId string) {
 }
 
 func (h *Hub) run() {
-	fmt.Printf("Hub [%s] run() started\n", h.hubId)
+	log.Printf("[INFO] Hub [%s] run() started\n", h.hubId)
 	close(h.ready)
 	for {
 		select {
 		case client := <-h.register:
-			fmt.Printf("[DEBUG] Hub %s received client in register\n", h.hubId)
+			log.Printf("[INFO] Hub %s received client in register\n", h.hubId)
 			if h.clients[0] == nil {
 				h.clients[0] = client
 				client.hub = h
@@ -104,7 +108,7 @@ func (h *Hub) run() {
 			}
 
 		case client := <-h.unregister:
-			// fmt.Printf("[DEBUG] Hub %s received client in unregister\n", h.hubId)
+			log.Printf("[INFO] Hub %s received client in unregister\n", h.hubId)
 			if h.clients[0] == client {
 				h.clients[0] = nil
 				if h.clients[1] != nil {
@@ -116,18 +120,14 @@ func (h *Hub) run() {
 					h.clients[0].send <- NewTextFrame("Opponent disconnected")
 				}
 			}
-		// vérifier pour le broadcast si les clients envoies des messages chiffrés
 		case message := <-h.broadcast:
-			fmt.Printf("[DEBUG] Hub %s received message in broadcast\n", h.hubId)
+			log.Printf("[INFO] Hub %s received message in broadcast\n", h.hubId)
 			if h.clients[0] != nil {
 				h.clients[0].send <- message
 			}
 			if h.clients[1] != nil {
 				h.clients[1].send <- message
 			}
-			// default:
-			// 	fmt.Println("Hub register channel is blocked!")
-			// 	return
 		}
 		// if h.clients[0] == nil && h.clients[1] == nil {
 		// 	h.gameState = gameFinished
@@ -171,8 +171,8 @@ func (hm *HubManager) MatchmakingLoop() {
 		hm.mu.Unlock()
 
 		if len(hm.hubs) > 0 && len(queue) > 0 {
-			fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
-			fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
+			log.Printf("[INFO] Current matchmaking queue length: %d\n", len(queue))
+			log.Printf("[INFO] Current hubs count: %d\n", len(hm.hubs))
 			availability := false
 			var availableHub *Hub
 			for _, hub := range hm.hubs {
@@ -183,7 +183,7 @@ func (hm *HubManager) MatchmakingLoop() {
 				}
 			}
 			if !availability {
-				fmt.Printf("No available hub found, creating a new one\n")
+				log.Printf("[INFO] No available hub found, creating a new one\n")
 				availableHub = hm.CreateHub(createId())
 			}
 
@@ -192,11 +192,11 @@ func (hm *HubManager) MatchmakingLoop() {
 					availableHub.register <- client
 					hm.RemoveClientFromQueue(client)
 					client.send <- NewTextFrame("You have been matched with an opponent!")
-					fmt.Printf("A match has been made\n")
+					log.Printf("[INFO] A match has been made\n")
 
 				}
 				if availableHub.clientCount() == 2 {
-					fmt.Printf("Hub %s is now full with 2 clients\n", availableHub.hubId)
+					log.Printf("[INFO] Hub %s is now full with 2 clients\n", availableHub.hubId)
 					availableHub.gameState = gamesOngoing
 					break
 				}

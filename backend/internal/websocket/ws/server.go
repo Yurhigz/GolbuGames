@@ -14,17 +14,6 @@ import (
 
 const magicGUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
-//  Gestion des opcodes :
-// 0x1 = texte
-
-// 0x2 = binaire
-
-// 0x8 = Close
-
-// 0x9 = Ping
-
-// 0xA = Pong
-
 // Fonction de gestion de la clef secrete
 
 func secretKeyVerification(clientKey string) (string, error) {
@@ -42,11 +31,11 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Erreur d'upgrade WebSocket: %v", err), http.StatusInternalServerError)
-		fmt.Printf("<websocket handler><upgrade connexion> Erreur d'upgrade connection")
+		log.Printf("[ERR] <websocket handler> Erreur d'upgrade connection")
 		return
 	}
 
-	fmt.Println("WebSocket connection established!")
+	log.Println("[INFO] WebSocket connection established!")
 
 	client := newClient(conn, hubManager)
 	client.queueTime = time.Now()
@@ -56,34 +45,13 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 	hubManager.ClientQueue = append(hubManager.ClientQueue, client)
 	hubManager.mu.Unlock()
 
-	log.Printf("Nouveau client connecté au hubManager")
-
-	// incoming := make(chan Frame)
-	// go handleWebSocketConnection(conn, incoming)
-
-	// go func() {
-	// 	for frame := range incoming {
-	// 		fmt.Println("Received frame:", string(frame.Payload))
-	// 	}
-	// }()
+	log.Printf("[INFO] Nouveau client connecté au hubManager")
 
 }
 
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
-	// log.Printf("=== HANDSHAKE DEBUG ===")
-	// log.Printf("Method: %s", r.Method)
-	// log.Printf("URL: %s", r.URL.String())
-
-	// Log tous les headers reçus
-	// log.Printf("Headers received:")
-	// for name, values := range r.Header {
-	// 	for _, value := range values {
-	// 		log.Printf("  %s: %s", name, value)
-	// 	}
-	// }
 
 	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
-
 		return nil, errors.New("Invalid upgrade request")
 	}
 
@@ -98,15 +66,6 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 	// w.Header().Set("Sec-WebSocket-Extensions", "")
 	w.Header().Set("Sec-WebSocket-Accept", acceptKey)
 
-	// log.Printf("Response headers being sent:")
-	// for name, values := range w.Header() {
-	// 	for _, value := range values {
-	// 		log.Printf("  %s: %s", name, value)
-	// 	}
-	// }
-
-	// log.Printf("Sending HTTP 101 Switching Protocols...")
-
 	w.WriteHeader(http.StatusSwitchingProtocols)
 
 	hj, ok := w.(http.Hijacker)
@@ -118,7 +77,6 @@ func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 		return nil, err
 	}
 
-	// log.Printf("Connection hijacked successfully")
 	log.Printf("=== HANDSHAKE COMPLETE ===")
 	return conn, nil
 }
@@ -131,7 +89,7 @@ func handleWebSocketConnection(conn net.Conn, incoming chan<- Frame) {
 	for {
 		n, err := conn.Read(tmpbuf)
 		if err != nil {
-			fmt.Println("Error reading:", err)
+			log.Println("[ERR] <handleWebSocketConnection> Error reading:", err)
 			break
 		}
 		buf = append(buf, tmpbuf[:n]...)
@@ -141,7 +99,7 @@ func handleWebSocketConnection(conn net.Conn, incoming chan<- Frame) {
 				if errors.Is(err, ErrIncompleteFrame) {
 					break // attendre plus de données
 				}
-				log.Println("parse error:", err)
+				log.Println("[ERR] <handleWebSocketConnection> parse error:", err)
 				return
 			}
 			incoming <- frame
