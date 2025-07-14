@@ -25,11 +25,9 @@ type Client struct {
 }
 
 const (
-	pongWait       = 60 * time.Second // Durée d'attente pour un pong
-	newline        = "\n"
-	space          = " "
-	pingPeriod     = (pongWait * 9) / 10 // Période de ping pour garder la connexion active
-	pongTimeout    = 60 * time.Second    // Durée d'attente pour un pong avant de fermer la connexion
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	pongTimeout    = 60 * time.Second
 	MaxMessageSize = 1024 * 1024
 )
 
@@ -50,22 +48,11 @@ func (c *Client) resetFragmentation() {
 	c.currentOpcode = 0
 }
 
-// Ajouter une logique de traitement de messages si nécessaire
-// processMessage traite les messages reçus des clients
-// Il peut être utilisé pour gérer les messages de jeu, les commandes, etc...
-// créer une frame à partir des messages reçus dans le channel car sinon cela créé des erreurs protocoles car le message est mal formaté
-
 func (c *Client) handleFrame(frame Frame) {
-	// log.Printf("=== FRAME RECEIVED ===")
-	// log.Printf("Client: %s", c.clientId)
-	// log.Printf("Opcode: 0x%x (%s)", frame.Opcode, opcodeToString(frame.Opcode))
-	// log.Printf("FIN: %t", frame.FIN)
-	// log.Printf("Payload length: %d", len(frame.Payload))
-	// log.Printf("Opcode reçu: 0x%x", frame.Opcode)
 	switch frame.Opcode {
 	case OpcodeClose:
-		log.Printf("Client %s closed the connection", c.clientId)
-		fmt.Printf("Fermeture du client")
+		log.Printf("[INFO] Client %s closed the connection", c.clientId)
+		log.Printf("[INFO] Fermeture du client")
 		if frame.Opcode == OpcodeClose && len(frame.Payload) >= 2 {
 			// Les 2 premiers bytes d'un close frame contiennent le code de fermeture
 			closeCode := (uint16(frame.Payload[0]) << 8) | uint16(frame.Payload[1])
@@ -73,25 +60,25 @@ func (c *Client) handleFrame(frame Frame) {
 			if len(frame.Payload) > 2 {
 				reason = string(frame.Payload[2:])
 			}
-			log.Printf("Close code: %d, reason: %s", closeCode, reason)
+			log.Printf("[INFO] Close code: %d, reason: %s", closeCode, reason)
 		}
-		fmt.Printf("[DEBUG] Fermeture du client %s", c.clientId)
+		log.Printf("[DEBUG] Fermeture du client %s", c.clientId)
 		c.hub.unregister <- c
 		return
 
 	case OpcodePing:
-		log.Printf("Received ping from client %s", c.clientId)
+		log.Printf("[INFO] Received ping from client %s", c.clientId)
 		pongFrame := Pong(frame.Payload)
 		c.mu.Lock()
 		_, err := c.conn.Write(pongFrame)
 		c.mu.Unlock()
 		if err != nil {
-			log.Printf("Error sending pong to client %s: %v", c.clientId, err)
+			log.Printf("[ERR] Error sending pong to client %s: %v", c.clientId, err)
 			return
 		}
 
 	case OpcodePong:
-		log.Printf("Received pong from client %s", c.clientId)
+		log.Printf("[INFO] Received pong from client %s", c.clientId)
 
 	case OpcodeText, OpcodeBinary:
 		// Premier frame d'un nouveau message
@@ -99,7 +86,7 @@ func (c *Client) handleFrame(frame Frame) {
 
 		if frame.FIN {
 			// Message complet en un seul frame
-			log.Printf("Received complete %s message from client %s",
+			log.Printf("[INFO] Received complete %s message from client %s",
 				opcodeToString(frame.Opcode), c.clientId)
 			if c.hub != nil {
 				c.hub.broadcast <- &frame
@@ -108,12 +95,12 @@ func (c *Client) handleFrame(frame Frame) {
 			c.resetFragmentation()
 		} else {
 			// Début d'un message fragmenté
-			log.Printf("Received first frame of fragmented %s message from client %s",
+			log.Printf("[INFO] Received first frame of fragmented %s message from client %s",
 				opcodeToString(frame.Opcode), c.clientId)
 
 			// Vérification de la taille
 			if len(frame.Payload) > MaxMessageSize {
-				log.Printf("First frame too large from client %s", c.clientId)
+				log.Printf("[ERR] First frame too large from client %s", c.clientId)
 				c.resetFragmentation()
 				return
 			}
@@ -124,13 +111,13 @@ func (c *Client) handleFrame(frame Frame) {
 	case OpcodeContinuation:
 		// Frame de continuation
 		if c.frameBuffer == nil || c.currentOpcode == 0 {
-			log.Printf("Received continuation frame without initial frame from client %s", c.clientId)
+			log.Printf("[INFO] Received continuation frame without initial frame from client %s", c.clientId)
 			return
 		}
 
 		// Vérification de la taille totale
 		if len(c.frameBuffer)+len(frame.Payload) > MaxMessageSize {
-			log.Printf("Message too large from client %s", c.clientId)
+			log.Printf("[INFO] Message too large from client %s", c.clientId)
 			c.resetFragmentation()
 			return
 		}
@@ -139,28 +126,28 @@ func (c *Client) handleFrame(frame Frame) {
 
 		if frame.FIN {
 			// Message complet
-			log.Printf("Received final continuation frame from client %s", c.clientId)
+			log.Printf("[INFO] Received final continuation frame from client %s", c.clientId)
 			if c.hub != nil {
 				c.hub.broadcast <- &frame
 			}
 			// c.send <- &frame
 			c.resetFragmentation()
 		} else {
-			log.Printf("Received continuation frame from client %s", c.clientId)
+			log.Printf("[INFO] Received continuation frame from client %s", c.clientId)
 		}
 
 	default:
-		log.Printf("Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.clientId)
+		log.Printf("[INFO] Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.clientId)
 	}
 }
 
 func (c *Client) writePump() {
-	log.Printf("writePump started for client %s", c.clientId)
+	log.Printf("[INFO] writePump started for client %s", c.clientId)
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
 		if c.hub != nil {
-			log.Printf("writePump closing for client %s", c.clientId)
+			log.Printf("[INFO] writePump closing for client %s", c.clientId)
 			c.hub.unregister <- c
 		} else {
 			c.hubManager.mu.Lock()
@@ -175,7 +162,7 @@ func (c *Client) writePump() {
 		select {
 		case frame, ok := <-c.send:
 			if !ok {
-				log.Printf("send channel closed for client %s", c.clientId)
+				log.Printf("[INFO] send channel closed for client %s", c.clientId)
 				return
 			}
 			c.mu.Lock()
@@ -183,7 +170,7 @@ func (c *Client) writePump() {
 			c.mu.Unlock()
 
 			if err != nil {
-				fmt.Printf("Erreur dans le select du writepump - message")
+				fmt.Printf("[ERR] Erreur dans le select du writepump - message")
 				return
 			}
 		case <-ticker.C:
@@ -193,7 +180,7 @@ func (c *Client) writePump() {
 			c.mu.Unlock()
 
 			if err != nil {
-				fmt.Printf("Erreur dans le select du writepump - ticker")
+				fmt.Printf("[ERR] Erreur dans le select du writepump - ticker")
 				return
 			}
 		}
@@ -201,9 +188,9 @@ func (c *Client) writePump() {
 }
 
 func (c *Client) readPump() {
-	log.Printf("readPump started for client %s", c.clientId)
+	log.Printf("[INFO] readPump started for client %s", c.clientId)
 	defer func() {
-		log.Printf("readPump closing for client %s", c.clientId)
+		log.Printf("[INFO] readPump closing for client %s", c.clientId)
 		if c.hub != nil {
 			c.hub.unregister <- c
 		} else {
