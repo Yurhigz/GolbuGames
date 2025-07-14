@@ -18,7 +18,7 @@ const magicGUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 func secretKeyVerification(clientKey string) (string, error) {
 	if clientKey == "" {
-		return "", errors.New("missing Sec-WebSocket-Key")
+		return "", errors.New("[ERR] missing Sec-WebSocket-Key")
 	}
 	hash := sha1.Sum([]byte(clientKey + magicGUID))
 	return base64.StdEncoding.EncodeToString(hash[:]), nil
