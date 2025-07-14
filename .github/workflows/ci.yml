@@ -77,9 +77,12 @@ jobs:
           go-version: '1.23.4'
 
       - name: Run gosec scanner
-        uses: securego/gosec@master/gosec-results.sarif ./backend/...'
-        with:
-          args: '-no-fail -fmt sarif -out backend/gosec-results.sarif ./backend/...'
+        run: |
+          cd backend
+          gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
 
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: backend/gosec-results.sarif
