@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   build-test:
@@ -62,31 +63,48 @@ jobs:
           cache-invalidation-interval: 7
           problem-matchers: true
 
+#  security:
+#    name: Sécurité – gosec
+#    runs-on: ubuntu-latest
+#    needs: build-test
+#    env:
+#      GO111MODULE: on
+#    steps:
+#      - uses: actions/checkout@v4
+#
+#      - name: Setup Go
+#        uses: actions/setup-go@v5
+#        with:
+#          go-version: '1.23.4'
+#
+#      - name: Install gosec
+#        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+#
+#      - name: Run gosec scanner
+#        run: |
+#          cd backend
+#          $HOME/go/bin/gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
+#
+#      - name: Upload SARIF results
+#        uses: github/codeql-action/upload-sarif@v3
+#        if: always()
+#        with:
+#          sarif_file: backend/gosec-results.sari
+
   security:
-    name: Sécurité – gosec
     runs-on: ubuntu-latest
-    needs: build-test
     env:
       GO111MODULE: on
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23.4'
-
-      - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
-
-      - name: Run gosec scanner
+      - name: Checkout Source
+        uses: actions/checkout@v3
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
         run: |
           cd backend
-          $HOME/go/bin/gosec -no-fail -fmt sarif -out gosec-results.sarif ./...
-
-      - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
+          args: '-no-fail -fmt sarif -out results.sarif ./backend/...'
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: backend/gosec-results.sarif
+          sarif_file: results.sarif
 
