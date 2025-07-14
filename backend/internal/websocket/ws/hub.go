@@ -15,11 +15,11 @@ import (
 // Chaque hub gère deux clients, leur envoi de messages et leur état de jeu.
 
 const (
-	gameWaiting  = 0
-	gamesOngoing = 1
-	gameFinished = 2
-	gameAborted  = 3
-	gamePaused   = 4
+	gameWaiting  = 0 // En attente de joueur avec au moins un joueur
+	gamesOngoing = 1 // Partie en cours donc joueurs = 2
+	gameFinished = 2 // Partie terminée => joueurs = 0
+	gameAborted  = 3 // Deconnexion ou autre => joueurs >= 1
+	gamePaused   = 4 // Partie en cours donc joueurs = 2
 )
 
 type GameStatus int
@@ -59,7 +59,6 @@ func newHub() *Hub {
 	}
 }
 
-// checker utilité fonction par rapport à newHub
 func (hm *HubManager) CreateHub(matchId string) *Hub {
 	hub := newHub()
 	hub.hubId = matchId
@@ -82,6 +81,31 @@ func (hm *HubManager) RemoveHub(matchId string) {
 		close(hub.broadcast)
 		delete(hm.hubs, matchId)
 	}
+}
+
+func (hm *HubManager) RemoveClientFromQueue(client *Client) {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+	for i, c := range hm.ClientQueue {
+		if c == client {
+			hm.ClientQueue = append(hm.ClientQueue[:i], hm.ClientQueue[i+1:]...)
+			return
+		}
+	}
+}
+
+func (h *Hub) clientCount() int {
+	count := 0
+	for _, c := range h.clients {
+		if c != nil {
+			count++
+		}
+	}
+	return count
+}
+
+func createId() string {
+	return fmt.Sprintf("hub_%d", time.Now().UnixNano())
 }
 
 func (h *Hub) run() {
@@ -129,42 +153,17 @@ func (h *Hub) run() {
 				h.clients[1].send <- message
 			}
 		}
-		// if h.clients[0] == nil && h.clients[1] == nil {
-		// 	h.gameState = gameFinished
-		// 	return
-		// }
-	}
-}
-
-func (hm *HubManager) RemoveClientFromQueue(client *Client) {
-	hm.mu.Lock()
-	defer hm.mu.Unlock()
-	for i, c := range hm.ClientQueue {
-		if c == client {
-			hm.ClientQueue = append(hm.ClientQueue[:i], hm.ClientQueue[i+1:]...)
+		if h.clients[0] == nil && h.clients[1] == nil {
+			h.gameState = gameFinished
 			return
 		}
 	}
 }
 
-func (h *Hub) clientCount() int {
-	count := 0
-	for _, c := range h.clients {
-		if c != nil {
-			count++
-		}
-	}
-	return count
-}
-
-func createId() string {
-	return fmt.Sprintf("hub_%d", time.Now().UnixNano())
-}
-
 // refactoriser avec deux fonctions pour les deux cas d'usage
 func (hm *HubManager) MatchmakingLoop() {
 	for {
-		time.Sleep(5 * time.Second) // Ajuster la fréquence de vérification si nécessaire
+		time.Sleep(5 * time.Second) // ajuster la fréquence de vérification si nécessaire mais dans le cadre du test/debug on peut rester à 5s
 		hm.mu.Lock()
 		queue := make([]*Client, len(hm.ClientQueue))
 		copy(queue, hm.ClientQueue)
@@ -217,6 +216,25 @@ func (hm *HubManager) MatchmakingLoop() {
 				hm.RemoveClientFromQueue(longestWaitingTime)
 			}
 
+		}
+	}
+
+}
+
+func (hm *HubManager) HubCleanupLoop() {
+	for {
+		time.Sleep(30 * time.Second) // fréquence de nettoyage à faire varier si on veut nettoyer plus ou moins vite et selon le volume de joueurs
+		var toDelete []string
+		hm.mu.Lock()
+		for id, hub := range hm.hubs {
+			if hub.clientCount() == 0 {
+				toDelete = append(toDelete, id)
+			}
+		}
+		hm.mu.Unlock()
+
+		for _, id := range toDelete {
+			hm.RemoveHub(id)
 		}
 	}
 
