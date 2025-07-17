@@ -229,6 +229,7 @@ func (hm *HubManager) HubCleanupLoop() {
 		for id, hub := range hm.hubs {
 			if hub.clientCount() == 0 {
 				toDelete = append(toDelete, id)
+				log.Printf("[INFO] Hub %s will be cleaned...", hub.hubId)
 			}
 		}
 		hm.mu.Unlock()
