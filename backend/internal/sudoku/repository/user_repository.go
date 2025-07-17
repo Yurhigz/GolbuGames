@@ -160,3 +160,88 @@ func GetUserStatsDB(parentsContext context.Context, id_user int) (*types.UserSta
 	return &stats, nil
 
 }
+
+func GetUserFriends(parentsContext context.Context, id_user int) ([]types.User, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `SELECT u.id, u.username FROM friendlist fl JOIN users u ON fl.friend_id = u.id WHERE fl.user_id = $1`
+
+	rows, err := database.DBPool.Query(ctx, query, id_user)
+	if err != nil {
+		return nil, fmt.Errorf("[GetUserFriend] Error retrieving friends for user %v : %v", id_user, err)
+	}
+	defer rows.Close()
+
+	var friends []types.User
+	for rows.Next() {
+		var friend types.User
+		if err := rows.Scan(&friend.ID, &friend.Username); err != nil {
+			return nil, fmt.Errorf("[GetUserFriend] Error scanning friend: %v", err)
+		}
+		friends = append(friends, friend)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("[GetUserFriend] Error iterating over friends: %v", err)
+	}
+
+	return friends, nil
+}
+
+func AddFriend(parentsContext context.Context, userId, friendId int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `INSERT INTO friendlist (user_id, friend_id) VALUES ($1, $2)`
+
+	_, err := database.DBPool.Exec(ctx, query, userId, friendId)
+	if err != nil {
+		return fmt.Errorf("[AddFriend] Error adding friend (ID: %d) for user (ID: %d): %v", friendId, userId, err)
+	}
+	log.Printf("Friend (ID: %d) added successfully for user (ID: %d)", friendId, userId)
+	return nil
+
+}
+
+func RemoveFriend(parentsContext context.Context, userId, friendId int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `DELETE FROM friendlist WHERE user_id = $1 AND friend_id = $2`
+
+	_, err := database.DBPool.Exec(ctx, query, userId, friendId)
+	if err != nil {
+		return fmt.Errorf("[RemoveFriend] Error removing friend (ID: %d) for user (ID: %d): %v", friendId, userId, err)
+	}
+	log.Printf("Friend (ID: %d) removed successfully for user (ID: %d)", friendId, userId)
+	return nil
+}
+
+func BlockUser(parentsContext context.Context, userId, friendId int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `INSERT INTO blocked_users (user_id, blocked_user_id) VALUES ($1, $2)`
+
+	_, err := database.DBPool.Exec(ctx, query, userId, friendId)
+	if err != nil {
+		return fmt.Errorf("[BlockUser] Error blocking user (ID: %d) for user (ID: %d): %v", friendId, userId, err)
+	}
+	log.Printf("User (ID: %d) blocked successfully for user (ID: %d)", friendId, userId)
+	return nil
+}
+
+func UnblockUser(parentsContext context.Context, userId, friendId int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `DELETE FROM blocked_users WHERE user_id = $1 AND blocked_user_id = $2`
+
+	_, err := database.DBPool.Exec(ctx, query, userId, friendId)
+	if err != nil {
+		return fmt.Errorf("[UnblockUser] Error unblocking user (ID: %d) for user (ID: %d): %v", friendId, userId, err)
+	}
+	log.Printf("User (ID: %d) unblocked successfully for user (ID: %d)", friendId, userId)
+	return nil
+}
