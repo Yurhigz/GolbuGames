@@ -13,7 +13,7 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 	mux.HandleFunc("POST /updateuser", handlers.UpdateUserPassword)
 	mux.HandleFunc("GET /user_stats/{id}", handlers.GetUserStats)
 	mux.HandleFunc("GET /user_id", handlers.GetUserId)
-	mux.HandleFunc("POST /login", handlers.UserLogin)
+	// mux.HandleFunc("POST /login", handlers.UserLogin)
 
 	// Sudoku API
 	mux.HandleFunc("POST /add_grid", handlers.AddGrid)
