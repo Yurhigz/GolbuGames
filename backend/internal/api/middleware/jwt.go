@@ -24,7 +24,7 @@ func GenerateJWT(userID, username string, roles []string) (string, error) {
 		Username: username,
 		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(60 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    "golbugames",
