@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"golbugames/backend/internal/database"
 	"golbugames/backend/pkg/types"
@@ -90,7 +92,7 @@ func GetUserDB(parentsContext context.Context, id_user int) (*types.User, error)
 	return &user, nil
 }
 
-func UserLoginDB(parentsContext context.Context, username, password string) (bool, error) {
+func UserLogin(parentsContext context.Context, username, password string) (bool, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
@@ -243,5 +245,28 @@ func UnblockUser(parentsContext context.Context, userId, friendId int) error {
 		return fmt.Errorf("[UnblockUser] Error unblocking user (ID: %d) for user (ID: %d): %v", friendId, userId, err)
 	}
 	log.Printf("User (ID: %d) unblocked successfully for user (ID: %d)", friendId, userId)
+	return nil
+}
+
+func GenerateRefreshToken() (string, error) {
+	bytes := make([]byte, 32)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", fmt.Errorf("error generating refresh token: %v", err)
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+func StoreRefreshToken(parentsContext context.Context, userId int, refreshToken string) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `INSERT INTO refresh_tokens (user_id, token) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET token = $2`
+
+	_, err := database.DBPool.Exec(ctx, query, userId, refreshToken)
+	if err != nil {
+		return fmt.Errorf("[StoreRefreshToken] Error storing refresh token for user (ID: %d): %v", userId, err)
+	}
+	log.Printf("Refresh token stored successfully for user (ID: %d)", userId)
 	return nil
 }
