@@ -16,6 +16,7 @@ import FAQ from "./pages/legal/FAQ";
 import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import Friends from "./pages/Friends";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path="/faq" element={<FAQ />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </div>
         <Footer />
