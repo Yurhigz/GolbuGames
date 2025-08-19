@@ -181,7 +181,7 @@ func GetLeaderboard(parentsContext context.Context) (*[]sudoku.Leaderboard, erro
 	defer cancel()
 
 	var leaderboardList []sudoku.Leaderboard
-	query := `SELECT user_id, elo_score, RANK() OVER (ORDER BY elo_score DESC) AS rank FROM leaderboard`
+    query := `SELECT users.username as username, elo_score, RANK() OVER (ORDER BY elo_score DESC) AS rank FROM leaderboard inner join users on leaderboard.user_id = users.id`
 
 	rows, _ := database.DBPool.Query(ctx, query)
 	leaderboardList, err := pgx.CollectRows(rows, pgx.RowToStructByName[sudoku.Leaderboard])

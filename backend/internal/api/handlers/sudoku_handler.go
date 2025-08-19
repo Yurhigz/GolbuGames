@@ -98,10 +98,17 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-// 	// Classement des meilleurs joueurs
-// 	// Filtrage par difficulté et ELO
-// }
+func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+    leaderboard, err := repository.GetLeaderboard(r.Context())
+    if err != nil {
+        http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(leaderboard)
+}
 
 // func GetUserHistory(w http.ResponseWriter, r *http.Request) {
 // 	// Historique des parties

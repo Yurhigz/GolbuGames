@@ -23,7 +23,7 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 	mux.HandleFunc("POST /submit_solo_game", handlers.SubmitSoloGame)
 	mux.HandleFunc("POST /submit_multi_game", handlers.SubmitMultiGame)
 
-	// mux.HandleFunc("GET /leaderboard", handlers.GetLeaderboard)
+	mux.HandleFunc("GET /leaderboard", handlers.GetLeaderboard)
 	// mux.HandleFunc("GET /user_history", handlers.GetUserHistory)
 	// mux.HandleFunc("POST /save_game", handlers.SaveGameProgress)
 
