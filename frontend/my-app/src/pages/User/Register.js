@@ -3,6 +3,8 @@ import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { Link } from "react-router-dom";
 import "./Register.css";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 // Fonction de nettoyage contre les injections (XSS)
 const sanitizeInput = (str) => {
@@ -20,12 +22,13 @@ const validatePassword = (password) => {
 };
 
 const Register = () => {
+    const navigate = useNavigate();
     const loginRef = useRef();
     const passwordRef = useRef();
     const confirmPasswordRef = useRef();
     const [error, setError] = useState("");
 
-    const handleRegister = () => {
+    const handleRegister = async () => {
         const rawLogin = loginRef.current.value;
         const rawPassword = passwordRef.current.value;
         const rawConfirmPassword = confirmPasswordRef.current.value;
@@ -61,7 +64,18 @@ const Register = () => {
             password,
         };
 
-        console.log("Création de compte sécurisée :", newUser);
+        try {
+            const response = await axios.post("http://localhost:3001/create_user", {
+                Username: login,
+                Password: password,
+                Accountname: login,
+            });
+            navigate("/");
+            console.log("Réponse serveur :", response.data);
+        } catch (error) {
+            setError("Erreur lors de la requête");
+            console.error("Erreur lors de la requête :", error);
+        }
     };
 
     return (
