@@ -90,19 +90,19 @@ JWT_SECRET=your_jwt_secret
 ### Phase 1
 - [x] Mise en place de la logique métier du sudoku
 - [x] Mise en place de la connexion avec la DB et fonctions d'intéractions
-- [x] Implémentation du Sudoku et intéractions BDD 
-- [x] Implémentation graphique et intéraction UI
+- [ ] Implémentation du Sudoku et intéractions BDD 
+- [ ] Implémentation graphique et intéraction UI
 - [ ] Système d'authentification JWT tokens
       
 ### Phase 2
 - [ ] Ajout du chat en temps réel
 - [ ] Mise en place mode multijoueurs & websocket
 - [ ] Système de badges
-- [x] Système de classement basique
+- [ ] Système de classement basique
 
 ### Phase 3
-- [x] Mode tournoi
-- [x] Système d'amis
+- [ ] Mode tournoi
+- [ ] Système d'amis
 - [ ] Profils utilisateurs avancés & statistiques
 - [ ] Application mobile
 
