@@ -79,6 +79,13 @@
     cursor: pointer;
 }
 
+.given-cell {
+  background-color: #eef6ff; /* léger bleu clair */
+  font-weight: bold;
+  padding: 4px; /* ✅ espace interne */
+  border-radius: 4px;
+}
+
 .grid-row:nth-child(3n) .grid-cell {
     border-bottom: 2px solid #333;
 }
