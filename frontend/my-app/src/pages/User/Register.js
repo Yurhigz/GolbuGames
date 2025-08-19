@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import {useContext, useRef, useState} from "react";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { Link } from "react-router-dom";
 import "./Register.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import {AuthContext} from "../../contexts/AuthContext";
 
 // Fonction de nettoyage contre les injections (XSS)
 const sanitizeInput = (str) => {
@@ -27,6 +28,7 @@ const Register = () => {
     const passwordRef = useRef();
     const confirmPasswordRef = useRef();
     const [error, setError] = useState("");
+    const { AuthLogin } = useContext(AuthContext);
 
     const handleRegister = async () => {
         const rawLogin = loginRef.current.value;
@@ -70,6 +72,8 @@ const Register = () => {
                 Password: password,
                 Accountname: login,
             });
+            const { access_token } = response.data;
+            AuthLogin({ login }, access_token);
             navigate("/");
             console.log("Réponse serveur :", response.data);
         } catch (error) {
