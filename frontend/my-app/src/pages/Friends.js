@@ -4,6 +4,12 @@ import { Input } from "../components/Input";
 
 const Friends = () => {
     const [friendUsername, setFriendUsername] = useState("");
+    const [friends, setFriends] = useState([
+        { id: 1, username: "Alice", status: "En ligne" },
+        { id: 2, username: "Bob", status: "Hors ligne" },
+    ]);
+    const [removingIds, setRemovingIds] = useState([]);
+    const [showPopup, setShowPopup] = useState(false);
 
     const sentRequests = [
         { id: 1, username: "Lucas" },
@@ -14,11 +20,6 @@ const Friends = () => {
         { id: 3, username: "Noah" },
     ];
 
-    const friends = [
-        { id: 1, username: "Alice", status: "En ligne" },
-        { id: 2, username: "Bob", status: "Hors ligne" },
-    ];
-
     const handleInvite = () => {
         if (friendUsername.trim()) {
             alert(`Invitation envoyée à ${friendUsername}`);
@@ -26,18 +27,23 @@ const Friends = () => {
         }
     };
 
+    const handleRemoveFriend = (id) => {
+        setRemovingIds((prev) => [...prev, id]);
+        setTimeout(() => {
+            setFriends((prev) => prev.filter((f) => f.id !== id));
+            setRemovingIds((prev) => prev.filter((rid) => rid !== id));
+        }, 300);
+    };
+
     return (
         <div className="friends-container">
+            {/* Partie gauche : Ajouter, demandes */}
             <div className="friends-left">
-                <h3>➕ Inviter un ami</h3>
-                <div className="invite-form">
-                    <Input
-                        type="text"
-                        placeholder="Nom d'utilisateur"
-                        value={friendUsername}
-                        onChange={(e) => setFriendUsername(e.target.value)}
-                    />
-                    <button onClick={handleInvite}>Envoyer</button>
+                <div className="friends-header">
+                    <h3>➕ Ajouter un ami</h3>
+                    <button className="btn-green btn-left" onClick={() => setShowPopup(true)}>
+                        Ajouter
+                    </button>
                 </div>
 
                 <div className="section">
@@ -71,17 +77,32 @@ const Friends = () => {
                 </div>
             </div>
 
+            {/* Partie droite : liste des amis */}
             <div className="friends-right">
                 <h3>👥 Mes Amis</h3>
-                <ul>
+                <ul className="friend-list-scroll">
                     {friends.map((friend) => (
-                        <li key={friend.id} className="friend-card">
+                        <li
+                            key={friend.id}
+                            className={`friend-card ${removingIds.includes(friend.id) ? "removing" : ""}`}
+                        >
                             <div className="friend-info">
                                 <span className="friend-name">{friend.username}</span>
-                                <span className={`status ${friend.status === "En ligne" ? "online" : "offline"}`}>
+                                <span
+                                    className={`status ${
+                                        friend.status === "En ligne" ? "online" : "offline"
+                                    }`}
+                                >
                                     {friend.status}
                                 </span>
                             </div>
+                            <button
+                                className="remove-friend"
+                                onClick={() => handleRemoveFriend(friend.id)}
+                                title="Supprimer"
+                            >
+                                ✖
+                            </button>
                         </li>
                     ))}
                     {friends.length === 0 && (
@@ -89,6 +110,45 @@ const Friends = () => {
                     )}
                 </ul>
             </div>
+
+            {/* Popup */}
+            {showPopup && (
+                <div className="popup-overlay">
+                    <div className="popup">
+                        <button className="close-button" onClick={() => setShowPopup(false)}>✖</button>
+                        <h3>➕ Ajouter un ami</h3>
+
+                        <div className="invite-form">
+                            <Input
+                                type="text"
+                                placeholder="Nom d'utilisateur"
+                                value={friendUsername}
+                                onChange={(e) => setFriendUsername(e.target.value)}
+                            />
+                            <button onClick={handleInvite}>Envoyer</button>
+                        </div>
+
+                        <div className="section">
+                            <h4>👥 Liste complète des amis</h4>
+                            <ul className="friend-list-scroll" style={{ maxHeight: "200px" }}>
+                                {friends.map((friend) => (
+                                    <li key={friend.id} className="friend-card small">
+                                        <div className="friend-info">
+                                            <span className="friend-name">{friend.username}</span>
+                                            <span className={`status ${friend.status === "En ligne" ? "online" : "offline"}`}>
+                                                {friend.status}
+                                            </span>
+                                        </div>
+                                    </li>
+                                ))}
+                                {friends.length === 0 && (
+                                    <li className="empty-msg">Aucun ami</li>
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -207,3 +207,60 @@ func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameS
 
 	return &gameHistory, nil
 }
+
+func GetTournamentId(parentsContext context.Context, tournamentName string) (int, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	var tournamentId int
+	query := `SELECT id FROM tournaments WHERE name = $1`
+
+	err := database.DBPool.QueryRow(ctx, query, tournamentName).Scan(&tournamentId)
+	if err != nil {
+		return 0, fmt.Errorf("[GetTournamentId] Error retrieving tournament ID for %v : %v", tournamentName, err)
+	}
+
+	return tournamentId, nil
+
+}
+
+func GetAllTournaments(parentsContext context.Context) ([]int, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	var tournamentIds []int
+	query := `SELECT id FROM tournaments`
+
+	rows, err := database.DBPool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("[GetAllTournaments] Error retrieving tournaments: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("[GetAllTournaments] Error scanning tournament ID: %v", err)
+		}
+		tournamentIds = append(tournamentIds, id)
+	}
+
+	return tournamentIds, nil
+
+}
+
+func RemoveTournament(parentsContext context.Context, tournamentId int) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	query := `DELETE FROM tournaments WHERE id = $1`
+
+	_, err := database.DBPool.Exec(ctx, query, tournamentId)
+	if err != nil {
+		return fmt.Errorf("[RemoveTournament] Error deleting tournament with ID %d: %v", tournamentId, err)
+	}
+
+	log.Printf("Tournament with ID %d removed successfully", tournamentId)
+	return nil
+
+}

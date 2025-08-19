@@ -27,6 +27,16 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), nil
 }
 
+func HashPasswordCompare(userPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(password))
+	if err != nil {
+		log.Println("passwords do not match : ", err)
+		return false
+	}
+	log.Println("passwords match")
+	return true
+}
+
 // comparaison du mot de passe utilisateur et du hash en BDD
 func ValidatePassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
