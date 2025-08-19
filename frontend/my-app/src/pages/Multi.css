@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 .multi-container {
   display: flex;
   flex-direction: column;
@@ -5,7 +7,6 @@
   padding: 60px 30px;
   color: #fff;
   font-family: 'Press Start 2P', cursive;
-  margin-bottom: 9rem;
 }
 
 .multi-title {
@@ -25,7 +26,7 @@
 .card {
   background: #1a1a1a;
   border: 6px solid #8a2be2;
-  padding: 60px 40px;
+  padding: 50px 40px;
   width: 420px;
   box-shadow: 0 0 20px #8a2be2;
   border-radius: 16px;
@@ -44,12 +45,12 @@
 }
 
 .option-title {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   color: #ffcc00;
 }
 
 .option-description {
-  font-size: 1.03rem;
+  font-size: 1rem;
   color: #ddd;
   line-height: 1.6;
 }

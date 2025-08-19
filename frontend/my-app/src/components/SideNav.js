@@ -64,10 +64,6 @@ const SideNav = () => {
                     <FaUserPlus className="nav-icon" />
                     <span>Connexion</span>
                 </Link>
-                <Link to="/profile" className="nav-item" onClick={handleLinkClick}>
-                    <FaUserPlus className="nav-icon" />
-                    <span>Profile</span>
-                </Link>
             </nav>
         </>
     );
