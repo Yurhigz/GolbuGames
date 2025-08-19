@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
+
 	var userReg types.UserRegistration
 	err := json.NewDecoder(r.Body).Decode(&userReg)
 	if err != nil {
@@ -27,7 +29,14 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.AddUserDB(r.Context(), userReg.Username, userReg.Accountname, userReg.Password)
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReg.Password), bcrypt.DefaultCost)
+    if err != nil {
+        // gérer l'erreur
+        http.Error(w, "Erreur lors du hash du mot de passe", http.StatusInternalServerError)
+        return
+    }
+
+	err = repository.AddUserDB(r.Context(), userReg.Username, userReg.Accountname, string(hashedPassword))
 	// Vérifier les duplicatas d'utilisateurs
 	if err != nil {
 		log.Printf("%v", err)
@@ -233,7 +242,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Username == "" || user.Password == "" {
+	if user.Username == "" || user.Password == "" || user.Accountname == "" {
 		http.Error(w, "username and password are required", http.StatusBadRequest)
 		return
 	}
@@ -253,30 +262,41 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Gérer la partie refresh token avec la fonction RefreshToken
 	jwtToken, err := middleware.GenerateJWT(strconv.Itoa(userLogin.ID), userLogin.Username, []string{"user"})
-	refreshToken, err := repository.RefreshToken(r.Context(), strconv.Itoa(userLogin.ID))
-	repository.StoreRefreshToken(r.Context(), userLogin.ID, refreshToken)
-
-	if err != nil {
-		log.Printf("Error generating JWT for user %s: %v", userLogin.Username, err)
-		http.Error(w, "Error generating token", http.StatusInternalServerError)
-		return
-	}
-
-	// Code à vérifier pour le token de refraichissement et à corriger côté DB
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
-		Path:     "/refresh",
-		Expires:  time.Now().Add(30 * 24 * time.Hour),
-	})
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"access_token": jwtToken,
-	})
+    json.NewEncoder(w).Encode(map[string]string{
+        "access_token": jwtToken,
+    })
+// 	refreshToken, err := RefreshToken(r.Context(), strconv.Itoa(userLogin.ID))
+//
+// 	repository.StoreRefreshToken(r.Context(), userLogin.ID, refreshToken)
+//
+// 	if err != nil {
+// 		log.Printf("Error generating JWT for user %s: %v", userLogin.Username, err)
+// 		http.Error(w, "Error generating token", http.StatusInternalServerError)
+// 		return
+// 	}
+//
+// 	// Code à vérifier pour le token de refraichissement et à corriger côté DB
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:     "refresh_token",
+// 		Value:    refreshToken,
+// 		HttpOnly: true,
+// 		Secure:   true,
+// 		SameSite: http.SameSiteStrictMode,
+// 		Path:     "/refresh",
+// 		Expires:  time.Now().Add(30 * 24 * time.Hour),
+// 	})
+//
+// 	w.Header().Set("Content-Type", "application/json")
+// 	json.NewEncoder(w).Encode(map[string]string{
+// 		"access_token": jwtToken,
+// 	})
+//
+//     w.Header().Set("Content-Type", "application/json")
+//     json.NewEncoder(w).Encode(map[string]string{
+//         "access_token": jwtToken,
+//     })
 
 }
 

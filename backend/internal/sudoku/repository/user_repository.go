@@ -32,8 +32,8 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 	// Insérer l'utilisateur
 	var userId int
 	err = tx.QueryRow(ctx,
-		`INSERT INTO users (username, accountname, password) 
-		 VALUES ($1, $2, $3) 
+		`INSERT INTO users (username, accountname, password)
+		 VALUES ($1, $2, $3)
 		 RETURNING id`,
 		username, accountname, password).Scan(&userId)
 	if err != nil {
@@ -56,7 +56,7 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 		return fmt.Errorf("[AddUser] Error committing transaction: %w", err)
 	}
 
-	log.Printf("User added successfully with initialized stats: %s", username)
+	log.Printf("User added successfully with initialized stats: %s - %s", username, password)
 	return nil
 }
 
