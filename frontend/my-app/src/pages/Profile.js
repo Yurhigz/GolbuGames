@@ -21,10 +21,32 @@ const Profile = () => {
         ],
     };
 
-    const handlePasswordChange = () => {
-        if (newPassword.trim()) {
-            alert("Mot de passe modifié !");
+    const handlePasswordChange = async () => {
+        if (!newPassword.trim()) return;
+
+        try {
+            const response = await fetch("http://localhost:3001/updateuser", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: 1, // Remplacer dynamiquement si besoin
+                    newPassword: newPassword,
+                }),
+            });
+
+            if (!response.ok) {
+                const errData = await response.text();
+                alert("Erreur : " + errData);
+                return;
+            }
+
+            const data = await response.json();
+            alert(data.message);
             setNewPassword("");
+        } catch (err) {
+            alert("Erreur réseau : " + err.message);
         }
     };
 

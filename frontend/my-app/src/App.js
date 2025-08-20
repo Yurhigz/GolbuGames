@@ -10,6 +10,7 @@ import Tournament from "./pages/Tournament";
 import Leaderboard from "./pages/Leaderboard";
 import Login from "./pages/User/Login";
 import Register from "./pages/User/Register";
+import Profile from "./pages/Profile";
 import About from "./pages/legal/About";
 import Help from "./pages/legal/Help";
 import FAQ from "./pages/legal/FAQ";
@@ -35,6 +36,7 @@ function App() {
                 <Route path="/friends" element={<Friends />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/faq" element={<FAQ />} />
