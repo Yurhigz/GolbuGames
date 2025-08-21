@@ -8,18 +8,53 @@ const Solo = () => {
   const [isModalOpen, setIsModalOpen] = useState(true);
   const [selectedNumber, setSelectedNumber] = useState(null);
   const [grid, setGrid] = useState(Array(9).fill(null).map(() => Array(9).fill(null)));
-  const [givenCells, setGivenCells] = useState([]); 
+  const [givenCells, setGivenCells] = useState([]);
   const [selectedCell, setSelectedCell] = useState({ row: 0, col: 0 });
   const [solution, setSolution] = useState(null);
   const [errorCount, setErrorCount] = useState(0);
   const [errorCells, setErrorCells] = useState([]);
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [hints, setHints] = useState([]);
-  const [selectedDifficulty, setSelectedDifficulty] = useState("Facile"); // ✅ UN SEUL état pour la difficulté
+  const [selectedDifficulty, setSelectedDifficulty] = useState("easy"); // "easy" | "intermediate" | "advanced" | "expert"
   const navigate = useNavigate();
 
-  // Timer
+  // ========= Utils =========
+
+  // Convertit une string (81 chars) vers matrice 9x9 (null pour '.' ou '0')
+  const parseBoard = (boardString) => {
+    const cleaned = (boardString || "").replace(/[^0-9.]/g, "");
+    if (cleaned.length !== 81) {
+      console.warn("Board string length != 81:", cleaned.length, cleaned);
+      return Array(9).fill(null).map(() => Array(9).fill(null));
+    }
+    return Array.from({ length: 9 }, (_, r) =>
+      Array.from({ length: 9 }, (_, c) => {
+        const ch = cleaned[r * 9 + c];
+        return (ch === '.' || ch === '0') ? null : parseInt(ch, 10);
+      })
+    );
+  };
+
+  // Reconvertit une matrice en string (emptyChar = '.' ou '0')
+  const stringifyBoard = (matrix, emptyChar = '0') => {
+    return matrix
+      .flat()
+      .map(v => (v == null ? emptyChar : String(v)))
+      .join('');
+  };
+
+  // Indices (0..80) des cases données (non nulles)
+  const computeGivenIndexes = (matrix) => {
+    const out = [];
+    matrix.forEach((row, r) =>
+      row.forEach((val, c) => {
+        if (val != null) out.push(r * 9 + c);
+      })
+    );
+    return out;
+  };
+
+  // ========= Timer =========
   useEffect(() => {
     let interval;
     if (startTime) {
@@ -30,76 +65,51 @@ const Solo = () => {
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Quand une difficulté est choisie
+  // ========= Sélection difficulté =========
   const handleSelectDifficulty = async (difficulty) => {
-  setSelectedDifficulty(difficulty); // ✅ met à jour le state
-  setIsModalOpen(false);
-  const fetchedSolution = await fetchSolutionFromBackend(difficulty); 
-  setSolution(fetchedSolution);
-  setStartTime(Date.now());
+    setSelectedDifficulty(difficulty);
+    setIsModalOpen(false);
+
+    await fetchGridFromBackend(difficulty);
+
+    setStartTime(Date.now());
   };
 
-  // Récupération de la grille + indices simulés selon difficulté
-  const fetchSolutionFromBackend = async (difficulty) => {
+  // ========= Backend: récupérer une grille =========
+  const fetchGridFromBackend = async (difficulty) => {
     try {
-      // ⚠️ Pour l’instant statique → backend plus tard
-      const solutionGrid = [
-        [5,3,4,6,7,8,9,1,2],
-        [6,7,2,1,9,5,3,4,8],
-        [1,9,8,3,4,2,5,6,7],
-        [8,5,9,7,6,1,4,2,3],
-        [4,2,6,8,5,3,7,9,1],
-        [7,1,3,9,2,4,8,5,6],
-        [9,6,1,5,3,7,2,8,4],
-        [2,8,7,4,1,9,6,3,5],
-        [3,4,5,2,8,6,1,7,9],
-      ];
+      const res = await fetch(`http://localhost:3001/grid?difficulty=${difficulty}`);
+      if (!res.ok) throw new Error(`Erreur API /grid: ${res.status}`);
 
-      // ✅ Nombre d’indices selon la difficulté
-      const generateHints = (difficulty) => {
-        let hintsCount = 0;
+      const data = await res.json();
+      console.log("Grille récupérée :", data);
 
-        if (difficulty === "Facile") hintsCount = 20;
-        if (difficulty === "Moyen") hintsCount = 15;
-        if (difficulty === "Difficile") hintsCount = 10;
+      const boardStr = data.board;        // obligatoire côté Go
+      const solutionStr = data.solution;  // optionnel (selon ton handler)
 
-        const newHints = Array.from({ length: hintsCount }, (_, i) => `Indice ${i + 1}`);
-        setHints(newHints);
-        return hintsCount;
-      };
-
-      // ✅ Création du board avec indices aléatoires
-      const hintsCount = generateHints(difficulty);
-      const allIndexes = Array.from({ length: 81 }, (_, i) => i);
-
-      const givenIndexes = new Set(
-        allIndexes.sort(() => 0.5 - Math.random()).slice(0, hintsCount)
-      );
-
-      const board = solutionGrid.map((row, r) =>
-        row.map((val, c) => (givenIndexes.has(r * 9 + c) ? val : null))
-      );
-
+      const board = parseBoard(boardStr);
       setGrid(board);
-      setGivenCells(Array.from(givenIndexes));
-      return solutionGrid;
+      setGivenCells(computeGivenIndexes(board));
 
+      if (solutionStr) {
+        setSolution(parseBoard(solutionStr));
+      } else {
+        setSolution(null); // si non fourni par l'API
+      }
     } catch (err) {
-      console.error(err);
-      return Array(9).fill(null).map(() => Array(9).fill(null));
+      console.error("Impossible de récupérer la grille :", err);
     }
   };
 
-  // Clic sur une case
+  // ========= Interactions =========
   const handleCellClick = (row, col) => {
-    if (givenCells.includes(row * 9 + col)) return;
+    if (givenCells.includes(row * 9 + col)) return; // lock cases données
     setSelectedCell({ row, col });
     if (selectedNumber !== null) {
       fillCell(row, col, selectedNumber);
     }
   };
 
-  // Remplir une case
   const fillCell = (row, col, number) => {
     if (givenCells.includes(row * 9 + col)) return;
     const newGrid = grid.map(r => [...r]);
@@ -118,21 +128,24 @@ const Solo = () => {
     }
   };
 
-  // Grille complète ?
-  const isGridComplete = () => grid.every(row => row.every(cell => cell !== null && cell !== ''));
+  const isGridComplete = () =>
+    grid.every(row => row.every(cell => cell !== null && cell !== ''));
 
-  // Soumission de la grille
+  // ========= Submit game =========
   const submitGrid = async () => {
     try {
-      await fetch("http://localhost:8080/submit_solo_game", {
+      // si jamais la grille n'est pas totalement remplie, on envoie des '0'
+      const gridString = stringifyBoard(grid, '0');
+
+      await fetch("http://localhost:3001/submit_solo_game", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: 1,
-          difficulty: selectedDifficulty, // ⚡ on garde la bonne difficulté
+          difficulty: selectedDifficulty,
           time: elapsedTime,
           errors: errorCount,
-          grid: grid.flat().join(""),
+          grid: gridString,
         }),
       });
     } catch (err) {
@@ -140,18 +153,18 @@ const Solo = () => {
     }
   };
 
-  // Vérifie fin de partie
+  // Fin de partie auto
   useEffect(() => {
     if (solution && isGridComplete()) {
       alert(`✅ Grille terminée en ${elapsedTime} secondes avec ${errorCount} erreurs.`);
       submitGrid();
     }
-  }, [grid, solution]);
+  }, [grid, solution]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Quitter
   const handleQuit = () => navigate('/');
 
-  // Gestion clavier
+  // ========= Clavier =========
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (isModalOpen) return;
@@ -162,7 +175,7 @@ const Solo = () => {
         e.preventDefault();
       }
       if (e.key >= '1' && e.key <= '9') {
-        fillCell(row, col, parseInt(e.key));
+        fillCell(row, col, parseInt(e.key, 10));
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         fillCell(row, col, null);
       } else if (e.key === 'ArrowUp' && row > 0) setSelectedCell({ row: row - 1, col });
@@ -173,9 +186,9 @@ const Solo = () => {
 
     window.addEventListener('keydown', handleKeyDown, { passive: false });
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, isModalOpen, grid, givenCells]);
+  }, [selectedCell, isModalOpen, grid, givenCells]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Affichage grille
+  // ========= UI =========
   const SudokuGrid = ({ isBackground }) => (
     <div className={`sudoku-grid ${isBackground ? 'background' : 'active'}`}>
       {[...Array(9)].map((_, rowIndex) => (
@@ -193,7 +206,7 @@ const Solo = () => {
               >
                 {!isBackground && (
                   <span style={{ color: hasError ? 'red' : isGiven ? 'blue' : 'black' }}>
-                    {cellValue}
+                    {cellValue ?? ""}
                   </span>
                 )}
               </div>
@@ -214,7 +227,7 @@ const Solo = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelectDifficulty={handleSelectDifficulty}
-        selectedDifficulty={selectedDifficulty} // ⚡ passe l’info au modal
+        selectedDifficulty={selectedDifficulty}
         setSelectedDifficulty={setSelectedDifficulty}
       />
 
@@ -223,7 +236,6 @@ const Solo = () => {
           <SudokuGrid isBackground={false} />
           <div className="actions-button-number">
             <NumberSelector onNumberSelect={setSelectedNumber} selectedNumber={selectedNumber} />
-
             <div className="game-actions">
               <button className="quit-button" onClick={handleQuit}>Quitter</button>
               <div className="error-counter">Nombre d'erreurs : {errorCount}</div>
