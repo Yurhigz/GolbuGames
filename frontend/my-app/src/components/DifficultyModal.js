@@ -9,9 +9,9 @@ const DifficultyModal = ({ isOpen, onClose, onSelectDifficulty }) => {
             <div className="modal-content">
                 <h2>Choisissez la difficulté</h2>
                 <div className="difficulty-buttons">
-                    <button onClick={() => onSelectDifficulty('Facile')}>Facile</button>
-                    <button onClick={() => onSelectDifficulty('Moyen')}>Moyen</button>
-                    <button onClick={() => onSelectDifficulty('Difficile')}>Difficile</button>
+                    <button onClick={() => onSelectDifficulty('easy')}>Facile</button>
+                    <button onClick={() => onSelectDifficulty('intermediate')}>Moyen</button>
+                    <button onClick={() => onSelectDifficulty('advanced')}>Difficile</button>
                 </div>
                 <button className="close-button" onClick={onClose}>×</button>
             </div>
