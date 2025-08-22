@@ -73,7 +73,7 @@ const Register = () => {
                 Accountname: login,
             });
             const { access_token } = response.data;
-            AuthLogin({ login }, access_token);
+            AuthLogin({ id: response.data.user_id, login }, access_token);
             navigate("/");
             console.log("Réponse serveur :", response.data);
         } catch (error) {

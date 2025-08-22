@@ -1,10 +1,12 @@
 // Profile.js
-import React, { useState } from "react";
+import React, {useContext, useState} from "react";
 import "./Profile.css";
+import {AuthContext} from "../contexts/AuthContext";
 
 const Profile = () => {
     const [newPassword, setNewPassword] = useState("");
     const [activeCategory, setActiveCategory] = useState("solo");
+    const { user } = useContext(AuthContext);
 
     const elo = 1320;
 
@@ -31,8 +33,8 @@ const Profile = () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    id: 1, // Remplacer dynamiquement si besoin
-                    newPassword: newPassword,
+                    id: parseInt(user.id),
+                    new_password: newPassword,
                 }),
             });
 

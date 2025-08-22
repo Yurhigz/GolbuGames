@@ -175,6 +175,12 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    pwdUpdate.NewPassword, err = utils.HashPassword(pwdUpdate.NewPassword)
+	if err != nil {
+		http.Error(w, "Error while hashing password", http.StatusInternalServerError)
+		return
+	}
+
 	err = repository.UpdateUserPasswordDB(r.Context(), pwdUpdate.ID, pwdUpdate.NewPassword)
 	if err != nil {
 		log.Printf("Error updating password for user %d: %v", pwdUpdate.ID, err)
@@ -223,12 +229,15 @@ func UserSignin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+    user, err := repository.GetUserIdDB(r.Context(), userRegistration.Username, userRegistration.Accountname)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":     "User created successfully",
 		"username":    userRegistration.Username,
 		"accountname": userRegistration.Accountname,
+		"user_id":  strconv.Itoa(user.ID),
 	})
 }
 

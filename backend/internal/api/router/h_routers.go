@@ -8,6 +8,7 @@ import (
 func InitRoutesSudoku(mux *http.ServeMux) {
 	// Users API
 	mux.HandleFunc("POST /create_user", handlers.CreateUser)
+// 	mux.HandleFunc("POST /create_user", handlers.UserSignin)
 	mux.HandleFunc("DELETE /delete_user/{id}", handlers.DeleteUser)
 	mux.HandleFunc("GET /user/{id}", handlers.GetUser)
 
