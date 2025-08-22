@@ -24,12 +24,12 @@ func GenerateJWT(userID, username string, roles []string) (string, error) {
 		Username: username,
 		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 			Issuer:    "golbugames",
 			Subject:   userID,
-			ID:        "golbugames_jwt_" + userID + "_" + time.Now().Format("20060102150405"),
+			ID:        "golbugames",
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -79,3 +79,22 @@ func HasRole(claims *CustomClaims, requiredRole string) bool {
 	}
 	return false
 }
+
+// func VerifyToken(tokenString string) error {
+// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+// 		return secretKey, nil
+// 	})
+
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	if !token.Valid {
+// 		return fmt.Errorf("invalid token")
+// 	}
+
+// 	return nil
+// }
+
+// https://medium.com/@cheickzida/golang-implementing-jwt-token-authentication-bba9bfd84d60
+// https://www.sohamkamani.com/golang/jwt-authentication/

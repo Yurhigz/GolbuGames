@@ -22,6 +22,7 @@ const EndGameModal = ({ isOpen, onClose, points, time, errors }) => {
 };
 
 const Solo = () => {
+
     const [isModalOpen, setIsModalOpen] = useState(true);
     const [selectedNumber, setSelectedNumber] = useState(null);
     const [grid, setGrid] = useState(Array(9).fill(null).map(() => Array(9).fill(null)));
@@ -143,6 +144,7 @@ const Solo = () => {
         try {
             const promises = Array.from({ length: 10 }).map(() =>
                 axios.post("http://127.0.0.1:3001/add_grid", { Difficulty: difficulty })
+
             );
             await Promise.all(promises);
         } catch (err) {
@@ -287,6 +289,7 @@ const Solo = () => {
                 </div>
             ))}
         </div>
+
     );
 
     return (
@@ -325,6 +328,7 @@ const Solo = () => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

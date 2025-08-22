@@ -133,10 +133,3 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-
-.modal-error {
-  color: red;
-  margin-bottom: 1rem;
-  font-weight: bold;
-}
-

@@ -208,6 +208,7 @@ func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameS
 	return &gameHistory, nil
 }
 
+
 func GetTournamentId(parentsContext context.Context, tournamentName string) (int, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
@@ -303,3 +304,4 @@ func AddTournament(parentsContext context.Context, tournament types.Tournament) 
 
     return nil
 }
+
