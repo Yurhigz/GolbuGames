@@ -1,19 +1,69 @@
-import { useRef } from "react";
+
+import { useRef, useState, useContext } from "react";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
-import { Link } from "react-router-dom"; // Si tu utilises React Router
+import {Link, useNavigate} from "react-router-dom";
+
 import "./Login.css";
+import axios from "axios";
+import { AuthContext } from "../../contexts/AuthContext";
 
 const Login = () => {
+    const navigate = useNavigate();
     const loginRef = useRef();
     const passwordRef = useRef();
 
-    const handleLogin = () => {
+    const [error, setError] = useState("");
+    const { AuthLogin } = useContext(AuthContext);
+
+    const handleLogin = async () => {
+        const rawLogin = loginRef.current.value;
+        const rawPassword = passwordRef.current.value;
+
+        const login = sanitizeInput(rawLogin.trim());
+        const password = sanitizeInput(rawPassword.trim());
+
+        if (!login || !password) {
+            setError("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        if (login.length > 20 || password.length > 20) {
+            setError("Les champs ne doivent pas dépasser 20 caractères.");
+            return;
+        }
+
+        if (!validatePassword(password)) {
+            setError("Le mot de passe doit contenir au moins 6 caractères, une lettre majuscule et un chiffre.");
+            return;
+        }
+
+        setError(""); // Réinitialise les erreurs
+
+
         const identifiants = {
             login: loginRef.current.value,
             password: passwordRef.current.value,
         };
-        console.log("Connexion :", identifiants);
+
+
+        console.log("Connexion sécurisée :", identifiants);
+        try {
+            const response = await axios.post("http://localhost:3001/login", {
+                Username: login,
+                Password: password,
+                Accountname: login,
+            });
+
+            const { access_token, user_id, username } = response.data;
+
+            AuthLogin({ id: user_id, username }, access_token);
+            navigate("/");
+        } catch (err) {
+            console.error("Erreur login:", err);
+            setError("Login échoué !");
+        }
+
     };
 
     return (

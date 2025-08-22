@@ -1,19 +1,76 @@
-import { useRef } from "react";
+
+import {useContext, useRef, useState} from "react";
+
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
 import { Link } from "react-router-dom";
 import "./Register.css";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import {AuthContext} from "../../contexts/AuthContext";
 
 const Register = () => {
+    const navigate = useNavigate();
     const loginRef = useRef();
     const passwordRef = useRef();
 
-    const handleRegister = () => {
+    const confirmPasswordRef = useRef();
+    const [error, setError] = useState("");
+    const { AuthLogin } = useContext(AuthContext);
+
+    const handleRegister = async () => {
+        const rawLogin = loginRef.current.value;
+        const rawPassword = passwordRef.current.value;
+        const rawConfirmPassword = confirmPasswordRef.current.value;
+
+        const login = sanitizeInput(rawLogin.trim());
+        const password = sanitizeInput(rawPassword.trim());
+        const confirmPassword = sanitizeInput(rawConfirmPassword.trim());
+
+        if (!login || !password || !confirmPassword) {
+            setError("Veuillez remplir tous les champs.");
+            return;
+        }
+
+        if (login.length > 20 || password.length > 20) {
+            setError("Les champs ne doivent pas dépasser 20 caractères.");
+            return;
+        }
+
+        if (!validatePassword(password)) {
+            setError("Le mot de passe doit contenir au moins 6 caractères, une lettre majuscule et un chiffre.");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError("Les mots de passe ne correspondent pas.");
+            return;
+        }
+
+        setError(""); // Réinitialiser les erreurs
+
+
         const newUser = {
             login: loginRef.current.value,
             password: passwordRef.current.value,
         };
-        console.log("Création de compte :", newUser);
+
+
+        try {
+            const response = await axios.post("http://localhost:3001/create_user", {
+                Username: login,
+                Password: password,
+                Accountname: login,
+            });
+            const { access_token } = response.data;
+            AuthLogin({ id: response.data.user_id, login }, access_token);
+            navigate("/");
+            console.log("Réponse serveur :", response.data);
+        } catch (error) {
+            setError("Erreur lors de la requête");
+            console.error("Erreur lors de la requête :", error);
+        }
+
     };
 
     return (

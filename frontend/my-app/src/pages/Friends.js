@@ -1,73 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import axios from "axios";
 import "./Friends.css";
 import { Input } from "../components/Input";
+import { AuthContext } from "../contexts/AuthContext";
 
 const Friends = () => {
+    const { user } = useContext(AuthContext);
     const [friendUsername, setFriendUsername] = useState("");
 
-    const sentRequests = [
-        { id: 1, username: "Lucas" },
-        { id: 2, username: "Emma" },
-    ];
+    const [friends, setFriends] = useState([]);
+    const [removingIds, setRemovingIds] = useState([]);
+    const [showPopup, setShowPopup] = useState(false);
 
-    const receivedRequests = [
-        { id: 3, username: "Noah" },
-    ];
 
-    const friends = [
-        { id: 1, username: "Alice", status: "En ligne" },
-        { id: 2, username: "Bob", status: "Hors ligne" },
-    ];
+    useEffect(() => {
+        if (!user) return;
 
-    const handleInvite = () => {
-        if (friendUsername.trim()) {
-            alert(`Invitation envoyée à ${friendUsername}`);
-            setFriendUsername("");
-        }
+        axios.get(`http://localhost:3001/friends/${user.id}`)
+            .then((res) => {
+                const friendsData = res.data.friends.map((f) => ({
+                    id: f.id,
+                    username: f.username,
+                    status: "Hors ligne",
+                }));
+                setFriends(friendsData);
+            })
+            .catch((err) => console.error("Erreur lors du fetch des amis:", err));
+    }, [user]);
+
+
+    const handleAddFriend = () => {
+        if (!friendUsername.trim() || !user) return;
+
+        axios.post(`http://localhost:3001/add_friend`, {
+            user_id: parseInt(user.id, 10),
+            friend_username: friendUsername
+        }, {
+            headers: { "Content-Type": "application/json" }
+        })
+            .then((res) => {
+                const newFriend = res.data.friend;
+                setFriends((prev) => [...prev, newFriend]);
+                setFriendUsername("");
+                setShowPopup(false);
+            })
+            .catch(() => alert("Impossible d'ajouter cet utilisateur."));
+    };
+
+    const handleRemoveFriend = (id) => {
+        if (!user) return;
+
+        setRemovingIds((prev) => [...prev, id]);
+        axios.delete(`http://localhost:3001/delete_friend/${user.id}/${id}`)
+            .then(() => setFriends((prev) => prev.filter((f) => f.id !== id)))
+            .catch(() => alert("Impossible de supprimer l'ami pour le moment."))
+            .finally(() => setRemovingIds((prev) => prev.filter((rid) => rid !== id)));
     };
 
     return (
         <div className="friends-container">
             <div className="friends-left">
-                <h3>➕ Inviter un ami</h3>
-                <div className="invite-form">
-                    <Input
-                        type="text"
-                        placeholder="Nom d'utilisateur"
-                        value={friendUsername}
-                        onChange={(e) => setFriendUsername(e.target.value)}
-                    />
-                    <button onClick={handleInvite}>Envoyer</button>
-                </div>
+                <div className="friends-header">
+                    <h3>➕ Ajouter un ami</h3>
+                    <button className="btn-green btn-left" onClick={() => setShowPopup(true)}>Ajouter</button>
 
-                <div className="section">
-                    <h4>📥 Demandes reçues</h4>
-                    <ul>
-                        {receivedRequests.map((req) => (
-                            <li key={req.id}>
-                                {req.username}
-                                <div className="actions">
-                                    <button className="accept">Accepter</button>
-                                    <button className="decline">Refuser</button>
-                                </div>
-                            </li>
-                        ))}
-                        {receivedRequests.length === 0 && (
-                            <li className="empty-msg">Aucune demande reçue</li>
-                        )}
-                    </ul>
-                </div>
-
-                <div className="section">
-                    <h4>📤 Demandes envoyées</h4>
-                    <ul>
-                        {sentRequests.map((req) => (
-                            <li key={req.id}>{req.username}</li>
-                        ))}
-                        {sentRequests.length === 0 && (
-                            <li className="empty-msg">Aucune demande envoyée</li>
-                        )}
-                    </ul>
                 </div>
             </div>
 
@@ -75,20 +71,43 @@ const Friends = () => {
                 <h3>👥 Mes Amis</h3>
                 <ul>
                     {friends.map((friend) => (
-                        <li key={friend.id} className="friend-card">
+
+                        <li key={friend.id} className={`friend-card ${removingIds.includes(friend.id) ? "removing" : ""}`}>
+
                             <div className="friend-info">
                                 <span className="friend-name">{friend.username}</span>
                                 <span className={`status ${friend.status === "En ligne" ? "online" : "offline"}`}>
                                     {friend.status}
                                 </span>
                             </div>
+
+                            <button className="remove-friend" onClick={() => handleRemoveFriend(friend.id)}>✖</button>
+
                         </li>
                     ))}
-                    {friends.length === 0 && (
-                        <li className="empty-msg">Aucun ami pour le moment</li>
-                    )}
+                    {friends.length === 0 && <li className="empty-msg">Aucun ami pour le moment</li>}
                 </ul>
             </div>
+
+
+            {showPopup && (
+                <div className="popup-overlay">
+                    <div className="popup">
+                        <button className="close-button" onClick={() => setShowPopup(false)}>✖</button>
+                        <h3>➕ Ajouter un ami</h3>
+                        <div className="invite-form">
+                            <Input
+                                type="text"
+                                placeholder="Nom d'utilisateur"
+                                value={friendUsername}
+                                onChange={(e) => setFriendUsername(e.target.value)}
+                            />
+                            <button onClick={handleAddFriend}>Envoyer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };

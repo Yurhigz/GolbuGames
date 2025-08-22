@@ -1,5 +1,9 @@
 package types
 
+import (
+	"time"
+)
+
 // MainGrid représente une grille de Sudoku 9x9
 type MainGrid [9][9]int
 
@@ -12,6 +16,14 @@ type Coordinates [2]int
 // 	Validate() bool
 // 	IsComplete() bool
 // }
+
+type Tournament struct {
+    ID          int
+    Name        string
+    Description string
+    StartTime   time.Time
+    EndTime     time.Time
+}
 
 // // SudokuGame implémente l'interface Game
 type SudokuGrid struct {
@@ -32,6 +44,11 @@ type User struct {
 	Accountname string `json:"accountname"`
 	Password    string `json:"password"`
 	ID          int    `json:"id"`
+}
+
+type AddFriendRequest struct {
+    UserID         int    `json:"user_id"`
+    FriendUsername string `json:"friend_username"`
 }
 
 type GridRequest struct {
