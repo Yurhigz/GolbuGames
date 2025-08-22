@@ -46,6 +46,11 @@ type User struct {
 	ID          int    `json:"id"`
 }
 
+type AddFriendRequest struct {
+    UserID         int    `json:"user_id"`
+    FriendUsername string `json:"friend_username"`
+}
+
 type GridRequest struct {
 	Difficulty string `json:"difficulty"`
 }

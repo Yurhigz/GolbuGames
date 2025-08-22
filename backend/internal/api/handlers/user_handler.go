@@ -43,11 +43,15 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error while adding a new user to the database", http.StatusInternalServerError)
 		return
 	}
+
+    user, err := repository.GetUserIdDB(r.Context(), userReg.Username, userReg.Accountname)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":  "Utilisateur créé avec succès",
 		"username": userReg.Username,
+		"user_id":  strconv.Itoa(user.ID),
 	})
 
 }
@@ -266,6 +270,8 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]string{
         "access_token": jwtToken,
+        "user_id":  strconv.Itoa(userLogin.ID),
+        "username": userLogin.Username,
     })
 // 	refreshToken, err := RefreshToken(r.Context(), strconv.Itoa(userLogin.ID))
 //

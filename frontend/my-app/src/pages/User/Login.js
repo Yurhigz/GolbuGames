@@ -63,9 +63,10 @@ const Login = () => {
                 Password: password,
                 Accountname: login,
             });
-            const { access_token } = response.data;
 
-            AuthLogin({ login }, access_token);
+            const { access_token, user_id, username } = response.data;
+
+            AuthLogin({ id: user_id, username }, access_token);
             navigate("/");
         } catch (err) {
             console.error("Erreur login:", err);

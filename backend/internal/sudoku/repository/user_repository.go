@@ -167,7 +167,14 @@ func GetUserFriends(parentsContext context.Context, id_user int) ([]types.User, 
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
-	query := `SELECT u.id, u.username FROM friendlist fl JOIN users u ON fl.friend_id = u.id WHERE fl.user_id = $1`
+	query := `SELECT u.id, u.username
+              FROM friendlist f
+                       JOIN users u
+                            ON (u.id = CASE
+                                           WHEN f.user_id = $1 THEN f.friend_id
+                                           ELSE f.user_id
+                                END)
+              WHERE f.user_id = $1 OR f.friend_id = $1;`
 
 	rows, err := database.DBPool.Query(ctx, query, id_user)
 	if err != nil {

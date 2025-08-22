@@ -14,14 +14,14 @@ import (
 func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
         UPDATE user_stats 
-        SET total_games = total_games + $6,
-            total_wins = total_wins + $1,
-            total_losses = total_losses + $2,
-            total_draws = total_draws + $3,
-            total_time = total_time + $4,
-            average_time = (total_time + $4) / (total_games + 1),
-            total_solo_games = total_solo_games + $5,
-        WHERE user_id = $7`
+            SET total_games = total_games + $6,
+                total_wins = total_wins + $1,
+                total_losses = total_losses + $2,
+                total_draws = total_draws + $3,
+                total_time = total_time + $4,
+                average_time = (total_time + $4) / (total_games + 1),
+                total_solo_games_finished = total_solo_games_finished + $5
+            WHERE user_id = $7;`
 
 	winInt := 0
 	lossInt := 0

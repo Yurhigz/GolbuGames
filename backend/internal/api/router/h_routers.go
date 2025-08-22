@@ -31,7 +31,7 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /friends/{id}", handlers.GetUserFriends)
 	mux.HandleFunc("DELETE /delete_friend/{id}/{f_id}", handlers.RemoveFriend)
-	mux.HandleFunc("POST /add_friend/{id}/{f_id}", handlers.AddFriend)
+	mux.HandleFunc("POST /add_friend", handlers.AddFriend)
 
 	mux.HandleFunc("GET /tournaments", handlers.GetAllTournaments)
 	mux.HandleFunc("POST /add_tournament", handlers.AddTournament)

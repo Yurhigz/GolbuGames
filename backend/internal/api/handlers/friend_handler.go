@@ -6,6 +6,7 @@ import (
     "log"
     "net/http"
     "strconv"
+    "golbugames/backend/pkg/types"
 )
 
 func GetUserFriends(w http.ResponseWriter, r *http.Request) {
@@ -63,32 +64,29 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddFriend(w http.ResponseWriter, r *http.Request) {
-    strId := r.PathValue("id")
-    id, err := strconv.Atoi(strId)
-    if err != nil {
-        log.Printf("%v", err)
-        http.Error(w, "id must be a number", http.StatusBadRequest)
+    var req types.AddFriendRequest
+
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
         return
     }
 
-    strFId := r.PathValue("f_id")
-    f_id, err := strconv.Atoi(strFId)
+    friend, err := repository.GetUserIdDB(r.Context(), req.FriendUsername, req.FriendUsername)
     if err != nil {
-        log.Printf("%v", err)
-        http.Error(w, "f_id must be a number", http.StatusBadRequest)
+        http.Error(w, "Friend not found", http.StatusNotFound)
         return
     }
 
-    err = repository.AddFriend(r.Context(), id, f_id)
-    if err != nil {
+    if err := repository.AddFriend(r.Context(), req.UserID, friend.ID); err != nil {
         log.Printf("%v", err)
-        http.Error(w, "Error while adding friends to the database", http.StatusInternalServerError)
+        http.Error(w, "Error while adding friend", http.StatusInternalServerError)
         return
     }
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(map[string]string{
-        "message":  "Friend remove avec succèss",
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "message": "Friend ajouté avec succès",
+        "friend":  friend,
     })
 }
