@@ -1,9 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DifficultyModal from '../components/DifficultyModal';
 import NumberSelector from '../components/NumberSelector';
 import './Solo.css';
+import {AuthContext} from "../contexts/AuthContext";
+
+const EndGameModal = ({ isOpen, onClose, points, time, errors }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h2>🎉 Partie terminée !</h2>
+                <p><strong>Points gagnés :</strong> {points}</p>
+                <p><strong>Temps :</strong> {time} secondes</p>
+                <p><strong>Erreurs :</strong> {errors}</p>
+                <button onClick={onClose} className="modal-button">OK</button>
+            </div>
+        </div>
+    );
+};
 
 const Solo = () => {
     const [isModalOpen, setIsModalOpen] = useState(true);
@@ -16,6 +32,11 @@ const Solo = () => {
     const [startTime, setStartTime] = useState(null);
     const [elapsedTime, setElapsedTime] = useState(0);
     const [selectedDifficulty, setSelectedDifficulty] = useState("easy");
+    const [showEndModal, setShowEndModal] = useState(false);
+    const [points, setPoints] = useState(0);
+    const [isGridValid, setIsGridValid] = useState(false);
+    const { user } = useContext(AuthContext);
+
     const navigate = useNavigate();
 
     // ========= Utils =========
@@ -42,21 +63,17 @@ const Solo = () => {
         return out;
     };
 
-    // Vérifie si une cellule est valide par rapport à toute la grille
     const isNumberValid = (row, col, number, currentGrid) => {
         if (!number) return true;
 
-        // Vérifier ligne
         for (let c = 0; c < 9; c++) {
             if (c !== col && currentGrid[row][c] === number) return false;
         }
 
-        // Vérifier colonne
         for (let r = 0; r < 9; r++) {
             if (r !== row && currentGrid[r][col] === number) return false;
         }
 
-        // Vérifier carré 3x3
         const startRow = Math.floor(row / 3) * 3;
         const startCol = Math.floor(col / 3) * 3;
         for (let r = startRow; r < startRow + 3; r++) {
@@ -68,7 +85,6 @@ const Solo = () => {
         return true;
     };
 
-    // Recalcule toutes les erreurs de la grille
     const recomputeErrors = (currentGrid) => {
         const errors = [];
         currentGrid.forEach((row, r) => {
@@ -81,42 +97,48 @@ const Solo = () => {
         return errors;
     };
 
+    const isGridComplete = (currentGrid) =>
+        currentGrid.every(row => row.every(cell => cell !== null && cell !== ''));
+
+    const isGridFullyValid = (currentGrid) =>
+        isGridComplete(currentGrid) &&
+        currentGrid.every((row, r) =>
+            row.every((val, c) => isNumberValid(r, c, val, currentGrid))
+        );
+
     const fillCell = (row, col, number) => {
         if (givenCells.includes(row * 9 + col)) return;
         const newGrid = grid.map(r => [...r]);
         newGrid[row][col] = number;
 
-        // recalcul des erreurs AVANT la modif (ancien état)
         const prevErrors = recomputeErrors(grid);
-
-        // application de la modif
         setGrid(newGrid);
 
-        // recalcul des erreurs APRES la modif
         const newErrors = recomputeErrors(newGrid);
         setErrorCells(newErrors);
 
-        // Vérifier si la nouvelle cellule est une erreur "nouvelle"
         if (number !== null && !isNumberValid(row, col, number, newGrid)) {
             const wasAlreadyInError = prevErrors.some(cell => cell.row === row && cell.col === col);
             if (!wasAlreadyInError) {
                 setErrorCount((prev) => prev + 1);
             }
         }
+
+        setIsGridValid(isGridFullyValid(newGrid));
     };
 
     // ========= Timer =========
     useEffect(() => {
         let interval;
-        if (startTime) {
+        if (startTime && !showEndModal) {
             interval = setInterval(() => {
                 setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
             }, 1000);
         }
         return () => clearInterval(interval);
-    }, [startTime]);
+    }, [startTime, showEndModal]);
 
-    // ========= Backend Helpers =========
+    // ========= Backend =========
     const generateGridsIfNeeded = async (difficulty) => {
         try {
             const promises = Array.from({ length: 10 }).map(() =>
@@ -154,37 +176,67 @@ const Solo = () => {
         await fetchGridFromBackend(difficulty);
     };
 
-    // ========= Interactions =========
-    const handleCellClick = (row, col) => {
-        if (givenCells.includes(row * 9 + col)) return;
-        setSelectedCell({ row, col });
-        if (selectedNumber !== null) fillCell(row, col, selectedNumber);
-    };
+    // ========= Fin de partie =========
+    const calculatePoints = (difficulty, time, errors) => {
+        const basePoints = {
+            easy: 100,
+            intermediate: 200,
+            advanced: 300,
+            expert: 500
+        }[difficulty] || 50;
 
-    const isGridComplete = () =>
-        grid.every(row => row.every(cell => cell !== null && cell !== ''));
+        let score = basePoints;
+        score -= time; // -1 point / seconde
+        score -= errors * 5; // -5 points par erreur
+        return score > 0 ? score : 0;
+    };
 
     const submitGrid = async () => {
         try {
             const gridString = grid.flat().map(v => v ?? 0).join('');
             await axios.post("http://localhost:3001/submit_solo_game", {
-                userId: 1,
+                user_id: user.id,
                 difficulty: selectedDifficulty,
-                time: elapsedTime,
-                errors: errorCount,
-                grid: gridString,
+                completion_time: elapsedTime,
+                game_mode: 'sudoku'
             });
+
         } catch (err) {
             console.error("Erreur lors de la soumission :", err);
         }
     };
 
     useEffect(() => {
-        if (isGridComplete()) {
-            alert(`✅ Grille terminée en ${elapsedTime} secondes avec ${errorCount} erreurs.`);
+        if (isGridValid) {
+            const pts = calculatePoints(selectedDifficulty, elapsedTime, errorCount);
+            setPoints(pts);
+            setShowEndModal(true);
             submitGrid();
         }
-    }, [grid]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isGridValid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ========= Interaction =========
+    const handleCellClick = (row, col) => {
+        if (!givenCells.includes(row * 9 + col)) {
+            setSelectedCell({ row, col });
+            if (selectedNumber !== null) {
+                fillCell(row, col, selectedNumber);
+            }
+        }
+    };
+
+    // useEffect(() => {
+    //     setIsGridValid(true);
+    // }, [selectedDifficulty]);
+
+    const handleNumberSelect = (number) => {
+        // Toggle si on clique sur le même nombre
+        if (selectedNumber === number) {
+            setSelectedNumber(null);
+        } else {
+            setSelectedNumber(number);
+        }
+    };
 
     const handleQuit = () => navigate('/');
 
@@ -249,11 +301,22 @@ const Solo = () => {
                 setSelectedDifficulty={setSelectedDifficulty}
             />
 
+            <EndGameModal
+                isOpen={showEndModal}
+                onClose={() => setShowEndModal(false)}
+                points={points}
+                time={elapsedTime}
+                errors={errorCount}
+            />
+
             {!isModalOpen && (
                 <div className="game-content">
                     <SudokuGrid isBackground={false} />
                     <div className="actions-button-number">
-                        <NumberSelector onNumberSelect={setSelectedNumber} selectedNumber={selectedNumber} />
+                        <NumberSelector
+                            onNumberSelect={handleNumberSelect}
+                            selectedNumber={selectedNumber}
+                        />
                         <div className="game-actions">
                             <button className="quit-button" onClick={handleQuit}>Quitter</button>
                             <div className="error-counter">Nombre d'erreurs : {errorCount}</div>
