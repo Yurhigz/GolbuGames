@@ -10,36 +10,41 @@ import Tournament from "./pages/Tournament";
 import Leaderboard from "./pages/Leaderboard";
 import Login from "./pages/User/Login";
 import Register from "./pages/User/Register";
+import Profile from "./pages/Profile";
 import About from "./pages/legal/About";
 import Help from "./pages/legal/Help";
 import FAQ from "./pages/legal/FAQ";
 import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import Friends from "./pages/Friends";
+import { AuthProvider } from "./contexts/AuthContext";
 
 function App() {
   return (
     <Router>
       <div className="app">
-        <SideNav />
-        <div className="main-content">
-          <Routes>
-            <Route path="/multiplayer/invite/:id" element={<Invite />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/solo" element={<Solo />} />
-            <Route path="/multi" element={<Multi />} />
-            <Route path="/tournament" element={<Tournament />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/friends" element={<Friends />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-          </Routes>
-        </div>
+        <AuthProvider>
+            <SideNav />
+            <div className="main-content">
+              <Routes>
+                <Route path="/multiplayer/invite/:id" element={<Invite />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/solo" element={<Solo />} />
+                <Route path="/multi" element={<Multi />} />
+                <Route path="/tournament" element={<Tournament />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/friends" element={<Friends />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/help" element={<Help />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+              </Routes>
+            </div>
+        </AuthProvider>
         <Footer />
       </div>
     </Router>
