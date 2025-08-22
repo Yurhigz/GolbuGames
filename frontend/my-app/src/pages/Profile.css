@@ -1,0 +1,173 @@
+/* === Profile Arcade Style === */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+.profile-container {
+    max-width: 800px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: #111;
+    border: 6px solid #8a2be2;
+    box-shadow: 0 0 20px #8a2be2;
+    color: #00ffe7;
+    font-family: 'Press Start 2P', cursive;
+    border-radius: 16px;
+}
+
+.profile-title {
+    text-align: center;
+    color: #ffcc00;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    text-shadow: 0 0 5px #ffcc00;
+}
+
+.elo-section h2 {
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.elo-section span {
+    color: #00ff88;
+}
+
+.password-section {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.password-section h3 {
+    font-size: 0.8rem;
+    color: #ffcc00;
+    margin-bottom: 0.5rem;
+}
+
+.password-section input {
+    width: 100%;
+    padding: 0.7rem;
+    border-radius: 6px;
+    background: #000;
+    color: #00ffe7;
+    border: 1px solid #00ffe7;
+    font-size: 0.7rem;
+    box-shadow: inset 0 0 5px #00ffe7;
+}
+
+.password-section button {
+    padding: 0.7rem 1.2rem;
+    font-size: 0.7rem;
+    background-color: #00ffe7;
+    color: #000;
+    border: 2px solid #ff00cc;
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 0 10px #00ffe7;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.password-section button:hover {
+    background-color: #ff00cc;
+    color: white;
+    box-shadow: 0 0 20px #ff00cc;
+}
+
+.score-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.category-tab {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.6rem;
+    background: #1a1a1a;
+    color: #00ffe7;
+    border: 2px solid #8a2be2;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.category-tab.active,
+.category-tab:hover {
+    background-color: #8a2be2;
+    color: #fff;
+    box-shadow: 0 0 10px #8a2be2;
+}
+
+.history-section h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: #ffcc00;
+}
+
+.history-section table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.6rem;
+    color: #00ffe7;
+    margin-top: 1rem;
+    table-layout: fixed;
+}
+
+.history-section th,
+.history-section td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #00ffe7;
+    text-align: center;
+    word-wrap: break-word;
+}
+
+.history-section th {
+    background-color: #1a1a1a;
+    color: #ffcc00;
+    text-shadow: 0 0 2px #ffcc00;
+}
+
+.history-section tr:nth-child(even) {
+    background-color: #141414;
+}
+
+.history-section tr:nth-child(odd) {
+    background-color: #000;
+}
+
+/* Animation lors du changement de catégorie */
+@keyframes fadeSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-slide-up {
+    animation: fadeSlideUp 0.4s ease-in-out;
+}
+
+@media (max-width: 600px) {
+    .score-tabs {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .category-tab {
+        width: 80%;
+        text-align: center;
+    }
+
+    .password-section input,
+    .password-section button {
+        width: 100%;
+    }
+}

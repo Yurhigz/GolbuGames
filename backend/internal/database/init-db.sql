@@ -1,9 +1,11 @@
 -- init-db.sql
+DROP DATABASE IF EXISTS golbugamesdb;
 CREATE DATABASE golbugamesdb;
 
 \c golbugamesdb
 
 -- Authentification générale peu importe le jeu
+DROP TABLE IF EXISTS users CASCADE;
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -12,7 +14,8 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Gestion des sessions peu importe le jeu 
+-- Gestion des sessions peu importe le jeu
+DROP TABLE IF EXISTS sessions CASCADE;
 CREATE TABLE sessions (
     id SERIAL PRIMARY KEY,
     game VARCHAR(100) NOT NULL,
@@ -22,7 +25,7 @@ CREATE TABLE sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE -- Suppression en cascade en cas de suppresion d'un utilisateur, mécanisme à confirmer
 );
 
-
+DROP TABLE IF EXISTS sudoku_games CASCADE;
 CREATE TABLE sudoku_games (
     id SERIAL PRIMARY KEY,
     board VARCHAR(200) NOT NULL,
@@ -31,6 +34,7 @@ CREATE TABLE sudoku_games (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS games_scores CASCADE;
 CREATE TABLE games_scores (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -43,6 +47,7 @@ CREATE TABLE games_scores (
     FOREIGN KEY (opponent_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+DROP TABLE IF EXISTS user_stats CASCADE;
 CREATE TABLE user_stats (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -56,15 +61,17 @@ CREATE TABLE user_stats (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS leaderboard CASCADE;
 CREATE TABLE leaderboard (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     elo_score INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-)
+);
 
 -- Une ligne par relation d'ami
+DROP TABLE IF EXISTS friendlist CASCADE;
 CREATE TABLE friendlist (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -75,6 +82,7 @@ CREATE TABLE friendlist (
 );
 
 -- Une ligne par blocage d'utilisateur
+DROP TABLE IF EXISTS blocked_users CASCADE;
 CREATE TABLE blocked_users (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -84,6 +92,7 @@ CREATE TABLE blocked_users (
     FOREIGN KEY (blocked_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS tournaments CASCADE;
 CREATE TABLE tournaments (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -93,6 +102,7 @@ CREATE TABLE tournaments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS tournament_participants CASCADE;
 CREATE TABLE tournament_participants (
     id SERIAL PRIMARY KEY,
     tournament_id INT NOT NULL,
@@ -103,6 +113,7 @@ CREATE TABLE tournament_participants (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS cookies CASCADE;
 CREATE TABLE cookies (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,

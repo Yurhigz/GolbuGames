@@ -2,11 +2,18 @@ package sudoku
 
 //  intégrer les types spécifiques au jeu sudoku plutôt que de tout stocket dans pkg
 
+// type Leaderboard struct {
+// 	UserID   int `json:"userid"`
+// 	EloScore int `json:"elo_score"`
+// 	Rank     int `json:"rank"`
+// }
+
 type Leaderboard struct {
-	UserID   int `json:"userid"`
-	EloScore int `json:"elo_score"`
-	Rank     int `json:"rank"`
+    Username string `json:"username"`
+    EloScore int    `json:"elo_score"`
+    Rank     int    `json:"rank"`
 }
+
 
 type GameScore struct {
 	GameID         int `json:"gameid"`

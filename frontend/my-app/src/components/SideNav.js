@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
 import { Link } from 'react-router-dom';
 import { AiFillHome } from 'react-icons/ai';
 import { GiPerspectiveDiceSixFacesRandom } from 'react-icons/gi';
 import { IoGameController } from 'react-icons/io5';
 import { FaTrophy, FaChartLine, FaUserPlus, FaBars } from 'react-icons/fa';
 import './SideNav.css';
+import { AuthContext } from "../contexts/AuthContext";
 
 const SideNav = () => {
+    const { user, AuthLogout } = useContext(AuthContext);
+
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleSideNav = () => {
@@ -35,6 +38,7 @@ const SideNav = () => {
             <button className="hamburger" onClick={toggleSideNav}>
                 <FaBars />
             </button>
+
             <nav className={`sidenav ${isOpen ? 'open' : ''}`}>
                 <Link to="/" className="nav-item" onClick={handleLinkClick}>
                     <AiFillHome className="nav-icon" />
@@ -44,10 +48,12 @@ const SideNav = () => {
                     <GiPerspectiveDiceSixFacesRandom className="nav-icon" />
                     <span>Jeu Solo</span>
                 </Link>
-                <Link to="/multi" className="nav-item" onClick={handleLinkClick}>
-                    <IoGameController className="nav-icon" />
-                    <span>Jeu Multi</span>
-                </Link>
+                {user && (
+                    <Link to="/multi" className="nav-item" onClick={handleLinkClick}>
+                        <IoGameController className="nav-icon" />
+                        <span>Jeu Multi</span>
+                    </Link>
+                )}
                 <Link to="/tournament" className="nav-item" onClick={handleLinkClick}>
                     <FaTrophy className="nav-icon" />
                     <span>Tournoi</span>
@@ -56,14 +62,20 @@ const SideNav = () => {
                     <FaChartLine className="nav-icon" />
                     <span>Classement</span>
                 </Link>
-                <Link to="/friends" className="nav-item" onClick={handleLinkClick}>
-                    <FaUserPlus className="nav-icon" />
-                    <span>Amis</span>
-                </Link>
-                <Link to="/login" className="nav-item" onClick={handleLinkClick}>
+                {user ? (
+                    <><Link to="/friends" className="nav-item" onClick={handleLinkClick}>
+                        <FaUserPlus className="nav-icon" />
+                        <span>Amis</span>
+                    </Link>
+                    <Link to="/logout" className="nav-item" onClick={AuthLogout}>
+                        <FaUserPlus className="nav-icon" />
+                        <span>Déconnexion</span>
+                    </Link>
+                    </>
+                ) : <Link to="/login" className="nav-item" onClick={handleLinkClick}>
                     <FaUserPlus className="nav-icon" />
                     <span>Connexion</span>
-                </Link>
+                </Link>}
             </nav>
         </>
     );

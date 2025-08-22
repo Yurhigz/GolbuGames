@@ -32,8 +32,8 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 	// Insérer l'utilisateur
 	var userId int
 	err = tx.QueryRow(ctx,
-		`INSERT INTO users (username, accountname, password) 
-		 VALUES ($1, $2, $3) 
+		`INSERT INTO users (username, accountname, password)
+		 VALUES ($1, $2, $3)
 		 RETURNING id`,
 		username, accountname, password).Scan(&userId)
 	if err != nil {
@@ -56,7 +56,7 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 		return fmt.Errorf("[AddUser] Error committing transaction: %w", err)
 	}
 
-	log.Printf("User added successfully with initialized stats: %s", username)
+	log.Printf("User added successfully with initialized stats: %s - %s", username, password)
 	return nil
 }
 
@@ -167,7 +167,14 @@ func GetUserFriends(parentsContext context.Context, id_user int) ([]types.User, 
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
-	query := `SELECT u.id, u.username FROM friendlist fl JOIN users u ON fl.friend_id = u.id WHERE fl.user_id = $1`
+	query := `SELECT u.id, u.username
+              FROM friendlist f
+                       JOIN users u
+                            ON (u.id = CASE
+                                           WHEN f.user_id = $1 THEN f.friend_id
+                                           ELSE f.user_id
+                                END)
+              WHERE f.user_id = $1 OR f.friend_id = $1;`
 
 	rows, err := database.DBPool.Query(ctx, query, id_user)
 	if err != nil {

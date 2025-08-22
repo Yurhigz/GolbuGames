@@ -1,8 +1,10 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useContext } from "react";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
-import { Link } from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import "./Login.css";
+import axios from "axios";
+import { AuthContext } from "../../contexts/AuthContext";
 
 const sanitizeInput = (str) => {
     const temp = document.createElement("div");
@@ -19,11 +21,13 @@ const validatePassword = (password) => {
 };
 
 const Login = () => {
+    const navigate = useNavigate();
     const loginRef = useRef();
     const passwordRef = useRef();
     const [error, setError] = useState("");
+    const { AuthLogin } = useContext(AuthContext);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         const rawLogin = loginRef.current.value;
         const rawPassword = passwordRef.current.value;
 
@@ -53,6 +57,21 @@ const Login = () => {
         };
 
         console.log("Connexion sécurisée :", identifiants);
+        try {
+            const response = await axios.post("http://localhost:3001/login", {
+                Username: login,
+                Password: password,
+                Accountname: login,
+            });
+
+            const { access_token, user_id, username } = response.data;
+
+            AuthLogin({ id: user_id, username }, access_token);
+            navigate("/");
+        } catch (err) {
+            console.error("Erreur login:", err);
+            setError("Login échoué !");
+        }
     };
 
     return (
