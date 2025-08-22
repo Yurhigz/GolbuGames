@@ -78,9 +78,51 @@ func validNbIndices(numbers int) (bool, error) {
 	return true, nil
 }
 
+func CountSolutions(grid *types.MainGrid, limit int) int {
+	var count int
+
+	var solve func(*types.MainGrid) bool
+	solve = func(g *types.MainGrid) bool {
+		// Chercher la première case vide
+		var row, col int
+		found := false
+		for i := 0; i < 9 && !found; i++ {
+			for j := 0; j < 9; j++ {
+				if g[i][j] == 0 {
+					row, col = i, j
+					found = true
+					break
+				}
+			}
+		}
+
+		// plus de case vide = une solution trouvée
+		if !found {
+			count++
+			return count >= limit // stop si on a atteint la limite
+		}
+
+		for v := 1; v <= 9; v++ {
+			if isValid(g, row, col, v) {
+				g[row][col] = v
+				if solve(g) { // si assez de solutions trouvées
+					g[row][col] = 0
+					return true
+				}
+				g[row][col] = 0
+			}
+		}
+		return false
+	}
+
+	copyGrid := *grid
+	solve(&copyGrid)
+	return count
+}
+
 func symmetryRandomRemoving(numbers int, grid *types.MainGrid) (bool, error) {
 	if numbers%2 != 0 {
-		numbers += 1
+		numbers++
 	}
 	valid, err := validNbIndices(numbers)
 	if !valid {
@@ -88,17 +130,29 @@ func symmetryRandomRemoving(numbers int, grid *types.MainGrid) (bool, error) {
 	}
 
 	removed := 0
-
-	for removed < numbers/2 {
+	attempts := 0
+	for removed < numbers/2 && attempts < 1000 {
+		attempts++
 		row := rand.Intn(9)
 		col := rand.Intn(9)
 
 		if grid[row][col] != 0 && grid[col][row] != 0 {
+			backup1 := grid[row][col]
+			backup2 := grid[col][row]
+
 			grid[row][col] = 0
 			grid[col][row] = 0
-			removed++
-		}
 
+			if CountSolutions(grid, 2) == 1 {
+				removed++
+			} else {
+				grid[row][col] = backup1
+				grid[col][row] = backup2
+			}
+		}
+	}
+	if removed < numbers {
+		return false, fmt.Errorf("failed to remove %d numbers, only removed %d", numbers, removed)
 	}
 	return true, nil
 }
@@ -108,16 +162,28 @@ func basicRandomRemoving(numbers int, grid *types.MainGrid) (bool, error) {
 	if !valid || err != nil {
 		return valid, err
 	}
-	removed := 0
 
-	for removed < numbers {
+	removed := 0
+	attempts := 0
+	for removed < numbers && attempts < 1000 {
+		attempts++
 		row := rand.Intn(9)
 		col := rand.Intn(9)
 
 		if grid[row][col] != 0 {
+			backup := grid[row][col]
 			grid[row][col] = 0
-			removed++
+
+			// Vérifie que la grille garde une seule solution
+			if CountSolutions(grid, 2) == 1 {
+				removed++
+			} else {
+				grid[row][col] = backup
+			}
 		}
+	}
+	if removed < numbers {
+		return false, fmt.Errorf("failed to remove %d numbers, only removed %d", numbers, removed)
 	}
 	return true, nil
 }
