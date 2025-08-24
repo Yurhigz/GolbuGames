@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"golbugames/backend/internal/database"
 	"golbugames/backend/internal/sudoku"
+	"golbugames/backend/pkg/types"
 	"log"
 	"time"
+
 	"github.com/jackc/pgx/v5"
-	"golbugames/backend/pkg/types"
 )
 
 func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
@@ -181,7 +182,7 @@ func GetLeaderboard(parentsContext context.Context) (*[]sudoku.Leaderboard, erro
 	defer cancel()
 
 	var leaderboardList []sudoku.Leaderboard
-    query := `SELECT users.username as username, elo_score, RANK() OVER (ORDER BY elo_score DESC) AS rank FROM leaderboard inner join users on leaderboard.user_id = users.id`
+	query := `SELECT users.username as username, elo_score, RANK() OVER (ORDER BY elo_score DESC) AS rank FROM leaderboard inner join users on leaderboard.user_id = users.id`
 
 	rows, _ := database.DBPool.Query(ctx, query)
 	leaderboardList, err := pgx.CollectRows(rows, pgx.RowToStructByName[sudoku.Leaderboard])
@@ -225,27 +226,27 @@ func GetTournamentId(parentsContext context.Context, tournamentName string) (int
 }
 
 func GetAllTournaments(parentsContext context.Context) ([]types.Tournament, error) {
-    ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
 
-    var tournaments []types.Tournament
-    query := `SELECT id, name, description, start_time, end_time FROM tournaments`
+	var tournaments []types.Tournament
+	query := `SELECT id, name, description, start_time, end_time FROM tournaments`
 
-    rows, err := database.DBPool.Query(ctx, query)
-    if err != nil {
-        return nil, fmt.Errorf("[GetAllTournaments] Error retrieving tournaments: %v", err)
-    }
-    defer rows.Close()
+	rows, err := database.DBPool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("[GetAllTournaments] Error retrieving tournaments: %v", err)
+	}
+	defer rows.Close()
 
-    for rows.Next() {
-        var t types.Tournament
-        if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.StartTime, &t.EndTime); err != nil {
-            return nil, fmt.Errorf("[GetAllTournaments] Error scanning tournament: %v", err)
-        }
-        tournaments = append(tournaments, t)
-    }
+	for rows.Next() {
+		var t types.Tournament
+		if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.StartTime, &t.EndTime); err != nil {
+			return nil, fmt.Errorf("[GetAllTournaments] Error scanning tournament: %v", err)
+		}
+		tournaments = append(tournaments, t)
+	}
 
-    return tournaments, nil
+	return tournaments, nil
 }
 
 func GetAllIDTournaments(parentsContext context.Context) ([]int, error) {
@@ -290,16 +291,16 @@ func RemoveTournament(parentsContext context.Context, tournamentId int) error {
 }
 
 func AddTournament(parentsContext context.Context, tournament types.Tournament) error {
-    ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 
 	query := `INSERT INTO tournaments (name, description, start_time, end_time) VALUES ($1, $2, $3, $4)`
 
-    _, err := database.DBPool.Exec(ctx, query, tournament.Name, tournament.Description, tournament.StartTime, tournament.EndTime)
-    if err != nil {
-        return fmt.Errorf("[AddFriend] Error adding torunament : %v", err)
-    }
-    log.Printf("Tournament added successfully")
+	_, err := database.DBPool.Exec(ctx, query, tournament.Name, tournament.Description, tournament.StartTime, tournament.EndTime)
+	if err != nil {
+		return fmt.Errorf("[AddFriend] Error adding torunament : %v", err)
+	}
+	log.Printf("Tournament added successfully")
 
-    return nil
+	return nil
 }
