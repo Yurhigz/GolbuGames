@@ -51,8 +51,3 @@ func CloseDB() {
 		log.Println("Database pool closed")
 	}
 }
-
-// os.Getenv("DATABASE_URL")
-//  https://donchev.is/post/working-with-postgresql-in-go-using-pgx/
-//  Il faudra mettre en place une gestion des connexions dans le cas de figure où la DB redémarre avec une boucle de tentative de reconnexion
-// et éventuellement limiter le nombre de tentatives ou mettre un temps entre chaque tentative
