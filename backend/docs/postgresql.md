@@ -20,3 +20,8 @@ psql -U postgres
 \dt 
 
 ```
+
+SELECT COUNT(*) FROM sudoku_games GROUP BY difficulty;
+SELECT * FROM sudoku_games GROUP BY difficulty;
+SELECT * FROM sudoku_games WHERE difficulty = 'hard';
+SELECT * FROM sudoku_games;
