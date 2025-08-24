@@ -8,6 +8,8 @@ import (
 	"log"
 	"math/rand/v2"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func AddGridDB(parentsContext context.Context, board, solution, difficulty string) error {
@@ -24,6 +26,23 @@ func AddGridDB(parentsContext context.Context, board, solution, difficulty strin
 
 	log.Printf("Sudoku grid added successfully with difficulty : %s", difficulty)
 	return nil
+}
+
+func BulkAddingGrids(parentsContext context.Context, bulkGrids []*types.SudokuGrid) error {
+	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
+	defer cancel()
+
+	_, err := database.DBPool.CopyFrom(ctx, pgx.Identifier{"sudoku_games"}, []string{"board", "solution", "difficulty"}, pgx.CopyFromSlice(len(bulkGrids), func(i int) ([]any, error) {
+		return []any{bulkGrids[i].Board, bulkGrids[i].Solution, bulkGrids[i].Difficulty}, nil
+	}))
+
+	if err != nil {
+		return fmt.Errorf("[BulkAddingGrids] Error inserting sudoku grid bulk : %v", err)
+	}
+
+	log.Printf("[BulkAddingGrids] %d Sudoku grids added successfully", len(bulkGrids))
+	return nil
+
 }
 
 func GetGridDB(parentsContext context.Context, id int) (string, string, error) {
