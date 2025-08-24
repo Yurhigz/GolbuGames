@@ -29,7 +29,7 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 	validDifficulties := map[string]bool{
 		"easy":         true,
 		"intermediate": true,
-		"advanced":     true,
+		"hard":         true,
 		"expert":       true,
 	}
 
@@ -74,7 +74,7 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	validDifficulties := map[string]bool{
 		"easy":         true,
 		"intermediate": true,
-		"advanced":     true,
+		"hard":         true,
 		"expert":       true,
 	}
 
@@ -99,15 +99,15 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-    leaderboard, err := repository.GetLeaderboard(r.Context())
-    if err != nil {
-        http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
-        return
-    }
+	leaderboard, err := repository.GetLeaderboard(r.Context())
+	if err != nil {
+		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(leaderboard)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(leaderboard)
 }
 
 // func GetUserHistory(w http.ResponseWriter, r *http.Request) {
