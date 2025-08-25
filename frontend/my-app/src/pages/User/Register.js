@@ -1,11 +1,10 @@
-import {useContext, useRef, useState} from "react";
+import { useContext, useRef, useState } from "react";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import {AuthContext} from "../../contexts/AuthContext";
+import { AuthContext } from "../../contexts/AuthContext";
+import { useRequest } from "../../utils/Request";
 
 // Fonction de nettoyage contre les injections (XSS)
 const sanitizeInput = (str) => {
@@ -29,6 +28,7 @@ const Register = () => {
     const confirmPasswordRef = useRef();
     const [error, setError] = useState("");
     const { AuthLogin } = useContext(AuthContext);
+    const { sendRequest } = useRequest();
 
     const handleRegister = async () => {
         const rawLogin = loginRef.current.value;
@@ -59,26 +59,23 @@ const Register = () => {
             return;
         }
 
-        setError(""); // Réinitialiser les erreurs
-
-        const newUser = {
-            login,
-            password,
-        };
+        setError(""); // reset erreurs
 
         try {
-            const response = await axios.post("http://localhost:3001/create_user", {
+            const data = await sendRequest("POST", "/create_user", {
                 Username: login,
                 Password: password,
                 Accountname: login,
-            });
-            const { access_token } = response.data;
-            AuthLogin({ id: response.data.user_id, login }, access_token);
+            }, false, true);
+
+            const { access_token, username, user_id } = data;
+
+            AuthLogin({ id: user_id, username }, access_token);
             navigate("/");
-            console.log("Réponse serveur :", response.data);
-        } catch (error) {
-            setError("Erreur lors de la requête");
-            console.error("Erreur lors de la requête :", error);
+            console.log("Réponse serveur :", data);
+        } catch (err) {
+            setError("Erreur lors de l'inscription.");
+            console.error("Erreur lors de la requête :", err);
         }
     };
 

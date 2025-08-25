@@ -49,15 +49,15 @@ const SideNav = () => {
                     <span>Jeu Solo</span>
                 </Link>
                 {user && (
-                    <Link to="/multi" className="nav-item" onClick={handleLinkClick}>
+                    <><Link to="/multi" className="nav-item" onClick={handleLinkClick}>
                         <IoGameController className="nav-icon" />
                         <span>Jeu Multi</span>
                     </Link>
+                    <Link to="/tournament" className="nav-item" onClick={handleLinkClick}>
+                        <FaTrophy className="nav-icon" />
+                        <span>Tournoi</span>
+                    </Link></>
                 )}
-                <Link to="/tournament" className="nav-item" onClick={handleLinkClick}>
-                    <FaTrophy className="nav-icon" />
-                    <span>Tournoi</span>
-                </Link>
                 <Link to="/leaderboard" className="nav-item" onClick={handleLinkClick}>
                     <FaChartLine className="nav-icon" />
                     <span>Classement</span>

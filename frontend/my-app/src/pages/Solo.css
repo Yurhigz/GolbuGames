@@ -190,7 +190,7 @@
     flex-wrap: wrap;
     gap: 8px;
     padding: 1rem;
-    background: #111;
+    background: #111 !important;
     border-radius: 12px;
     box-shadow: 0 0 20px #00ffe7;
 }

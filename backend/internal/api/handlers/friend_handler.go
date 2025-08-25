@@ -7,9 +7,19 @@ import (
     "net/http"
     "strconv"
     "golbugames/backend/pkg/types"
+    "golbugames/backend/internal/api/middleware"
 )
 
 func GetUserFriends(w http.ResponseWriter, r *http.Request) {
+
+    claims, ok := r.Context().Value("claims").(*middleware.CustomClaims)
+    if !ok || claims == nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    log.Printf("UserID from token: %s, expires at: %v", claims.UserID, claims.ExpiresAt.Time)
+
     strId := r.PathValue("id")
     id, err := strconv.Atoi(strId)
     if err != nil {

@@ -1,12 +1,14 @@
 // Profile.js
-import React, {useContext, useState} from "react";
+import React, { useContext, useState } from "react";
 import "./Profile.css";
-import {AuthContext} from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
+import { useRequest } from "../utils/Request";
 
 const Profile = () => {
     const [newPassword, setNewPassword] = useState("");
     const [activeCategory, setActiveCategory] = useState("solo");
     const { user } = useContext(AuthContext);
+    const { sendRequest } = useRequest();
 
     const elo = 1320;
 
@@ -27,28 +29,15 @@ const Profile = () => {
         if (!newPassword.trim()) return;
 
         try {
-            const response = await fetch("http://localhost:3001/updateuser", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    id: parseInt(user.id),
-                    new_password: newPassword,
-                }),
-            });
+            const res = await sendRequest("POST", "/updateuser", {
+                id: parseInt(user.id, 10),
+                new_password: newPassword,
+            }, true);
 
-            if (!response.ok) {
-                const errData = await response.text();
-                alert("Erreur : " + errData);
-                return;
-            }
-
-            const data = await response.json();
-            alert(data.message);
+            alert(res.message || "Mot de passe modifié avec succès !");
             setNewPassword("");
         } catch (err) {
-            alert("Erreur réseau : " + err.message);
+            alert("Erreur : " + err.message);
         }
     };
 
@@ -96,20 +85,20 @@ const Profile = () => {
                 <h3>Historique - {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}</h3>
                 <table>
                     <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Adversaire</th>
-                            <th>Résultat</th>
-                        </tr>
+                    <tr>
+                        <th>Date</th>
+                        <th>Adversaire</th>
+                        <th>Résultat</th>
+                    </tr>
                     </thead>
                     <tbody key={activeCategory} className="fade-slide-up">
-                        {scoreHistory[activeCategory].map((match) => (
-                            <tr key={match.id}>
-                                <td>{match.date}</td>
-                                <td>{match.opponent}</td>
-                                <td>{match.result}</td>
-                            </tr>
-                        ))}
+                    {scoreHistory[activeCategory].map((match) => (
+                        <tr key={match.id}>
+                            <td>{match.date}</td>
+                            <td>{match.opponent}</td>
+                            <td>{match.result}</td>
+                        </tr>
+                    ))}
                     </tbody>
                 </table>
             </div>

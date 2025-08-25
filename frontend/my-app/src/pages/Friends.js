@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from "react";
-import axios from "axios";
 import "./Friends.css";
 import { Input } from "../components/Input";
 import { AuthContext } from "../contexts/AuthContext";
+import { useRequest } from "../utils/Request";
 
 const Friends = () => {
     const { user } = useContext(AuthContext);
+    const { sendRequest } = useRequest();
     const [friendUsername, setFriendUsername] = useState("");
     const [friends, setFriends] = useState([]);
     const [removingIds, setRemovingIds] = useState([]);
@@ -14,44 +15,62 @@ const Friends = () => {
     useEffect(() => {
         if (!user) return;
 
-        axios.get(`http://localhost:3001/friends/${user.id}`)
-            .then((res) => {
-                const friendsData = res.data.friends.map((f) => ({
+        const fetchFriends = async () => {
+            try {
+                const res = await sendRequest("GET", `/friends/${user.id}`, {}, true);
+                const friendsData = res.data.friends.map(f => ({
                     id: f.id,
                     username: f.username,
                     status: "Hors ligne",
                 }));
                 setFriends(friendsData);
-            })
-            .catch((err) => console.error("Erreur lors du fetch des amis:", err));
-    }, [user]);
+            } catch (err) {
+                console.error("Erreur lors du fetch des amis:", err);
+            }
+        };
 
-    const handleAddFriend = () => {
+        fetchFriends();
+    }, [user, sendRequest]);
+
+
+
+    const handleAddFriend = async () => {
         if (!friendUsername.trim() || !user) return;
 
-        axios.post(`http://localhost:3001/add_friend`, {
-            user_id: parseInt(user.id, 10),
-            friend_username: friendUsername
-        }, {
-            headers: { "Content-Type": "application/json" }
-        })
-            .then((res) => {
-                const newFriend = res.data.friend;
-                setFriends((prev) => [...prev, newFriend]);
-                setFriendUsername("");
-                setShowPopup(false);
-            })
-            .catch(() => alert("Impossible d'ajouter cet utilisateur."));
+        try {
+            const res = await sendRequest("POST", "/add_friend", {
+                user_id: parseInt(user.id, 10),
+                friend_username: friendUsername
+            }, true);
+
+            const newFriend = {
+                id: res.friend.id,
+                username: res.friend.username,
+                status: "Hors ligne"
+            };
+
+            setFriends((prev) => [...prev, newFriend]);
+            setFriendUsername("");
+            setShowPopup(false);
+        } catch (err) {
+            console.error("Impossible d'ajouter cet utilisateur:", err);
+            alert("Impossible d'ajouter cet utilisateur.");
+        }
     };
 
-    const handleRemoveFriend = (id) => {
+    const handleRemoveFriend = async (id) => {
         if (!user) return;
 
         setRemovingIds((prev) => [...prev, id]);
-        axios.delete(`http://localhost:3001/delete_friend/${user.id}/${id}`)
-            .then(() => setFriends((prev) => prev.filter((f) => f.id !== id)))
-            .catch(() => alert("Impossible de supprimer l'ami pour le moment."))
-            .finally(() => setRemovingIds((prev) => prev.filter((rid) => rid !== id)));
+        try {
+            await sendRequest("DELETE", `/delete_friend/${user.id}/${id}`, {}, true);
+            setFriends((prev) => prev.filter((f) => f.id !== id));
+        } catch (err) {
+            console.error("Impossible de supprimer l'ami:", err);
+            alert("Impossible de supprimer l'ami pour le moment.");
+        } finally {
+            setRemovingIds((prev) => prev.filter((rid) => rid !== id));
+        }
     };
 
     return (
@@ -66,6 +85,7 @@ const Friends = () => {
             <div className="friends-right">
                 <h3>👥 Mes Amis</h3>
                 <ul className="friend-list-scroll">
+                    {friends.length === 0 && <li className="empty-msg">Aucun ami pour le moment</li>}
                     {friends.map((friend) => (
                         <li key={friend.id} className={`friend-card ${removingIds.includes(friend.id) ? "removing" : ""}`}>
                             <div className="friend-info">
@@ -77,7 +97,6 @@ const Friends = () => {
                             <button className="remove-friend" onClick={() => handleRemoveFriend(friend.id)}>✖</button>
                         </li>
                     ))}
-                    {friends.length === 0 && <li className="empty-msg">Aucun ami pour le moment</li>}
                 </ul>
             </div>
 

@@ -1,10 +1,10 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import './Solo.css';
 import DifficultyModal from '../components/DifficultyModal';
 import NumberSelector from '../components/NumberSelector';
-import './Solo.css';
-import {AuthContext} from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
+import { useRequest } from "../utils/Request";
 
 const EndGameModal = ({ isOpen, onClose, points, time, errors }) => {
     if (!isOpen) return null;
@@ -36,7 +36,7 @@ const Solo = () => {
     const [points, setPoints] = useState(0);
     const [isGridValid, setIsGridValid] = useState(false);
     const { user } = useContext(AuthContext);
-
+    const { sendRequest } = useRequest();
     const navigate = useNavigate();
 
     // ========= Utils =========
@@ -142,7 +142,7 @@ const Solo = () => {
     const generateGridsIfNeeded = async (difficulty) => {
         try {
             const promises = Array.from({ length: 10 }).map(() =>
-                axios.post("http://127.0.0.1:3001/add_grid", { Difficulty: difficulty })
+                sendRequest("POST", "/add_grid", { Difficulty: difficulty }, true)
             );
             await Promise.all(promises);
         } catch (err) {
@@ -152,9 +152,7 @@ const Solo = () => {
 
     const fetchGridFromBackend = async (difficulty) => {
         try {
-            const res = await axios.get(`http://127.0.0.1:3001/grid?difficulty=${difficulty}`);
-            const data = res.data;
-
+            const data = await sendRequest("GET", `/grid?difficulty=${difficulty}`, {}, true);
             const board = parseBoardString(data.board);
             setGrid(board);
             setGivenCells(computeGivenIndexes(board));
@@ -193,14 +191,17 @@ const Solo = () => {
 
     const submitGrid = async () => {
         try {
-            const gridString = grid.flat().map(v => v ?? 0).join('');
-            await axios.post("http://localhost:3001/submit_solo_game", {
-                user_id: user.id,
-                difficulty: selectedDifficulty,
-                completion_time: elapsedTime,
-                game_mode: 'sudoku'
-            });
-
+            await sendRequest(
+                "POST",
+                "/submit_solo_game",
+                {
+                    user_id: user.id,
+                    difficulty: selectedDifficulty,
+                    completion_time: elapsedTime,
+                    game_mode: 'sudoku'
+                },
+                true
+            );
         } catch (err) {
             console.error("Erreur lors de la soumission :", err);
         }

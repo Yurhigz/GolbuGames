@@ -1,10 +1,10 @@
 import { useRef, useState, useContext } from "react";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
-import {Link, useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
-import axios from "axios";
 import { AuthContext } from "../../contexts/AuthContext";
+import { useRequest } from "../../utils/Request";
 
 const sanitizeInput = (str) => {
     const temp = document.createElement("div");
@@ -26,6 +26,7 @@ const Login = () => {
     const passwordRef = useRef();
     const [error, setError] = useState("");
     const { AuthLogin } = useContext(AuthContext);
+    const { sendRequest } = useRequest();
 
     const handleLogin = async () => {
         const rawLogin = loginRef.current.value;
@@ -45,27 +46,22 @@ const Login = () => {
         }
 
         if (!validatePassword(password)) {
-            setError("Le mot de passe doit contenir au moins 6 caractères, une lettre majuscule et un chiffre.");
+            setError(
+                "Le mot de passe doit contenir au moins 6 caractères, une lettre majuscule et un chiffre."
+            );
             return;
         }
 
-        setError(""); // Réinitialise les erreurs
+        setError("");
 
-        const identifiants = {
-            login,
-            password,
-        };
-
-        console.log("Connexion sécurisée :", identifiants);
         try {
-            const response = await axios.post("http://localhost:3001/login", {
+            const data = await sendRequest("POST", "/login", {
                 Username: login,
                 Password: password,
                 Accountname: login,
-            });
+            }, false, true);
 
-            const { access_token, user_id, username } = response.data;
-
+            const { access_token, user_id, username } = data;
             AuthLogin({ id: user_id, username }, access_token);
             navigate("/");
         } catch (err) {
@@ -100,7 +96,10 @@ const Login = () => {
             <Button onClick={handleLogin}>Connexion</Button>
 
             <div className="register-link">
-                <p>Pas encore de compte ? <Link to="/register">Créer un compte</Link></p>
+                <p>
+                    Pas encore de compte ?{" "}
+                    <Link to="/register">Créer un compte</Link>
+                </p>
             </div>
         </div>
     );

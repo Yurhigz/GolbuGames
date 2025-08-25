@@ -3,6 +3,7 @@ import axios from "axios";
 import { Input } from "../components/Input";
 import { Card } from "../components/Card";
 import "./Tournament.css";
+import { useRequest } from "../utils/Request";
 
 // Anti-XSS : échappe le HTML
 const sanitizeInput = (str) => {
@@ -16,6 +17,7 @@ const isValidText = (str) => /^[a-zA-Z0-9\s\-_.,!?]+$/.test(str);
 
 const Tournament = () => {
     const [tournaments, setTournaments] = useState([]);
+    // const [selectedTournamentId, setSelectedTournamentId] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [error, setError] = useState("");
     const [newTournament, setNewTournament] = useState({
@@ -23,13 +25,14 @@ const Tournament = () => {
         description: "",
         maxPlayers: 4,
     });
+    const { sendRequest } = useRequest();
 
     // 🔹 Fonction pour récupérer les tournois depuis le backend
     const fetchTournaments = async () => {
         try {
-            const response = await axios.get("http://localhost:3001/tournaments");
-            if (response.data && response.data.tournaments) {
-                setTournaments(response.data.tournaments);
+            const res = await sendRequest("GET", "/tournaments", null, true);
+            if (res && res.tournaments) {
+                setTournaments(res.tournaments);
             }
         } catch (err) {
             console.error("Erreur lors de la récupération des tournois :", err);
@@ -91,12 +94,12 @@ const Tournament = () => {
 
         try {
             // 👉 Envoi au backend
-            const response = await axios.post("http://localhost:3001/add_tournament", {
+            const response = await sendRequest("POST", "/add_tournament", {
                 Name: name,
                 Description: description,
                 StartTime: new Date().toISOString(),
                 EndTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            });
+            }, true);
 
             console.log("Tournoi créé :", response.data);
 

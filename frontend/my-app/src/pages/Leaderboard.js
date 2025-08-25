@@ -1,23 +1,19 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Card, CardContent } from "../components/Card";
+import { useRequest } from "../utils/Request";
 import "./Leaderboard.css";
 
 const Leaderboard = () => {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { sendRequest } = useRequest();
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const token = localStorage.getItem("token");
-                const response = await axios.get("http://localhost:3001/leaderboard", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-                setPlayers(response.data);
+                const data = await sendRequest("GET", "/leaderboard", null, true);
+                setPlayers(data);
             } catch (err) {
                 console.error("Erreur lors du fetch leaderboard:", err);
                 setError("Impossible de charger le classement.");
@@ -27,7 +23,7 @@ const Leaderboard = () => {
         };
 
         fetchLeaderboard();
-    }, []);
+    }, [sendRequest]);
 
     if (loading) return <p>Chargement du classement...</p>;
     if (error) return <p className="error">{error}</p>;
