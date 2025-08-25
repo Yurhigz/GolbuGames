@@ -9,6 +9,79 @@ import (
 	"time"
 )
 
+// structure client pour solo
+
+type SoloClient struct {
+	clientId    string
+	pseudo      string
+	conn        net.Conn
+	mu          sync.Mutex
+	elo         int
+	frameBuffer []byte
+	send        chan *Frame
+	solution    string
+	playable    string
+}
+
+func newSoloClient(conn net.Conn) *SoloClient {
+	return &SoloClient{
+		conn: conn,
+		send: make(chan *Frame, 256),
+	}
+}
+
+func (c *SoloClient) ValidateMove(index int, value byte) bool {
+	// Vérifie si la valeur correspond à la solution
+	if c.solution[index] == value {
+		return true
+	}
+	return false
+}
+
+func (c *SoloClient) writePump() {
+
+}
+
+func (c *SoloClient) readPump() {
+	buffer := make([]byte, 0, 4096)
+	for {
+		temp := make([]byte, 1024)
+
+		n, err := c.conn.Read(temp)
+		if err != nil {
+			log.Printf("[ERR] <readPump> Error reading from client %s: %v", c.clientId, err)
+			return
+		}
+
+		log.Printf("[INFO] Read %d bytes from client %s (read #%d)", n, c.clientId)
+		if n == 0 {
+			log.Printf("[WARN] Read 0 bytes from client %s, continuing...", c.clientId)
+			continue
+		}
+
+		buffer = append(buffer, temp[:n]...)
+
+		// Traiter toutes les frames complètes dans le buffer
+		frameCount := 0
+		for len(buffer) > 0 {
+			frameCount++
+			frame, frameLen, err := parseFrame(buffer)
+			if err != nil {
+				log.Printf("parseFrame error: %v", err)
+				if err == ErrIncompleteFrame {
+					// Frame incomplète, attendre plus de données
+					log.Printf("[INFO] Incomplete frame, waiting for more data...")
+					break
+				}
+				log.Printf("[ERR] Error parsing frame from client %s: %v", c.clientId, err)
+				return
+			}
+			// WIP
+		}
+	}
+}
+
+// structure client pour multijoueurs
 type Client struct {
 	clientId      string
 	nickname      string
