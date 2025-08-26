@@ -185,8 +185,14 @@ func GetUserId(w http.ResponseWriter, r *http.Request) {
 
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 
-	var pwdUpdate types.PasswordUpdate
-	err := json.NewDecoder(r.Body).Decode(&pwdUpdate)
+    userID, err := middleware.GetUserIdFromClaim(r)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusUnauthorized)
+        return
+    }
+
+	var pwdUpdate types.PasswordUpdateJwt
+	err = json.NewDecoder(r.Body).Decode(&pwdUpdate)
 	if err != nil {
 		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
@@ -198,9 +204,9 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Vérifier que l'utilisateur existe
-	_, err = repository.GetUserDB(r.Context(), pwdUpdate.ID)
+	_, err = repository.GetUserDB(r.Context(), userID)
 	if err != nil {
-		log.Printf("Error retrieving user %d: %v", pwdUpdate.ID, err)
+		log.Printf("Error retrieving user %d: %v", userID, err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -211,9 +217,9 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.UpdateUserPasswordDB(r.Context(), pwdUpdate.ID, pwdUpdate.NewPassword)
+	err = repository.UpdateUserPasswordDB(r.Context(), userID, pwdUpdate.NewPassword)
 	if err != nil {
-		log.Printf("Error updating password for user %d: %v", pwdUpdate.ID, err)
+		log.Printf("Error updating password for user %d: %v", userID, err)
 		http.Error(w, "Failed to update password", http.StatusInternalServerError)
 		return
 	}
@@ -222,7 +228,6 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Password updated successfully",
-		"userid":  strconv.Itoa(pwdUpdate.ID),
 	})
 }
 

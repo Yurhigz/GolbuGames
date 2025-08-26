@@ -34,8 +34,8 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 	// mux.HandleFunc("GET /user_history", handlers.GetUserHistory)
 	// mux.HandleFunc("POST /save_game", handlers.SaveGameProgress)
 
-	mux.HandleFunc("GET /friends/{id}", middleware.JWTMiddleware("", handlers.GetUserFriends))
-	mux.HandleFunc("DELETE /delete_friend/{id}/{f_id}", middleware.JWTMiddleware("", handlers.RemoveFriend))
+	mux.HandleFunc("GET /friends", middleware.JWTMiddleware("", handlers.GetUserFriends))
+	mux.HandleFunc("DELETE /delete_friend/{f_id}", middleware.JWTMiddleware("", handlers.RemoveFriend))
 	mux.HandleFunc("POST /add_friend", middleware.JWTMiddleware("", handlers.AddFriend))
 
 	mux.HandleFunc("GET /tournaments", middleware.JWTMiddleware("", handlers.GetAllTournaments))

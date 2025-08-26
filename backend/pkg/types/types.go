@@ -51,6 +51,10 @@ type AddFriendRequest struct {
     FriendUsername string `json:"friend_username"`
 }
 
+type AddFriendRequestJwt struct {
+    FriendUsername string `json:"friend_username"`
+}
+
 type GridRequest struct {
 	Difficulty string `json:"difficulty"`
 }
@@ -77,5 +81,9 @@ type Game struct {
 
 type PasswordUpdate struct {
 	ID          int    `json:"id"`
+	NewPassword string `json:"new_password"`
+}
+
+type PasswordUpdateJwt struct {
 	NewPassword string `json:"new_password"`
 }

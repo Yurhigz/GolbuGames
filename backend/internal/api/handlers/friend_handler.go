@@ -11,24 +11,13 @@ import (
 )
 
 func GetUserFriends(w http.ResponseWriter, r *http.Request) {
-
-    claims, ok := r.Context().Value("claims").(*middleware.CustomClaims)
-    if !ok || claims == nil {
-        http.Error(w, "Unauthorized", http.StatusUnauthorized)
-        return
-    }
-
-    log.Printf("UserID from token: %s, expires at: %v", claims.UserID, claims.ExpiresAt.Time)
-
-    strId := r.PathValue("id")
-    id, err := strconv.Atoi(strId)
+    userID, err := middleware.GetUserIdFromClaim(r)
     if err != nil {
-        log.Printf("%v", err)
-        http.Error(w, "id must be a number", http.StatusBadRequest)
+        http.Error(w, err.Error(), http.StatusUnauthorized)
         return
     }
 
-    friends, err := repository.GetUserFriends(r.Context(), id)
+    friends, err := repository.GetUserFriends(r.Context(), userID)
     if err != nil {
         log.Printf("%v", err)
         http.Error(w, "Error while retrieving friends from the database", http.StatusInternalServerError)
@@ -43,11 +32,9 @@ func GetUserFriends(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveFriend(w http.ResponseWriter, r *http.Request) {
-    strId := r.PathValue("id")
-    id, err := strconv.Atoi(strId)
+    userID, err := middleware.GetUserIdFromClaim(r)
     if err != nil {
-        log.Printf("%v", err)
-        http.Error(w, "id must be a number", http.StatusBadRequest)
+        http.Error(w, err.Error(), http.StatusUnauthorized)
         return
     }
 
@@ -59,7 +46,7 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    err = repository.RemoveFriend(r.Context(), id, f_id)
+    err = repository.RemoveFriend(r.Context(), userID, f_id)
     if err != nil {
         log.Printf("%v", err)
         http.Error(w, "Error while removing friends from the database", http.StatusInternalServerError)
@@ -74,7 +61,13 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddFriend(w http.ResponseWriter, r *http.Request) {
-    var req types.AddFriendRequest
+    userID, err := middleware.GetUserIdFromClaim(r)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusUnauthorized)
+        return
+    }
+
+    var req types.AddFriendRequestJwt
 
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
         http.Error(w, "Invalid request payload", http.StatusBadRequest)
@@ -87,7 +80,7 @@ func AddFriend(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    if err := repository.AddFriend(r.Context(), req.UserID, friend.ID); err != nil {
+    if err := repository.AddFriend(r.Context(), userID, friend.ID); err != nil {
         log.Printf("%v", err)
         http.Error(w, "Error while adding friend", http.StatusInternalServerError)
         return

@@ -30,7 +30,6 @@ const Profile = () => {
 
         try {
             const res = await sendRequest("POST", "/updateuser", {
-                id: parseInt(user.id, 10),
                 new_password: newPassword,
             }, true);
 

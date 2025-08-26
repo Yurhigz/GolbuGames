@@ -8,6 +8,7 @@ import (
     "context"
 	"github.com/golang-jwt/jwt/v5"
 	"strings"
+	"strconv"
 )
 
 type CustomClaims struct {
@@ -163,4 +164,18 @@ func JWTMiddleware(requiredRole string, next http.HandlerFunc) http.HandlerFunc 
 
 		next.ServeHTTP(w, r)
 	}
+}
+
+func GetUserIdFromClaim(r *http.Request) (int, error) {
+    claims, ok := r.Context().Value("claims").(*CustomClaims)
+    if !ok || claims == nil {
+        return 0, fmt.Errorf("unauthorized: no claims found in context")
+    }
+
+    userID, err := strconv.Atoi(claims.UserID)
+    if err != nil {
+        return 0, fmt.Errorf("invalid user ID: %v", err)
+    }
+
+    return userID, nil
 }

@@ -17,7 +17,7 @@ const Friends = () => {
 
         const fetchFriends = async () => {
             try {
-                const res = await sendRequest("GET", `/friends/${user.id}`, {}, true);
+                const res = await sendRequest("GET", `/friends`, {}, true);
                 const friendsData = res.data.friends.map(f => ({
                     id: f.id,
                     username: f.username,
@@ -39,7 +39,6 @@ const Friends = () => {
 
         try {
             const res = await sendRequest("POST", "/add_friend", {
-                user_id: parseInt(user.id, 10),
                 friend_username: friendUsername
             }, true);
 
@@ -63,7 +62,7 @@ const Friends = () => {
 
         setRemovingIds((prev) => [...prev, id]);
         try {
-            await sendRequest("DELETE", `/delete_friend/${user.id}/${id}`, {}, true);
+            await sendRequest("DELETE", `/delete_friend/${id}`, {}, true);
             setFriends((prev) => prev.filter((f) => f.id !== id));
         } catch (err) {
             console.error("Impossible de supprimer l'ami:", err);
