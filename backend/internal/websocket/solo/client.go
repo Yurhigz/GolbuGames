@@ -21,8 +21,8 @@ type SoloClient struct {
 	elo         int
 	frameBuffer []byte
 	send        chan *websocket.Frame
-	solution    string
-	playable    string
+	solution    []int
+	playable    []int
 }
 
 func newSoloClient(conn net.Conn) *SoloClient {
@@ -34,7 +34,7 @@ func newSoloClient(conn net.Conn) *SoloClient {
 
 func (c *SoloClient) ValidateMove(index int, value byte) bool {
 	// Vérifie si la valeur correspond à la solution
-	if c.solution[index] == value {
+	if c.solution[index] == int(value) {
 		return true
 	}
 	return false
