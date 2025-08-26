@@ -1,4 +1,4 @@
-package ws
+package websocket
 
 import "encoding/binary"
 
@@ -81,7 +81,7 @@ func Pong(payload []byte) []byte {
 	return BuildFrame(payload, OpcodePong, true)
 }
 
-func opcodeToString(opcode byte) string {
+func OpcodeToString(opcode byte) string {
 	switch opcode {
 	case OpcodeContinuation:
 		return "Continuation"
@@ -125,7 +125,7 @@ func extractPayload(buf []byte) []byte {
 }
 
 // Fonction de décodage des messages clients
-func parseFrame(buf []byte) (Frame, int, error) {
+func ParseFrame(buf []byte) (Frame, int, error) {
 	bufLength := len(buf)
 	frame := Frame{}
 	if bufLength < 2 {

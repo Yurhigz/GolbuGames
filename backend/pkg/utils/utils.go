@@ -51,3 +51,13 @@ func GridTransformer(sudokuGrid *types.MainGrid) string {
 	}
 	return FlattenedSudoku
 }
+
+func GridSerializer(sudokuGrid *types.MainGrid) []int {
+	var SerializedSudoku []int
+	for _, row := range *sudokuGrid {
+		for _, v := range row {
+			SerializedSudoku = append(SerializedSudoku, v)
+		}
+	}
+	return SerializedSudoku
+}

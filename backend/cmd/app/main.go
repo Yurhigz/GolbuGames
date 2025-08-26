@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"golbugames/backend/config"
 	"golbugames/backend/internal/api/router"
 	"golbugames/backend/internal/database"
 	"log"
@@ -32,6 +33,13 @@ func main() {
 	err := database.InitDB(ctx)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	// Init Sudoku Grids
+
+	err = config.InitGridGeneration(ctx)
+	if err != nil {
+		log.Fatalf("Failed to generate Grids : %v", err)
 	}
 
 	// Init router

@@ -1,12 +1,14 @@
-package ws
+package multiplayer
 
 import (
+	"golbugames/backend/internal/websocket"
 	"log"
 	"net"
 	"sync"
 	"time"
 )
 
+// structure client pour multijoueurs
 type Client struct {
 	clientId      string
 	conn          net.Conn
@@ -68,7 +70,7 @@ func (c *Client) handleFrame(frame Frame) {
 	case OpcodePong:
 		log.Printf("Received pong from client %s", c.clientId)
 
-	case OpcodeText, OpcodeBinary:
+	case websocket.OpcodeText, websocket.OpcodeBinary:
 		// Premier frame d'un nouveau message
 		c.currentOpcode = frame.Opcode
 
@@ -93,7 +95,7 @@ func (c *Client) handleFrame(frame Frame) {
 			c.frameBuffer = append(c.frameBuffer[:0], frame.Payload...)
 		}
 
-	case OpcodeContinuation:
+	case websocket.OpcodeContinuation:
 		// Frame de continuation
 		if c.frameBuffer == nil || c.currentOpcode == 0 {
 			log.Printf("Received continuation frame without initial frame from client %s", c.clientId)
@@ -147,7 +149,7 @@ func (c *Client) writePump() {
 		case <-ticker.C:
 			// Envoyer un ping
 			c.mu.Lock()
-			_, err := c.conn.Write(Ping([]byte("ping")))
+			_, err := c.conn.Write(websocket.Ping([]byte("ping")))
 			c.mu.Unlock()
 
 			if err != nil {

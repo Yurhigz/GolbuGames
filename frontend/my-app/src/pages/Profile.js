@@ -1,7 +1,6 @@
-// Profile.js
-import React, {useContext, useState} from "react";
+import React, { useContext, useState } from "react";
 import "./Profile.css";
-import {AuthContext} from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
 
 const Profile = () => {
     const [newPassword, setNewPassword] = useState("");
@@ -12,11 +11,11 @@ const Profile = () => {
 
     const scoreHistory = {
         solo: [
-            { id: 1, opponent: "Bot#1", result: "Victoire", date: "2025-08-01" },
-            { id: 2, opponent: "Bot#2", result: "Défaite", date: "2025-07-29" },
+            { id: 1, result: "Victoire", date: "2025-08-01", time: "320s" },
+            { id: 2, result: "Défaite", date: "2025-07-29", time: "400s" },
         ],
         versus: [
-            { id: 1, opponent: "Lucas", result: "Victoire", date: "2025-07-27" },
+            { id: 1, opponent: "Lucas", result: "Victoire", date: "2025-07-27", time: "290s" },
         ],
         tournois: [
             { id: 1, opponent: "Tournoi S1", result: "3e place", date: "2025-07-15" },
@@ -52,6 +51,12 @@ const Profile = () => {
         }
     };
 
+    // Format titre pour affichage
+    const getTitle = (cat) => {
+        if (cat === "versus") return "Multijoueurs";
+        return cat.charAt(0).toUpperCase() + cat.slice(1);
+    };
+
     return (
         <div className="profile-container" style={{ fontSize: '0.9rem' }}>
             <h1 className="profile-title">👤 Mon Profil</h1>
@@ -82,7 +87,7 @@ const Profile = () => {
                     className={`category-tab ${activeCategory === "versus" ? "active" : ""}`}
                     onClick={() => setActiveCategory("versus")}
                 >
-                    Versus
+                    Multijoueurs
                 </button>
                 <button
                     className={`category-tab ${activeCategory === "tournois" ? "active" : ""}`}
@@ -93,21 +98,23 @@ const Profile = () => {
             </div>
 
             <div className="history-section">
-                <h3>Historique - {activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)}</h3>
+                <h3>Historique - {getTitle(activeCategory)}</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Adversaire</th>
+                            {activeCategory !== "solo" && <th>Adversaire</th>}
                             <th>Résultat</th>
+                            {(activeCategory === "solo" || activeCategory === "versus") && <th>Temps</th>}
                         </tr>
                     </thead>
                     <tbody key={activeCategory} className="fade-slide-up">
                         {scoreHistory[activeCategory].map((match) => (
                             <tr key={match.id}>
                                 <td>{match.date}</td>
-                                <td>{match.opponent}</td>
+                                {activeCategory !== "solo" && <td>{match.opponent}</td>}
                                 <td>{match.result}</td>
+                                {(activeCategory === "solo" || activeCategory === "versus") && <td>{match.time}</td>}
                             </tr>
                         ))}
                     </tbody>

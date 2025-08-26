@@ -29,7 +29,7 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 	validDifficulties := map[string]bool{
 		"easy":         true,
 		"intermediate": true,
-		"advanced":     true,
+		"hard":         true,
 		"expert":       true,
 	}
 
@@ -64,6 +64,7 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// En cours de traitement avec le Websocket
 func GetGrid(w http.ResponseWriter, r *http.Request) {
 
 	difficulty := r.URL.Query().Get("difficulty")
@@ -74,7 +75,7 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	validDifficulties := map[string]bool{
 		"easy":         true,
 		"intermediate": true,
-		"advanced":     true,
+		"hard":         true,
 		"expert":       true,
 	}
 
@@ -93,21 +94,21 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":    "Grid sucessfully retrieved",
-		"board":      sudokuGrid.Board,
+// 		"board":      sudokuGrid.Board,
 		"difficulty": sudokuGrid.Difficulty,
 	})
 }
 
 func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
-    leaderboard, err := repository.GetLeaderboard(r.Context())
-    if err != nil {
-        http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
-        return
-    }
+	leaderboard, err := repository.GetLeaderboard(r.Context())
+	if err != nil {
+		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
+		return
+	}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(leaderboard)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(leaderboard)
 }
 
 // func GetUserHistory(w http.ResponseWriter, r *http.Request) {

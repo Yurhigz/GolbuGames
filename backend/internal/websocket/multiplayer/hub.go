@@ -1,4 +1,4 @@
-package ws
+package multiplayer
 
 // Le fonctionnement avec un système de hubmanager va permettre de créer des rooms de communication.
 // A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer

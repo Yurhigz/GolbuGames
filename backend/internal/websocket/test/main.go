@@ -17,8 +17,13 @@ const (
 )
 
 func main() {
-
-	http.HandleFunc("/websocket", websocketHandler)
+	HubManager := ws.NewHubManager()
+	go HubManager.MatchmakingLoop()
+	// A debug
+	// go HubManager.HubCleanupLoop()
+	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
+		ws.WebsocketHandler(w, r, HubManager)
+	})
 	fmt.Printf("Listening on port %v ...", 3005)
 
 	http.ListenAndServe(":3005", nil)

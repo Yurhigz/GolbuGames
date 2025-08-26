@@ -1,10 +1,10 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DifficultyModal from '../components/DifficultyModal';
 import NumberSelector from '../components/NumberSelector';
 import './Solo.css';
-import {AuthContext} from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
 
 const EndGameModal = ({ isOpen, onClose, points, time, errors }) => {
     if (!isOpen) return null;
@@ -21,9 +21,31 @@ const EndGameModal = ({ isOpen, onClose, points, time, errors }) => {
     );
 };
 
+const CountdownOverlay = ({ onComplete }) => {
+    const [count, setCount] = useState(3);
+
+    useEffect(() => {
+        if (count === 0) {
+            const timer = setTimeout(() => onComplete(), 500);
+            return () => clearTimeout(timer);
+        }
+        const interval = setInterval(() => setCount((prev) => prev - 1), 1000);
+        return () => clearInterval(interval);
+    }, [count, onComplete]);
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h1 style={{ fontSize: '3rem' }}>{count === 0 ? 'Partez !' : count}</h1>
+            </div>
+        </div>
+    );
+};
+
 const Solo = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(true);
+    const [showCountdown, setShowCountdown] = useState(false);
     const [selectedNumber, setSelectedNumber] = useState(null);
     const [grid, setGrid] = useState(Array(9).fill(null).map(() => Array(9).fill(null)));
     const [givenCells, setGivenCells] = useState([]);
@@ -37,21 +59,21 @@ const Solo = () => {
     const [points, setPoints] = useState(0);
     const [isGridValid, setIsGridValid] = useState(false);
     const { user } = useContext(AuthContext);
-
     const navigate = useNavigate();
+    const socketRef = useRef(null);
 
-    // ========= Utils =========
-    const parseBoardString = (boardStr) => {
-        if (!boardStr) return Array(9).fill(null).map(() => Array(9).fill(null));
-        return boardStr
-            .split(";")
-            .filter(line => line.trim() !== "")
-            .map(row =>
-                row.split(",").map(val => {
-                    const num = parseInt(val, 10);
-                    return isNaN(num) || num === 0 ? null : num;
-                })
+    // 🔥 Nouveau parseur pour tableau
+    const parseBoardArray = (arr) => {
+        if (!arr || !Array.isArray(arr) || arr.length !== 81) {
+            return Array(9).fill(null).map(() => Array(9).fill(null));
+        }
+        const matrix = [];
+        for (let i = 0; i < 9; i++) {
+            matrix.push(
+                arr.slice(i * 9, i * 9 + 9).map(num => (num === 0 ? null : num))
             );
+        }
+        return matrix;
     };
 
     const computeGivenIndexes = (matrix) => {
@@ -66,15 +88,8 @@ const Solo = () => {
 
     const isNumberValid = (row, col, number, currentGrid) => {
         if (!number) return true;
-
-        for (let c = 0; c < 9; c++) {
-            if (c !== col && currentGrid[row][c] === number) return false;
-        }
-
-        for (let r = 0; r < 9; r++) {
-            if (r !== row && currentGrid[r][col] === number) return false;
-        }
-
+        for (let c = 0; c < 9; c++) if (c !== col && currentGrid[row][c] === number) return false;
+        for (let r = 0; r < 9; r++) if (r !== row && currentGrid[r][col] === number) return false;
         const startRow = Math.floor(row / 3) * 3;
         const startCol = Math.floor(col / 3) * 3;
         for (let r = startRow; r < startRow + 3; r++) {
@@ -82,7 +97,6 @@ const Solo = () => {
                 if ((r !== row || c !== col) && currentGrid[r][c] === number) return false;
             }
         }
-
         return true;
     };
 
@@ -125,10 +139,15 @@ const Solo = () => {
             }
         }
 
+        // Envoi WebSocket
+        const position = row * 9 + col;
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify({ position, value: number }));
+        }
+
         setIsGridValid(isGridFullyValid(newGrid));
     };
 
-    // ========= Timer =========
     useEffect(() => {
         let interval;
         if (startTime && !showEndModal) {
@@ -175,36 +194,71 @@ const Solo = () => {
 
     const handleSelectDifficulty = async (difficulty) => {
         setSelectedDifficulty(difficulty);
-        await fetchGridFromBackend(difficulty);
+
+        const socket = new WebSocket(`ws://localhost:3001/grid?difficulty=${difficulty}`);
+        socketRef.current = socket;
+
+        socket.onopen = () => console.log("[WS] Connecté");
+
+        socket.onmessage = (e) => {
+            console.log("[WS] Reçu:", e.data);
+            try {
+                const msg = JSON.parse(e.data);
+
+                if (msg.type === "init" && msg.grid) {
+                    const board = parseBoardArray(msg.grid);
+                    setGrid(board);
+                    setGivenCells(computeGivenIndexes(board));
+                    setShowCountdown(true);
+                }
+                else if (msg.position !== undefined && msg.value !== undefined && msg.valid !== undefined) {
+                    const row = Math.floor(msg.position / 9);
+                    const col = msg.position % 9;
+
+                    if (msg.valid) {
+                        setGivenCells(prev => [...prev, msg.position]);
+                        setGrid(prevGrid => {
+                            const newGrid = prevGrid.map(r => [...r]);
+                            newGrid[row][col] = msg.value;
+                            return newGrid;
+                        });
+                        setErrorCells(prev => prev.filter(c => !(c.row === row && c.col === col)));
+                    } else {
+                        setErrorCells(prev => [...prev, { row, col }]);
+                        setErrorCount(prev => prev + 1);
+                    }
+                }
+            } catch (err) {
+                console.error("[WS] Erreur parsing:", err);
+            }
+        };
+
+        socket.onerror = (err) => console.error("[WS] Erreur:", err);
+        socket.onclose = () => console.log("[WS] Fermé");
     };
 
-    // ========= Fin de partie =========
-    const calculatePoints = (difficulty, time, errors) => {
-        const basePoints = {
-            easy: 100,
-            intermediate: 200,
-            advanced: 300,
-            expert: 500
-        }[difficulty] || 50;
+    const startGameAfterCountdown = () => {
+        setShowCountdown(false);
+        setIsModalOpen(false);
+        setStartTime(Date.now());
+    };
 
-        let score = basePoints;
-        score -= time; // -1 point / seconde
-        score -= errors * 5; // -5 points par erreur
+    const calculatePoints = (difficulty, time, errors) => {
+        const base = { easy: 100, intermediate: 200, advanced: 300, expert: 500 }[difficulty] || 50;
+        let score = base - time - errors * 5;
         return score > 0 ? score : 0;
     };
 
     const submitGrid = async () => {
         try {
-            const gridString = grid.flat().map(v => v ?? 0).join('');
             await axios.post("http://localhost:3001/submit_solo_game", {
                 user_id: user.id,
                 difficulty: selectedDifficulty,
                 completion_time: elapsedTime,
                 game_mode: 'sudoku'
             });
-
         } catch (err) {
-            console.error("Erreur lors de la soumission :", err);
+            console.error("Erreur soumission:", err);
         }
     };
 
@@ -215,9 +269,8 @@ const Solo = () => {
             setShowEndModal(true);
             submitGrid();
         }
-    }, [isGridValid]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isGridValid]);
 
-    // ========= Interaction =========
     const handleCellClick = (row, col) => {
         if (!givenCells.includes(row * 9 + col)) {
             setSelectedCell({ row, col });
@@ -227,42 +280,32 @@ const Solo = () => {
         }
     };
 
-    // useEffect(() => {
-    //     setIsGridValid(true);
-    // }, [selectedDifficulty]);
-
     const handleNumberSelect = (number) => {
-        // Toggle si on clique sur le même nombre
-        if (selectedNumber === number) {
-            setSelectedNumber(null);
-        } else {
-            setSelectedNumber(number);
-        }
+        setSelectedNumber(prev => (prev === number ? null : number));
     };
 
-    const handleQuit = () => navigate('/');
+    const handleQuit = () => {
+        if (socketRef.current) socketRef.current.close();
+        navigate('/');
+    };
 
-    // ========= Clavier =========
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (isModalOpen) return;
             const { row, col } = selectedCell;
             if (givenCells.includes(row * 9 + col)) return;
-
             if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
             if (e.key >= '1' && e.key <= '9') fillCell(row, col, parseInt(e.key, 10));
-            else if (e.key === 'Backspace' || e.key === 'Delete') fillCell(row, col, null);
+            else if (["Backspace", "Delete"].includes(e.key)) fillCell(row, col, null);
             else if (e.key === 'ArrowUp' && row > 0) setSelectedCell({ row: row - 1, col });
             else if (e.key === 'ArrowDown' && row < 8) setSelectedCell({ row: row + 1, col });
             else if (e.key === 'ArrowLeft' && col > 0) setSelectedCell({ row, col: col - 1 });
             else if (e.key === 'ArrowRight' && col < 8) setSelectedCell({ row, col: col + 1 });
         };
-
         window.addEventListener('keydown', handleKeyDown, { passive: false });
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [selectedCell, isModalOpen, grid, givenCells]);
 
-    // ========= UI =========
     const SudokuGrid = ({ isBackground }) => (
         <div className={`sudoku-grid ${isBackground ? 'background' : 'active'}`}>
             {[...Array(9)].map((_, rowIndex) => (
@@ -304,6 +347,8 @@ const Solo = () => {
                 setSelectedDifficulty={setSelectedDifficulty}
             />
 
+            {showCountdown && <CountdownOverlay onComplete={startGameAfterCountdown} />}
+
             <EndGameModal
                 isOpen={showEndModal}
                 onClose={() => setShowEndModal(false)}
@@ -312,7 +357,7 @@ const Solo = () => {
                 errors={errorCount}
             />
 
-            {!isModalOpen && (
+            {!isModalOpen && !showCountdown && (
                 <div className="game-content">
                     <SudokuGrid isBackground={false} />
                     <div className="actions-button-number">
