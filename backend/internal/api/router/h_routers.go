@@ -4,10 +4,14 @@ import (
 	"golbugames/backend/internal/api/handlers"
 	"golbugames/backend/internal/websocket/solo"
 	"net/http"
+	"golbugames/backend/internal/websocket/multiplayer"
 	"golbugames/backend/internal/api/middleware"
 )
 
 func InitRoutesSudoku(mux *http.ServeMux) {
+    HubManager := multiplayer.NewHubManager()
+    go HubManager.MatchmakingLoop()
+
 	// Users API
 	mux.HandleFunc("POST /create_user", handlers.CreateUser)
 // 	mux.HandleFunc("POST /create_user", handlers.UserSignin)
@@ -28,9 +32,14 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 	// mux.HandleFunc("GET /grid", handlers.GetGrid)
 	mux.HandleFunc("GET /grid", solo.WebsocketHandlerSolo)
 
-	// Game API
+	// Game API*ws.HubManager
 	mux.HandleFunc("POST /submit_solo_game", handlers.SubmitSoloGame)
+// 	mux.HandleFunc("/ws/solo", solo.WebsocketHandlerSolo)
+
 	mux.HandleFunc("POST /submit_multi_game", middleware.JWTMiddleware("", handlers.SubmitMultiGame))
+	mux.HandleFunc("/ws/multi", func(w http.ResponseWriter, r *http.Request) {
+        multiplayer.WebsocketHandler(w, r, HubManager)
+    })
 
 	mux.HandleFunc("GET /leaderboard", handlers.GetLeaderboard)
 	// mux.HandleFunc("GET /user_history", handlers.GetUserHistory)
