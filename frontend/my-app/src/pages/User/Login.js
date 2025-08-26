@@ -8,6 +8,19 @@ import "./Login.css";
 import axios from "axios";
 import { AuthContext } from "../../contexts/AuthContext";
 
+const sanitizeInput = (str) => {
+    const temp = document.createElement("div");
+    temp.textContent = str;
+    return temp.innerHTML;
+};
+
+const validatePassword = (password) => {
+    const hasMinLength = password.length >= 6;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    return hasMinLength && hasUppercase && hasNumber;
+};
+
 const Login = () => {
     const navigate = useNavigate();
     const loginRef = useRef();
