@@ -1,18 +1,15 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"golbugames/backend/internal/api/middleware"
 	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/pkg/types"
-	"golbugames/backend/pkg/utils"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 	"golang.org/x/crypto/bcrypt"
+
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -196,6 +193,7 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
 // Il faudra intégrer la validation par mail de l'inscription de l'utilisateur.
 func UserSignin(w http.ResponseWriter, r *http.Request) {
 	var userRegistration types.UserRegistration
@@ -322,5 +320,6 @@ func RefreshToken(parentsContext context.Context, refreshToken string) (string, 
 	defer cancel()
 
 	return "", fmt.Errorf("[RefreshToken] Refresh token functionality is not implemented yet")
+
 
 }

@@ -68,6 +68,7 @@ CREATE TABLE leaderboard (
     elo_score INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
 );
 
 -- Une ligne par relation d'ami
@@ -121,5 +122,6 @@ CREATE TABLE cookies (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+
 
 )
