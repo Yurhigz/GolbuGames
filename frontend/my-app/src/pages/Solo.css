@@ -5,6 +5,7 @@
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    font-size: 18px; /* Augmente la taille globale */
 }
 
 .background-grid {
@@ -58,90 +59,10 @@
 }
 
 .sudoku-grid {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.grid-row {
-    display: flex;
-}
-
-.grid-cell {
-    width: 50px;
-    height: 50px;
-    border: 1px solid #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    cursor: pointer;
-}
-
-.given-cell {
-  background-color: #eef6ff; /* léger bleu clair */
-  font-weight: bold;
-  padding: 4px; /* ✅ espace interne */
-  border-radius: 4px;
-}
-
-.grid-row:nth-child(3n) .grid-cell {
-    border-bottom: 2px solid #333;
-}
-
-.grid-row:first-child .grid-cell {
-    border-top: 2px solid #333;
-}
-
-.grid-cell:nth-child(3n) {
-    border-right: 2px solid #333;
-}
-
-.grid-cell:first-child {
-    border-left: 2px solid #333;
-}
-
-.grid-cell:hover {
-    background-color: #f0f0f0;
-}
-
-.active-grid {
-    position: relative;
-    z-index: 2;
-}
-
-.game-actions {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 20px;
-    flex-direction: column;
-  }
-
-.actions-button-number {
-    display: flex;
-    flex-direction: column;
-}
-
-  .game-result {
-    margin-top: 15px;
-    font-size: 18px;
-    font-weight: bold;
-    text-align: center;
-  }
-
-  .selected-cell {
-    border: 2px solid #3498db;
-    background-color: #ecf0f1;
-  }
-
-.sudoku-grid {
     background: #111;
     padding: 1rem;
     border-radius: 12px;
     box-shadow: 0 0 20px #00ffe7;
-    /*width: fit-content;*/
 }
 
 .grid-row {
@@ -149,35 +70,46 @@
 }
 
 .grid-cell, .number-button {
-    border: 1px solid #555;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #555;
     background: #1a1a1a !important;
-    color: #00ffe7;
+    color: #d6c935; /* Chiffres en vert */
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: inset 0 0 4px #00ffe7;
     cursor: pointer;
-    font-size: 15px !important;
+    font-size: 22px !important;
 }
 
-/* Style pour les sous-grilles 3x3 */
+.given-cell {
+  background-color: #eef6ff;
+  font-weight: bold;
+  padding: 4px;
+  border-radius: 4px;
+}
+
 .grid-row:nth-child(3n) {
-    border-bottom: 2px solid #00ffe7;
+    border-bottom: 3px solid #00ffe7; /* démarcation plus épaisse */
 }
 
 .grid-row:first-child {
-    border-top: 2px solid #00ffe7;
+    border-top: 3px solid #00ffe7;
 }
 
 .grid-cell:nth-child(3n) {
-    border-right: 2px solid #00ffe7;
+    border-right: 3px solid #00ffe7;
 }
 
 .grid-cell:first-child {
-    border-left: 2px solid #00ffe7;
+    border-left: 3px solid #00ffe7;
 }
 
-/* Cellule sélectionnée (mode actif uniquement) */
+.grid-cell:hover {
+    background-color: #f0f0f0;
+}
+
 .selected-cell {
     background-color: #00ffe733;
     box-shadow: 0 0 8px #ff00cc;
@@ -193,6 +125,7 @@
     background: #111;
     border-radius: 12px;
     box-shadow: 0 0 20px #00ffe7;
+    margin-top: 2px;
 }
 
 .quit-button,
@@ -201,11 +134,10 @@
     font-size: 1rem;
     font-family: 'Press Start 2P', cursive;
     text-transform: uppercase;
-    /*border-radius: 12px;*/
-    /*border: none;*/
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-left: 0px;
+    margin-top: 15px;
+    margin-left: 25px;
     margin-right: 0px;
     border-radius: 8px;
 }
@@ -235,6 +167,15 @@
     border: none;
 }
 
+.error-counter, .timer {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffcc00;
+    text-align: center;
+    margin-top: 30px;
+    width: 400px;
+}
+
 @media (max-width: 1100px) {
     .game-content {
         flex-direction: column;
@@ -255,7 +196,6 @@
     }
 }
 
-/* Fond semi-transparent derrière la modale */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -270,7 +210,6 @@
     z-index: 1000;
 }
 
-/* Contenu de la modale */
 .modal-content {
     background: #fff;
     padding: 2rem;
@@ -282,21 +221,18 @@
     animation: fadeIn 0.3s ease-out;
 }
 
-/* Titre */
 .modal-content h2 {
     font-size: 1.6rem;
     margin-bottom: 1rem;
     color: #333;
 }
 
-/* Texte */
 .modal-content p {
     margin: 0.6rem 0;
     font-size: 1rem;
     color: #555;
 }
 
-/* Bouton */
 .modal-button {
     margin-top: 1.5rem;
     padding: 0.7rem 1.5rem;
@@ -314,7 +250,6 @@
     background: #3a9ed9;
 }
 
-/* Animation */
 @keyframes fadeIn {
     from {
         transform: scale(0.9);
@@ -325,4 +260,3 @@
         opacity: 1;
     }
 }
-
