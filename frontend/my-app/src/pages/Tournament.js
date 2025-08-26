@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { Input } from "../components/Input";
 import { Card } from "../components/Card";
 import "./Tournament.css";
