@@ -209,6 +209,7 @@ func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameS
 	return &gameHistory, nil
 }
 
+
 func GetTournamentId(parentsContext context.Context, tournamentName string) (int, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
@@ -305,81 +306,3 @@ func AddTournament(parentsContext context.Context, tournament types.Tournament) 
 	return nil
 }
 
-// func GetTournamentByID(parentsContext context.Context, id int) (*types.Tournament, error) {
-//     ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
-// 	defer cancel()
-//
-// 	var t types.Tournament
-// 	query := `SELECT id, name, description, start_time, end_time FROM tournaments WHERE id=$1`
-// 	err := database.DBPool.QueryRow(ctx, query, id).Scan(&t.ID, &t.Name, &t.Description, &t.StartTime, &t.EndTime)
-// 	return &t, err
-// }
-//
-// func GetParticipants(parentsContext context.Context, id int) ([]int, error) {
-//     ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
-// 	defer cancel()
-// 	rows, err := database.DBPool.Query(ctx, `SELECT user_id FROM tournament_participants WHERE tournament_id=$1`, id)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer rows.Close()
-//
-// 	var participants []int
-// 	for rows.Next() {
-// 		var userID int
-// 		if err := rows.Scan(&userID); err != nil {
-// 			return nil, err
-// 		}
-// 		participants = append(participants, userID)
-// 	}
-//
-// 	return participants, rows.Err()
-// }
-//
-// func StartTournament(parentsContext context.Context, id int) error {
-//     ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
-// 	defer cancel()
-//
-// 	query := `UPDATE tournaments SET start_time=NOW() WHERE id=$1`
-// 	_, err := database.DBPool.Exec(ctx, query, id)
-// 	return err
-// }
-//
-// func AddParticipant(ctx context.Context, tournamentID int, userID int, hubManager *ws.HubManager) error {
-//     ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-//     defer cancel()
-//
-//     // Vérifier que le tournoi existe et qu'il n'a pas commencé
-//     var startTime time.Time
-//     err := database.DBPool.QueryRow(ctx, `SELECT start_time FROM tournaments WHERE id=$1`, tournamentID).Scan(&startTime)
-//     if err != nil {
-//         return fmt.Errorf("tournament not found: %v", err)
-//     }
-//     if time.Now().After(startTime) {
-//         return fmt.Errorf("cannot join, tournament already started")
-//     }
-//
-//     // Vérifier si l'utilisateur est déjà inscrit
-//     var exists bool
-//     err = database.DBPool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM tournament_participants WHERE tournament_id=$1 AND user_id=$2)`, tournamentID, userID).Scan(&exists)
-//     if err != nil {
-//         return fmt.Errorf("error checking participant existence: %v", err)
-//     }
-//     if exists {
-//         return fmt.Errorf("user already joined")
-//     }
-//
-//     // Ajouter le participant
-//     _, err = database.DBPool.Exec(ctx, `INSERT INTO tournament_participants (tournament_id, user_id, created_at) VALUES ($1,$2,NOW())`, tournamentID, userID)
-//     if err != nil {
-//         return fmt.Errorf("error inserting participant: %v", err)
-//     }
-//
-//     // Notifier le Hub WebSocket
-//     hubManager.BroadcastToTournament(
-//         fmt.Sprintf("%d", tournamentID),
-//         fmt.Sprintf("User %d vient de rejoindre le tournoi !", userID),
-//     )
-//
-//     return nil
-// }

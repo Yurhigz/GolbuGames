@@ -67,6 +67,11 @@ const SideNav = () => {
                         <FaUserPlus className="nav-icon" />
                         <span>Amis</span>
                     </Link>
+                    <Link to="/Profile" className="nav-item" onClick={handleLinkClick}>
+                        <FaUserPlus className="nav-icon" />
+                        <span>Profile</span>
+                    </Link>
+
                     <Link to="/logout" className="nav-item" onClick={AuthLogout}>
                         <FaUserPlus className="nav-icon" />
                         <span>Déconnexion</span>
