@@ -75,32 +75,32 @@ func UpgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 	return conn, nil
 }
 
-func HandleWebSocketConnection(conn net.Conn, incoming chan<- Frame) {
-	defer conn.Close()
-	tmpbuf := make([]byte, 1024)
-	var buf []byte
+// func HandleWebSocketConnection(conn net.Conn, incoming chan<- Frame) {
+// 	defer conn.Close()
+// 	tmpbuf := make([]byte, 1024)
+// 	var buf []byte
 
-	for {
-		n, err := conn.Read(tmpbuf)
-		if err != nil {
-			log.Println("[ERR] <handleWebSocketConnection> Error reading:", err)
-			break
-		}
-		buf = append(buf, tmpbuf[:n]...)
-		for {
-			frame, frameLength, err := ParseFrame(buf)
-			if err != nil {
-				if errors.Is(err, ErrIncompleteFrame) {
-					break // attendre plus de données
-				}
-				log.Println("[ERR] <handleWebSocketConnection> parse error:", err)
-				return
-			}
-			incoming <- frame
-			buf = buf[frameLength:]
+// 	for {
+// 		n, err := conn.Read(tmpbuf)
+// 		if err != nil {
+// 			log.Println("[ERR] <handleWebSocketConnection> Error reading:", err)
+// 			break
+// 		}
+// 		buf = append(buf, tmpbuf[:n]...)
+// 		for {
+// 			frame, frameLength, err := ParseFrame(buf)
+// 			if err != nil {
+// 				if errors.Is(err, ErrIncompleteFrame) {
+// 					break // attendre plus de données
+// 				}
+// 				log.Println("[ERR] <handleWebSocketConnection> parse error:", err)
+// 				return
+// 			}
+// 			incoming <- frame
+// 			buf = buf[frameLength:]
 
-		}
+// 		}
 
-	}
+// 	}
 
-}
+// }
