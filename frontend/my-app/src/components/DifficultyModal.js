@@ -11,7 +11,7 @@ const DifficultyModal = ({ isOpen, onClose, onSelectDifficulty }) => {
                 <div className="difficulty-buttons">
                     <button onClick={() => onSelectDifficulty('easy')}>Facile</button>
                     <button onClick={() => onSelectDifficulty('intermediate')}>Moyen</button>
-                    <button onClick={() => onSelectDifficulty('advanced')}>Difficile</button>
+                    <button onClick={() => onSelectDifficulty('hard')}>Difficile</button>
                 </div>
                 <button className="close-button" onClick={onClose}>×</button>
             </div>

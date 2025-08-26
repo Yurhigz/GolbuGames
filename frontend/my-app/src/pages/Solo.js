@@ -61,17 +61,18 @@ const Solo = () => {
     const navigate = useNavigate();
     const socketRef = useRef(null);
 
-    const parseBoardString = (boardStr) => {
-        if (!boardStr) return Array(9).fill(null).map(() => Array(9).fill(null));
-        return boardStr
-            .split(";")
-            .filter(line => line.trim() !== "")
-            .map(row =>
-                row.split(",").map(val => {
-                    const num = parseInt(val, 10);
-                    return isNaN(num) || num === 0 ? null : num;
-                })
+    // 🔥 Nouveau parseur pour tableau
+    const parseBoardArray = (arr) => {
+        if (!arr || !Array.isArray(arr) || arr.length !== 81) {
+            return Array(9).fill(null).map(() => Array(9).fill(null));
+        }
+        const matrix = [];
+        for (let i = 0; i < 9; i++) {
+            matrix.push(
+                arr.slice(i * 9, i * 9 + 9).map(num => (num === 0 ? null : num))
             );
+        }
+        return matrix;
     };
 
     const computeGivenIndexes = (matrix) => {
@@ -156,48 +157,49 @@ const Solo = () => {
         return () => clearInterval(interval);
     }, [startTime, showEndModal]);
 
-    const generateGridsIfNeeded = async (difficulty) => {
-        try {
-            const promises = Array.from({ length: 10 }).map(() =>
-                axios.post("http://127.0.0.1:3001/add_grid", { Difficulty: difficulty })
-            );
-            await Promise.all(promises);
-        } catch (err) {
-            console.error("Impossible de générer les grilles :", err);
-        }
-    };
-
-    const fetchGridFromBackend = async (difficulty) => {
-        try {
-            const res = await axios.get(`http://127.0.0.1:3001/grid?difficulty=${difficulty}`);
-            const data = res.data;
-            const board = parseBoardString(data.board);
-            setGrid(board);
-            setGivenCells(computeGivenIndexes(board));
-            setShowCountdown(true);
-        } catch (err) {
-            if (err.response?.status === 500) {
-                await generateGridsIfNeeded(difficulty);
-                return fetchGridFromBackend(difficulty);
-            } else {
-                console.error("Impossible de récupérer la grille :", err);
-            }
-        }
-    };
-
     const handleSelectDifficulty = async (difficulty) => {
         setSelectedDifficulty(difficulty);
 
-        // Connexion WebSocket
-        const socket = new WebSocket("ws://localhost:3001/ws/solo");
+        const socket = new WebSocket(`ws://localhost:3001/grid?difficulty=${difficulty}`);
         socketRef.current = socket;
 
         socket.onopen = () => console.log("[WS] Connecté");
-        socket.onmessage = (e) => console.log("[WS] Reçu:", e.data);
+
+        socket.onmessage = (e) => {
+            console.log("[WS] Reçu:", e.data);
+            try {
+                const msg = JSON.parse(e.data);
+
+                if (msg.type === "init" && msg.grid) {
+                    const board = parseBoardArray(msg.grid);
+                    setGrid(board);
+                    setGivenCells(computeGivenIndexes(board));
+                    setShowCountdown(true);
+                }
+                else if (msg.position !== undefined && msg.value !== undefined && msg.valid !== undefined) {
+                    const row = Math.floor(msg.position / 9);
+                    const col = msg.position % 9;
+
+                    if (msg.valid) {
+                        setGivenCells(prev => [...prev, msg.position]);
+                        setGrid(prevGrid => {
+                            const newGrid = prevGrid.map(r => [...r]);
+                            newGrid[row][col] = msg.value;
+                            return newGrid;
+                        });
+                        setErrorCells(prev => prev.filter(c => !(c.row === row && c.col === col)));
+                    } else {
+                        setErrorCells(prev => [...prev, { row, col }]);
+                        setErrorCount(prev => prev + 1);
+                    }
+                }
+            } catch (err) {
+                console.error("[WS] Erreur parsing:", err);
+            }
+        };
+
         socket.onerror = (err) => console.error("[WS] Erreur:", err);
         socket.onclose = () => console.log("[WS] Fermé");
-
-        await fetchGridFromBackend(difficulty);
     };
 
     const startGameAfterCountdown = () => {
