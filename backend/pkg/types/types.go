@@ -18,17 +18,17 @@ type Coordinates [2]int
 // }
 
 type Tournament struct {
-    ID          int
-    Name        string
-    Description string
-    StartTime   time.Time
-    EndTime     time.Time
+	ID          int
+	Name        string
+	Description string
+	StartTime   time.Time
+	EndTime     time.Time
 }
 
 // // SudokuGame implémente l'interface Game
 type SudokuGrid struct {
-	Board      string `json:"board"`
-	Solution   string `json:"solution"`
+	Board      []int  `json:"board"`
+	Solution   []int  `json:"solution"`
 	Difficulty string `json:"difficulty"`
 }
 
@@ -47,8 +47,8 @@ type User struct {
 }
 
 type AddFriendRequest struct {
-    UserID         int    `json:"user_id"`
-    FriendUsername string `json:"friend_username"`
+	UserID         int    `json:"user_id"`
+	FriendUsername string `json:"friend_username"`
 }
 
 type AddFriendRequestJwt struct {

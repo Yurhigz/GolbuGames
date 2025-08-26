@@ -54,8 +54,8 @@ func InitGridGeneration(ctx context.Context) error {
 				}
 
 				grid := &types.SudokuGrid{
-					Board:      utils.GridTransformer(playable),
-					Solution:   utils.GridTransformer(solved),
+					Board:      utils.GridSerializer(playable),
+					Solution:   utils.GridSerializer(solved),
 					Difficulty: difficulty,
 				}
 

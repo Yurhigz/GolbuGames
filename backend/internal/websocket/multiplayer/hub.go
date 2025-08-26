@@ -1,7 +1,8 @@
-package ws
+package multiplayer
 
 import (
 	"fmt"
+	"golbugames/backend/internal/websocket"
 	"log"
 	"sync"
 	"time"
@@ -36,7 +37,7 @@ type Hub struct {
 	clients    [2]*Client
 	register   chan *Client
 	unregister chan *Client
-	broadcast  chan *Frame
+	broadcast  chan *websocket.Frame
 	hubId      string
 	gameState  GameStatus
 	ready      chan struct{}
@@ -50,7 +51,7 @@ func NewHubManager() *HubManager {
 
 func newHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan *Frame),
+		broadcast:  make(chan *websocket.Frame),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    [2]*Client{nil, nil},
@@ -120,15 +121,15 @@ func (h *Hub) run() {
 				client.hub = h
 				client.matchId = h.hubId
 				time.Sleep(1000 * time.Millisecond)
-				client.send <- NewTextFrame("Waiting for opponent...")
+				client.send <- websocket.NewTextFrame("Waiting for opponent...")
 			} else {
 				h.clients[1] = client
 				client.hub = h
 				client.matchId = h.hubId
 				time.Sleep(100 * time.Millisecond)
 				message := "Opponent found... Game starting!"
-				h.clients[0].send <- NewTextFrame(message)
-				h.clients[1].send <- NewTextFrame(message)
+				h.clients[0].send <- websocket.NewTextFrame(message)
+				h.clients[1].send <- websocket.NewTextFrame(message)
 			}
 
 		case client := <-h.unregister:
@@ -136,12 +137,12 @@ func (h *Hub) run() {
 			if h.clients[0] == client {
 				h.clients[0] = nil
 				if h.clients[1] != nil {
-					h.clients[1].send <- NewTextFrame("Opponent disconnected")
+					h.clients[1].send <- websocket.NewTextFrame("Opponent disconnected")
 				}
 			} else if h.clients[1] == client {
 				h.clients[1] = nil
 				if h.clients[0] != nil {
-					h.clients[0].send <- NewTextFrame("Opponent disconnected")
+					h.clients[0].send <- websocket.NewTextFrame("Opponent disconnected")
 				}
 			}
 		case message := <-h.broadcast:
@@ -190,7 +191,7 @@ func (hm *HubManager) MatchmakingLoop() {
 				if client.matchId == "" {
 					availableHub.register <- client
 					hm.RemoveClientFromQueue(client)
-					client.send <- NewTextFrame("You have been matched with an opponent!")
+					client.send <- websocket.NewTextFrame("You have been matched with an opponent!")
 					log.Printf("[INFO] A match has been made\n")
 
 				}

@@ -2,6 +2,7 @@ package router
 
 import (
 	"golbugames/backend/internal/api/handlers"
+	"golbugames/backend/internal/websocket/solo"
 	"net/http"
 	"golbugames/backend/internal/api/middleware"
 )
@@ -24,9 +25,10 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 
 	// Sudoku API
 	mux.HandleFunc("POST /add_grid", handlers.AddGrid)
-	mux.HandleFunc("GET /grid", handlers.GetGrid)
+	// mux.HandleFunc("GET /grid", handlers.GetGrid)
+	mux.HandleFunc("GET /grid", solo.WebsocketHandlerSolo)
 
-	// Game API*ws.HubManager
+	// Game API
 	mux.HandleFunc("POST /submit_solo_game", handlers.SubmitSoloGame)
 	mux.HandleFunc("POST /submit_multi_game", middleware.JWTMiddleware("", handlers.SubmitMultiGame))
 

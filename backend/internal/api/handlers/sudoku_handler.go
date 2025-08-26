@@ -64,6 +64,7 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// En cours de traitement avec le Websocket
 func GetGrid(w http.ResponseWriter, r *http.Request) {
 
 	difficulty := r.URL.Query().Get("difficulty")
@@ -93,7 +94,7 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":    "Grid sucessfully retrieved",
-		"board":      sudokuGrid.Board,
+// 		"board":      sudokuGrid.Board,
 		"difficulty": sudokuGrid.Difficulty,
 	})
 }

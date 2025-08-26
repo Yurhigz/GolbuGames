@@ -28,8 +28,8 @@ CREATE TABLE sessions (
 DROP TABLE IF EXISTS sudoku_games CASCADE;
 CREATE TABLE sudoku_games (
     id SERIAL PRIMARY KEY,
-    board VARCHAR(200) NOT NULL,
-    solution VARCHAR(200) NOT NULL,
+    board JSON NOT NULL,
+    solution JSON NOT NULL,
     difficulty VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
