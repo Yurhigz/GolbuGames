@@ -24,7 +24,27 @@ func secretKeyVerification(clientKey string) (string, error) {
 	return base64.StdEncoding.EncodeToString(hash[:]), nil
 }
 
-// Fonction de coordination/service
+// WebsocketHandler Solo
+func WebsocketHandlerSolo(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgradeConnection(w, r)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Erreur d'upgrade WebSocket: %v", err), http.StatusInternalServerError)
+		log.Printf("[ERR] <websocket handler> Erreur d'upgrade connection")
+		return
+	}
+
+	log.Println("[INFO] WebSocket connection established!")
+
+	client := newSoloClient(conn)
+
+	go client.writePump()
+	go client.readPump()
+
+	log.Printf("[INFO] Nouveau client crée")
+
+}
+
+// WebsocketHandler multijoueurs
 func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubManager) {
 
 	conn, err := upgradeConnection(w, r)
@@ -51,29 +71,44 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request, hubManager *HubMan
 
 func upgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
 
-	if strings.ToLower(r.Header.Get("Connection")) != "upgrade" || strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
+	if !strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade") ||
+		strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
 		return nil, errors.New("Invalid upgrade request")
 	}
 
-	acceptKey, err := secretKeyVerification(r.Header.Get("Sec-WebSocket-Key"))
+	// Vérification version
+	if r.Header.Get("Sec-WebSocket-Version") != "13" {
+		return nil, errors.New("unsupported websocket version")
+	}
 
+	acceptKey, err := secretKeyVerification(r.Header.Get("Sec-WebSocket-Key"))
 	if err != nil {
 		return nil, err
 	}
-	w.Header().Set("Sec-WebSocket-Version", "13")
-	w.Header().Set("Upgrade", "websocket")
-	w.Header().Set("Connection", "Upgrade")
-	// w.Header().Set("Sec-WebSocket-Extensions", "")
-	w.Header().Set("Sec-WebSocket-Accept", acceptKey)
-
-	w.WriteHeader(http.StatusSwitchingProtocols)
 
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		return nil, errors.New("webserver doesn't support hijacking")
 	}
-	conn, _, err := hj.Hijack()
+	conn, buf, err := hj.Hijack()
 	if err != nil {
+		return nil, err
+	}
+
+	response := fmt.Sprintf(
+		"HTTP/1.1 101 Switching Protocols\r\n"+
+			"Upgrade: websocket\r\n"+
+			"Connection: Upgrade\r\n"+
+			"Sec-WebSocket-Accept: %s\r\n\r\n",
+		acceptKey,
+	)
+
+	if _, err := buf.WriteString(response); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	if err := buf.Flush(); err != nil {
+		conn.Close()
 		return nil, err
 	}
 
