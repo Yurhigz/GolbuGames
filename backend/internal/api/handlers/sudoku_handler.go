@@ -64,6 +64,7 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// En cours de traitement avec le Websocket
 func GetGrid(w http.ResponseWriter, r *http.Request) {
 
 	difficulty := r.URL.Query().Get("difficulty")
