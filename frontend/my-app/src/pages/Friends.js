@@ -7,9 +7,11 @@ import { AuthContext } from "../contexts/AuthContext";
 const Friends = () => {
     const { user } = useContext(AuthContext);
     const [friendUsername, setFriendUsername] = useState("");
+
     const [friends, setFriends] = useState([]);
     const [removingIds, setRemovingIds] = useState([]);
     const [showPopup, setShowPopup] = useState(false);
+
 
     useEffect(() => {
         if (!user) return;
@@ -25,6 +27,7 @@ const Friends = () => {
             })
             .catch((err) => console.error("Erreur lors du fetch des amis:", err));
     }, [user]);
+
 
     const handleAddFriend = () => {
         if (!friendUsername.trim() || !user) return;
@@ -60,26 +63,32 @@ const Friends = () => {
                 <div className="friends-header">
                     <h3>➕ Ajouter un ami</h3>
                     <button className="btn-green btn-left" onClick={() => setShowPopup(true)}>Ajouter</button>
+
                 </div>
             </div>
 
             <div className="friends-right">
                 <h3>👥 Mes Amis</h3>
-                <ul className="friend-list-scroll">
+                <ul>
                     {friends.map((friend) => (
+
                         <li key={friend.id} className={`friend-card ${removingIds.includes(friend.id) ? "removing" : ""}`}>
+
                             <div className="friend-info">
                                 <span className="friend-name">{friend.username}</span>
                                 <span className={`status ${friend.status === "En ligne" ? "online" : "offline"}`}>
                                     {friend.status}
                                 </span>
                             </div>
+
                             <button className="remove-friend" onClick={() => handleRemoveFriend(friend.id)}>✖</button>
+
                         </li>
                     ))}
                     {friends.length === 0 && <li className="empty-msg">Aucun ami pour le moment</li>}
                 </ul>
             </div>
+
 
             {showPopup && (
                 <div className="popup-overlay">
@@ -98,6 +107,7 @@ const Friends = () => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };

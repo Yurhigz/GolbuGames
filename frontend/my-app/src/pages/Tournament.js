@@ -4,6 +4,7 @@ import { Input } from "../components/Input";
 import { Card } from "../components/Card";
 import "./Tournament.css";
 
+
 // Anti-XSS : échappe le HTML
 const sanitizeInput = (str) => {
     const temp = document.createElement("div");
@@ -198,6 +199,7 @@ const Tournament = () => {
             )}
         </div>
     );
+
 };
 
 export default Tournament;

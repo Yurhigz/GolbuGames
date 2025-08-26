@@ -33,14 +33,6 @@ const (
 	MaxPayloadSize         = 1024 * 1024
 )
 
-func NewTextFrame(msg string) *Frame {
-	return &Frame{
-		FIN:     true,
-		Opcode:  OpcodeText,
-		Payload: []byte(msg),
-	}
-}
-
 func isFinalFrame(b byte) bool {
 	return b&(1<<7) != 0
 }
@@ -202,8 +194,6 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 }
 
 //  Fonction de construction des réponses côté serveur vers les clients
-// ajouter la gestion des frames fragmentées et des des erreurs
-// ajouter la gestion des frames ping/pong
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	var frame []byte
 	var firstByte byte = 0b0000000
@@ -235,17 +225,4 @@ func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	return frame
 }
 
-func (f *Frame) ToBytes() []byte {
-	return BuildFrame(f.Payload, f.Opcode, f.FIN)
-}
-
-func CloseFrame(code uint16, reason string) *Frame {
-	payload := make([]byte, 2+len(reason))
-	binary.BigEndian.PutUint16(payload, code)
-	copy(payload[2:], reason)
-	return &Frame{
-		FIN:     true,
-		Opcode:  OpcodeClose,
-		Payload: payload,
-	}
-}
+// Gestion des frames fragmentés

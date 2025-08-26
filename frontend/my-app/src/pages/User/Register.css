@@ -1,51 +1,50 @@
 .register-container {
     width: 100%;
-    max-width: 560px; /* Réduction de la largeur */
-    margin: 8rem auto;
-    padding: 5rem 3rem; /* Hauteur augmentée, largeur inchangée */
+    max-width: 600px;
+    margin: 5rem auto;
+    padding: 3rem;
     border-radius: 16px;
     background-color: #111;
     box-shadow: 0 0 20px #8a2be2;
     font-family: 'Press Start 2P', cursive;
     border: 6px solid #8a2be2;
     color: #00ffe7;
-    font-size: 1rem;
 }
 
 .register-title {
     text-align: center;
-    margin-bottom: 2.5rem;
-    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
     color: #ffcc00;
 }
 
 .input-group {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .input-field {
     width: 100%;
-    padding: 1rem;
-    font-size: 1rem;
-    border: 2px solid #00ffe7;
-    border-radius: 10px;
+    padding: 0.75rem;
+    font-size: 0.7rem;
+    border: 1px solid #00ffe7;
+    border-radius: 6px;
     background-color: #000;
     color: #00ffe7;
-    box-shadow: 0 0 7px #00ffe7 inset;
+    box-shadow: 0 0 5px #00ffe7 inset;
     font-family: inherit;
 }
 
 .btn-green {
     width: 100%;
-    padding: 1.2rem;
-    font-size: 1rem;
+    padding: 0.75rem;
+    font-size: 0.7rem;
     background-color: #00ffe7;
     color: #000;
-    border: 3px solid #ff00cc;
-    border-radius: 10px;
+    border: 2px solid #ff00cc;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
-    box-shadow: 0 0 12px #00ffe7;
+    box-shadow: 0 0 10px #00ffe7;
     transition: background-color 0.3s, box-shadow 0.3s;
     font-family: inherit;
 }
@@ -57,9 +56,9 @@
 }
 
 .login-link {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.6rem;
     color: #888;
 }
 
@@ -72,10 +71,4 @@
 .login-link a:hover {
     text-decoration: underline;
     color: #ffcc00;
-}
-
-.register-error {
-    color: red;
-    margin-bottom: 1rem;
-    font-weight: bold;
 }

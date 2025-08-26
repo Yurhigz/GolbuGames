@@ -43,6 +43,7 @@ const CountdownOverlay = ({ onComplete }) => {
 };
 
 const Solo = () => {
+
     const [isModalOpen, setIsModalOpen] = useState(true);
     const [showCountdown, setShowCountdown] = useState(false);
     const [selectedNumber, setSelectedNumber] = useState(null);
@@ -156,6 +157,40 @@ const Solo = () => {
         }
         return () => clearInterval(interval);
     }, [startTime, showEndModal]);
+
+    // ========= Backend =========
+    const generateGridsIfNeeded = async (difficulty) => {
+        try {
+            const promises = Array.from({ length: 10 }).map(() =>
+                axios.post("http://127.0.0.1:3001/add_grid", { Difficulty: difficulty })
+
+            );
+            await Promise.all(promises);
+        } catch (err) {
+            console.error("Impossible de générer les grilles :", err);
+        }
+    };
+
+    const fetchGridFromBackend = async (difficulty) => {
+        try {
+            const res = await axios.get(`http://127.0.0.1:3001/grid?difficulty=${difficulty}`);
+            const data = res.data;
+
+            const board = parseBoardString(data.board);
+            setGrid(board);
+            setGivenCells(computeGivenIndexes(board));
+
+            setIsModalOpen(false);
+            setStartTime(Date.now());
+        } catch (err) {
+            if (err.response && err.response.status === 500) {
+                await generateGridsIfNeeded(difficulty);
+                return fetchGridFromBackend(difficulty);
+            } else {
+                console.error("Impossible de récupérer la grille :", err);
+            }
+        }
+    };
 
     const handleSelectDifficulty = async (difficulty) => {
         setSelectedDifficulty(difficulty);
@@ -297,6 +332,7 @@ const Solo = () => {
                 </div>
             ))}
         </div>
+
     );
 
     return (
@@ -337,6 +373,7 @@ const Solo = () => {
                     </div>
                 </div>
             )}
+
         </div>
     );
 };
