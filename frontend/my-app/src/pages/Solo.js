@@ -176,7 +176,7 @@ const Solo = () => {
             const res = await axios.get(`http://127.0.0.1:3001/grid?difficulty=${difficulty}`);
             const data = res.data;
 
-            const board = parseBoardString(data.board);
+            const board = parseBoardArray(data.board);
             setGrid(board);
             setGivenCells(computeGivenIndexes(board));
 
