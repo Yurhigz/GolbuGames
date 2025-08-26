@@ -1,6 +1,7 @@
 package solo
 
 import (
+	"encoding/json"
 	"fmt"
 	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/internal/websocket"
@@ -40,13 +41,16 @@ func WebsocketHandlerSolo(w http.ResponseWriter, r *http.Request) {
 	go client.writePump()
 	go client.readPump()
 
+	payload, _ := json.Marshal(map[string]interface{}{
+		"type":       "init",
+		"grid":       client.playable,
+		"difficulty": difficulty,
+	})
+
 	grid := &websocket.Frame{
-		Opcode: websocket.OpcodeText,
-		FIN:    true,
-		Payload: []byte(fmt.Sprintf(
-			`{"type":"init","grid":"%s","difficulty":"%s"}`,
-			client.playable, difficulty,
-		)),
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
 	}
 
 	client.send <- grid
