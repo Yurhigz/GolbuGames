@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"golbugames/backend/internal/websocket/ws"
+	"golbugames/backend/internal/websocket/multiplayer"
 	"net/http"
 	"time"
 )
@@ -14,12 +14,12 @@ const (
 )
 
 func main() {
-	HubManager := ws.NewHubManager()
+	HubManager := multiplayer.NewHubManager()
 	go HubManager.MatchmakingLoop()
 	// A debug
 	// go HubManager.HubCleanupLoop()
 	http.HandleFunc("/websocket", func(w http.ResponseWriter, r *http.Request) {
-		ws.WebsocketHandler(w, r, HubManager)
+		multiplayer.WebsocketHandler(w, r, HubManager)
 	})
 	fmt.Printf("Listening on port %v ...", 3005)
 
