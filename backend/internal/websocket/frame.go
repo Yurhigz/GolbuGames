@@ -1,4 +1,4 @@
-package ws
+package websocket
 
 import "encoding/binary"
 
@@ -82,14 +82,14 @@ func unmaskPayload(payload []byte, mask []byte) []byte {
 }
 
 func Ping(payload []byte) []byte {
-	return buildFrame(payload, OpcodePing, true)
+	return BuildFrame(payload, OpcodePing, true)
 }
 
 func Pong(payload []byte) []byte {
-	return buildFrame(payload, OpcodePong, true)
+	return BuildFrame(payload, OpcodePong, true)
 }
 
-func opcodeToString(opcode byte) string {
+func OpcodeToString(opcode byte) string {
 	switch opcode {
 	case OpcodeContinuation:
 		return "Continuation"
@@ -133,7 +133,7 @@ func extractPayload(buf []byte) []byte {
 }
 
 // Fonction de décodage des messages clients
-func parseFrame(buf []byte) (Frame, int, error) {
+func ParseFrame(buf []byte) (Frame, int, error) {
 	bufLength := len(buf)
 	frame := Frame{}
 	if bufLength < 2 {
@@ -204,7 +204,7 @@ func parseFrame(buf []byte) (Frame, int, error) {
 //  Fonction de construction des réponses côté serveur vers les clients
 // ajouter la gestion des frames fragmentées et des des erreurs
 // ajouter la gestion des frames ping/pong
-func buildFrame(payload []byte, opcode byte, fin bool) []byte {
+func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	var frame []byte
 	var firstByte byte = 0b0000000
 	if fin {
@@ -236,7 +236,7 @@ func buildFrame(payload []byte, opcode byte, fin bool) []byte {
 }
 
 func (f *Frame) ToBytes() []byte {
-	return buildFrame(f.Payload, f.Opcode, f.FIN)
+	return BuildFrame(f.Payload, f.Opcode, f.FIN)
 }
 
 func CloseFrame(code uint16, reason string) *Frame {
