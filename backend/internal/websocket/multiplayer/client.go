@@ -49,16 +49,16 @@ func (c *Client) processMessage(payload []byte) {
 
 }
 
-func (c *Client) handleFrame(frame Frame) {
+func (c *Client) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
-	case OpcodeClose:
+	case websocket.OpcodeClose:
 		log.Printf("Client %s closed the connection", c.clientId)
 		c.hub.unregister <- c
 		return
 
-	case OpcodePing:
+	case websocket.OpcodePing:
 		log.Printf("Received ping from client %s", c.clientId)
-		pongFrame := Pong(frame.Payload)
+		pongFrame := websocket.Pong(frame.Payload)
 		c.mu.Lock()
 		_, err := c.conn.Write(pongFrame)
 		c.mu.Unlock()
@@ -67,7 +67,7 @@ func (c *Client) handleFrame(frame Frame) {
 			return
 		}
 
-	case OpcodePong:
+	case websocket.OpcodePong:
 		log.Printf("Received pong from client %s", c.clientId)
 
 	case websocket.OpcodeText, websocket.OpcodeBinary:
@@ -77,13 +77,13 @@ func (c *Client) handleFrame(frame Frame) {
 		if frame.FIN {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s",
-				opcodeToString(frame.Opcode), c.clientId)
+				websocket.opcodeToString(frame.Opcode), c.clientId)
 			c.send <- frame.Payload
 			c.resetFragmentation()
 		} else {
 			// Début d'un message fragmenté
 			log.Printf("Received first frame of fragmented %s message from client %s",
-				opcodeToString(frame.Opcode), c.clientId)
+				websocket.opcodeToString(frame.Opcode), c.clientId)
 
 			// Vérification de la taille
 			if len(frame.Payload) > MaxMessageSize {

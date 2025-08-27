@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"golbugames/backend/internal/database"
 	"golbugames/backend/pkg/types"
@@ -161,7 +163,6 @@ func GetUserStatsDB(parentsContext context.Context, id_user int) (*types.UserSta
 
 }
 
-
 func GetUserFriends(parentsContext context.Context, id_user int) ([]types.User, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
@@ -276,4 +277,3 @@ func StoreRefreshToken(parentsContext context.Context, userId int, refreshToken 
 	log.Printf("Refresh token stored successfully for user (ID: %d)", userId)
 	return nil
 }
-
