@@ -225,4 +225,17 @@ func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	return frame
 }
 
-// Gestion des frames fragmentés
+func (f *Frame) ToBytes() []byte {
+	return BuildFrame(f.Payload, f.Opcode, f.FIN)
+}
+
+func CloseFrame(code uint16, reason string) *Frame {
+	payload := make([]byte, 2+len(reason))
+	binary.BigEndian.PutUint16(payload, code)
+	copy(payload[2:], reason)
+	return &Frame{
+		FIN:     true,
+		Opcode:  OpcodeClose,
+		Payload: payload,
+	}
+}
