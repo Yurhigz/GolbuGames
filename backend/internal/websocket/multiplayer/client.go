@@ -2,44 +2,24 @@ package multiplayer
 
 import (
 	"golbugames/backend/internal/websocket"
+	"golbugames/backend/internal/websocket/client"
 	"log"
 	"net"
-	"sync"
 	"time"
 )
 
 // structure client pour multijoueurs
 type Client struct {
-	clientId      string
-	conn          net.Conn
-	mu            sync.Mutex
-	send          chan []byte
-	hub           *Hub
-	matchId       string
-	frameBuffer   []byte
-	currentOpcode byte
+	baseClient client.BaseClient
+	hub        *Hub
+	matchId    string
 }
-
-const (
-	pongWait       = 60 * time.Second // Durée d'attente pour un pong
-	newline        = "\n"
-	space          = " "
-	pingPeriod     = (pongWait * 9) / 10 // Période de ping pour garder la connexion active
-	pongTimeout    = 60 * time.Second    // Durée d'attente pour un pong avant de fermer la connexion
-	MaxMessageSize = 1024 * 1024
-)
 
 func newClient(conn net.Conn, hub *Hub) *Client {
 	return &Client{
-		conn: conn,
-		send: make(chan []byte, 256),
-		hub:  hub,
+		baseClient: *client.NewBaseClient(conn),
+		hub:        hub,
 	}
-}
-
-func (c *Client) resetFragmentation() {
-	c.frameBuffer = nil
-	c.currentOpcode = 0
 }
 
 // Ajouter une logique de traitement de messages si nécessaire
@@ -52,42 +32,42 @@ func (c *Client) processMessage(payload []byte) {
 func (c *Client) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
-		log.Printf("Client %s closed the connection", c.clientId)
+		log.Printf("Client %s closed the connection", c.baseClient.ClientId)
 		c.hub.unregister <- c
 		return
 
 	case websocket.OpcodePing:
-		log.Printf("Received ping from client %s", c.clientId)
+		log.Printf("Received ping from client %s", c.baseClient.ClientId)
 		pongFrame := websocket.Pong(frame.Payload)
-		c.mu.Lock()
-		_, err := c.conn.Write(pongFrame)
-		c.mu.Unlock()
+		c.baseClient.Mu.Lock()
+		_, err := c.baseClient.Conn.Write(pongFrame)
+		c.baseClient.Mu.Unlock()
 		if err != nil {
-			log.Printf("Error sending pong to client %s: %v", c.clientId, err)
+			log.Printf("Error sending pong to client %s: %v", c.baseClient.ClientId, err)
 			return
 		}
 
 	case websocket.OpcodePong:
-		log.Printf("Received pong from client %s", c.clientId)
+		log.Printf("Received pong from client %s", c.baseClient.ClientId)
 
 	case websocket.OpcodeText, websocket.OpcodeBinary:
 		// Premier frame d'un nouveau message
-		c.currentOpcode = frame.Opcode
+		c.baseClient.CurrentOpcode = frame.Opcode
 
 		if frame.FIN {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s",
-				websocket.opcodeToString(frame.Opcode), c.clientId)
-			c.send <- frame.Payload
+				websocket.opcodeToString(frame.Opcode), c.baseClient.ClientId)
+			c.baseClient.Send <- frame.Payload
 			c.resetFragmentation()
 		} else {
 			// Début d'un message fragmenté
 			log.Printf("Received first frame of fragmented %s message from client %s",
-				websocket.opcodeToString(frame.Opcode), c.clientId)
+				websocket.opcodeToString(frame.Opcode), c.baseClient.ClientId)
 
 			// Vérification de la taille
 			if len(frame.Payload) > MaxMessageSize {
-				log.Printf("First frame too large from client %s", c.clientId)
+				log.Printf("First frame too large from client %s", c.baseClient.ClientId)
 				c.resetFragmentation()
 				return
 			}
@@ -97,14 +77,14 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 
 	case websocket.OpcodeContinuation:
 		// Frame de continuation
-		if c.frameBuffer == nil || c.currentOpcode == 0 {
-			log.Printf("Received continuation frame without initial frame from client %s", c.clientId)
+		if c.frameBuffer == nil || c.baseClient.CurrentOpcode == 0 {
+			log.Printf("Received continuation frame without initial frame from client %s", c.baseClient.ClientId)
 			return
 		}
 
 		// Vérification de la taille totale
 		if len(c.frameBuffer)+len(frame.Payload) > MaxMessageSize {
-			log.Printf("Message too large from client %s", c.clientId)
+			log.Printf("Message too large from client %s", c.baseClient.ClientId)
 			c.resetFragmentation()
 			return
 		}
@@ -113,15 +93,15 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 
 		if frame.FIN {
 			// Message complet
-			log.Printf("Received final continuation frame from client %s", c.clientId)
+			log.Printf("Received final continuation frame from client %s", c.baseClient.ClientId)
 			c.send <- frame.Payload
 			c.resetFragmentation()
 		} else {
-			log.Printf("Received continuation frame from client %s", c.clientId)
+			log.Printf("Received continuation frame from client %s", c.baseClient.ClientId)
 		}
 
 	default:
-		log.Printf("Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.clientId)
+		log.Printf("Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.baseClient.ClientId)
 	}
 }
 
@@ -130,7 +110,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.hub.unregister <- c
-		c.conn.Close()
+		c.baseClient.Conn.Close()
 	}()
 
 	for {
@@ -139,18 +119,18 @@ func (c *Client) writePump() {
 			if !ok {
 				return
 			}
-			c.mu.Lock()
-			_, err := c.conn.Write(message)
-			c.mu.Unlock()
+			c.baseClient.Mu.Lock()
+			_, err := c.baseClient.Conn.Write(message)
+			c.baseClient.Mu.Unlock()
 
 			if err != nil {
 				return
 			}
 		case <-ticker.C:
 			// Envoyer un ping
-			c.mu.Lock()
-			_, err := c.conn.Write(websocket.Ping([]byte("ping")))
-			c.mu.Unlock()
+			c.baseClient.Mu.Lock()
+			_, err := c.baseClient.Conn.Write(websocket.Ping([]byte("ping")))
+			c.baseClient.Mu.Unlock()
 
 			if err != nil {
 				return
@@ -164,16 +144,16 @@ func (c *Client) readPump() {
 
 	defer func() {
 		c.hub.unregister <- c
-		c.conn.Close()
+		c.baseClient.Conn.Close()
 	}()
 
 	buffer := make([]byte, 0, 4096)
 
 	for {
 		temp := make([]byte, 1024)
-		n, err := c.conn.Read(temp)
+		n, err := c.baseClient.Conn.Read(temp)
 		if err != nil {
-			log.Printf("Error reading from client %s: %v", c.clientId, err)
+			log.Printf("Error reading from client %s: %v", c.baseClient.ClientId, err)
 			return
 		}
 
@@ -191,7 +171,7 @@ func (c *Client) readPump() {
 					// Frame incomplète, attendre plus de données
 					break
 				}
-				log.Printf("Error parsing frame from client %s: %v", c.clientId, err)
+				log.Printf("Error parsing frame from client %s: %v", c.baseClient.ClientId, err)
 				return
 			}
 

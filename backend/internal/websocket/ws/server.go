@@ -12,17 +12,6 @@ import (
 	"time"
 )
 
-//  Gestion des opcodes :
-// 0x1 = texte
-
-// 0x2 = binaire
-
-// 0x8 = Close
-
-// 0x9 = Ping
-
-// 0xA = Pong
-
 // Fonction de gestion de la clef secrete
 
 func secretKeyVerification(clientKey string) (string, error) {
