@@ -1,7 +1,6 @@
 package client
 
 import (
-	"golbugames/backend/internal/websocket"
 	"net"
 	"sync"
 	"time"
@@ -22,7 +21,7 @@ type BaseClient struct {
 	Elo           int
 	Conn          net.Conn
 	Mu            sync.Mutex
-	Send          chan *websocket.Frame
+	Send          chan []byte
 	Solution      []int
 	Playable      []int
 	FrameBuffer   []byte
@@ -32,7 +31,7 @@ type BaseClient struct {
 func NewBaseClient(conn net.Conn) *BaseClient {
 	return &BaseClient{
 		Conn: conn,
-		Send: make(chan *websocket.Frame, 256),
+		Send: make(chan []byte, 256),
 	}
 }
 
