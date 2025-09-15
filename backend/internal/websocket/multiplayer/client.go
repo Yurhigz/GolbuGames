@@ -12,22 +12,21 @@ import (
 type Client struct {
 	baseClient client.BaseClient
 	hub        *Hub
+	hubManager *HubManager
 	matchId    string
+	queueTime  time.Time
 }
 
-func newClient(conn net.Conn, hub *Hub) *Client {
+// Création d'un nouveau client
+
+func newClient(conn net.Conn, hubManager *HubManager) *Client {
 	return &Client{
 		baseClient: *client.NewBaseClient(conn),
-		hub:        hub,
+		hubManager: hubManager,
 	}
 }
 
-// Ajouter une logique de traitement de messages si nécessaire
-// processMessage traite les messages reçus des clients
-// Il peut être utilisé pour gérer les messages de jeu, les commandes, etc...
-func (c *Client) processMessage(payload []byte) {
-
-}
+// Gestion des frames reçues
 
 func (c *Client) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
@@ -56,46 +55,45 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 
 		if frame.FIN {
 			// Message complet en un seul frame
-			log.Printf("Received complete %s message from client %s",
-				websocket.opcodeToString(frame.Opcode), c.baseClient.ClientId)
+			log.Printf("Received complete %s message from client %s", websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
 			c.baseClient.Send <- frame.Payload
-			c.resetFragmentation()
+			c.baseClient.ResetFragmentation()
 		} else {
 			// Début d'un message fragmenté
 			log.Printf("Received first frame of fragmented %s message from client %s",
-				websocket.opcodeToString(frame.Opcode), c.baseClient.ClientId)
+				websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
 
 			// Vérification de la taille
-			if len(frame.Payload) > MaxMessageSize {
+			if len(frame.Payload) > client.MaxMessageSize {
 				log.Printf("First frame too large from client %s", c.baseClient.ClientId)
-				c.resetFragmentation()
+				c.baseClient.ResetFragmentation()
 				return
 			}
 
-			c.frameBuffer = append(c.frameBuffer[:0], frame.Payload...)
+			c.baseClient.FrameBuffer = append(c.baseClient.FrameBuffer[:0], frame.Payload...)
 		}
 
 	case websocket.OpcodeContinuation:
 		// Frame de continuation
-		if c.frameBuffer == nil || c.baseClient.CurrentOpcode == 0 {
+		if c.baseClient.FrameBuffer == nil || c.baseClient.CurrentOpcode == 0 {
 			log.Printf("Received continuation frame without initial frame from client %s", c.baseClient.ClientId)
 			return
 		}
 
 		// Vérification de la taille totale
-		if len(c.frameBuffer)+len(frame.Payload) > MaxMessageSize {
+		if len(c.baseClient.FrameBuffer)+len(frame.Payload) > client.MaxMessageSize {
 			log.Printf("Message too large from client %s", c.baseClient.ClientId)
-			c.resetFragmentation()
+			c.baseClient.ResetFragmentation()
 			return
 		}
 
-		c.frameBuffer = append(c.frameBuffer, frame.Payload...)
+		c.baseClient.FrameBuffer = append(c.baseClient.FrameBuffer, frame.Payload...)
 
 		if frame.FIN {
 			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.baseClient.ClientId)
-			c.send <- frame.Payload
-			c.resetFragmentation()
+			c.baseClient.Send <- frame.Payload
+			c.baseClient.ResetFragmentation()
 		} else {
 			log.Printf("Received continuation frame from client %s", c.baseClient.ClientId)
 		}
@@ -104,6 +102,8 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		log.Printf("Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.baseClient.ClientId)
 	}
 }
+
+// WritePump envoie les messages du canal Send au client
 
 func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
@@ -115,7 +115,7 @@ func (c *Client) writePump() {
 
 	for {
 		select {
-		case message, ok := <-c.send:
+		case message, ok := <-c.baseClient.Send:
 			if !ok {
 				return
 			}
@@ -139,6 +139,8 @@ func (c *Client) writePump() {
 	}
 
 }
+
+// ReadPump lit les messages du client et les traite
 
 func (c *Client) readPump() {
 
@@ -165,9 +167,9 @@ func (c *Client) readPump() {
 
 		// Traiter toutes les frames complètes dans le buffer
 		for len(buffer) > 0 {
-			frame, frameLen, err := parseFrame(buffer)
+			frame, frameLen, err := websocket.ParseFrame(buffer)
 			if err != nil {
-				if err == ErrIncompleteFrame {
+				if err == websocket.ErrIncompleteFrame {
 					// Frame incomplète, attendre plus de données
 					break
 				}
