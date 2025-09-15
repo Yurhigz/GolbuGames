@@ -1,12 +1,16 @@
 package multiplayer
 
+import "sync"
+
 // Le fonctionnement avec un système de hubmanager va permettre de créer des rooms de communication.
 // A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer
 // à une room, et on l'associera à la même room que son adversaire
 // On crée un hubmanager qui n'est ni plus ni moins qu'une liste des rooms
 
 type HubManager struct {
-	hubs map[string]*Hub
+	hubs        map[string]*Hub
+	mu          sync.Mutex
+	ClientQueue []*Client
 }
 
 type Hub struct {
@@ -50,33 +54,33 @@ func (h *Hub) run() {
 		case client := <-h.register:
 			if h.clients[0] == nil {
 				h.clients[0] = client
-				client.send <- []byte("Waiting for opponent...")
+				client.baseClient.Send <- []byte("Waiting for opponent...")
 			} else if h.clients[1] == nil {
 				h.clients[1] = client
 
 				message := []byte("Opponent found... Game starting!")
-				h.clients[0].send <- message
-				h.clients[1].send <- message
+				h.clients[0].baseClient.Send <- message
+				h.clients[1].baseClient.Send <- message
 			}
 		case client := <-h.unregister:
 			if h.clients[0] == client {
 				h.clients[0] = nil
 				if h.clients[1] != nil {
-					h.clients[1].send <- []byte("Opponent disconnected")
+					h.clients[1].baseClient.Send <- []byte("Opponent disconnected")
 				}
 			} else if h.clients[1] == client {
 				h.clients[1] = nil
 				if h.clients[0] != nil {
-					h.clients[0].send <- []byte("Opponent disconnected")
+					h.clients[0].baseClient.Send <- []byte("Opponent disconnected")
 				}
 			}
 
 		case message := <-h.broadcast:
 			if h.clients[0] != nil {
-				h.clients[0].send <- message
+				h.clients[0].baseClient.Send <- message
 			}
 			if h.clients[1] != nil {
-				h.clients[1].send <- message
+				h.clients[1].baseClient.Send <- message
 			}
 		}
 	}
