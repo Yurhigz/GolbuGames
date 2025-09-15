@@ -39,3 +39,11 @@ func (c *BaseClient) ResetFragmentation() {
 	c.FrameBuffer = nil
 	c.CurrentOpcode = 0
 }
+
+func (c *BaseClient) ValidateMove(index int, value byte) bool {
+	// Vérifie si la valeur correspond à la solution
+	if c.Solution[index] == int(value) {
+		return true
+	}
+	return false
+}
