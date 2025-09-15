@@ -10,7 +10,7 @@ import (
 
 // structure client pour multijoueurs
 type Client struct {
-	baseClient client.BaseClient
+	baseClient *client.BaseClient
 	hub        *Hub
 	hubManager *HubManager
 	matchId    string
@@ -21,7 +21,7 @@ type Client struct {
 
 func newClient(conn net.Conn, hubManager *HubManager) *Client {
 	return &Client{
-		baseClient: *client.NewBaseClient(conn),
+		baseClient: client.NewBaseClient(conn),
 		hubManager: hubManager,
 	}
 }
