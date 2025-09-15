@@ -4,46 +4,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"golbugames/backend/internal/websocket"
+	"golbugames/backend/internal/websocket/client"
 	"io"
 	"log"
 	"net"
-	"sync"
 	"time"
 )
 
 // structure client pour solo
 
 type SoloClient struct {
-	clientId    string
-	pseudo      string
-	conn        net.Conn
-	mu          sync.Mutex
-	elo         int
-	frameBuffer []byte
-	send        chan *websocket.Frame
-	solution    []int
-	playable    []int
+	baseClient *client.BaseClient
 }
 
 func newSoloClient(conn net.Conn) *SoloClient {
 	return &SoloClient{
-		conn: conn,
-		send: make(chan *websocket.Frame, 256),
+		baseClient: client.NewBaseClient(conn),
 	}
-}
-
-func (c *SoloClient) ValidateMove(index int, value byte) bool {
-	// Vérifie si la valeur correspond à la solution
-	if c.solution[index] == int(value) {
-		return true
-	}
-	return false
 }
 
 func (c *SoloClient) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
-		log.Printf("[INFO] Client %s closed the connection", c.clientId)
+		log.Printf("[INFO] Client %s closed the connection", c.baseClient.ClientId)
 		log.Printf("[INFO] Fermeture du client")
 		c.send <- websocket.CloseFrame(1000, "Normal Closure")
 		return
@@ -73,7 +56,7 @@ func (c *SoloClient) handleFrame(frame websocket.Frame) {
 			return
 		}
 
-		valid := c.ValidateMove(move.Position, move.Value)
+		valid := c.baseClient.ValidateMove(move.Position, move.Value)
 
 		resp := &websocket.Frame{
 			Opcode: websocket.OpcodeText,
