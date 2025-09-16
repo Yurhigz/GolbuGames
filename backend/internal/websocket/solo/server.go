@@ -34,8 +34,8 @@ func WebsocketHandlerSolo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := newSoloClient(conn)
-	client.playable = sudokuGrid.Board
-	client.solution = sudokuGrid.Solution
+	client.baseClient.Playable = sudokuGrid.Board
+	client.baseClient.Solution = sudokuGrid.Solution
 	log.Printf("[INFO] New client created")
 
 	go client.writePump()
@@ -43,7 +43,7 @@ func WebsocketHandlerSolo(w http.ResponseWriter, r *http.Request) {
 
 	payload, _ := json.Marshal(map[string]interface{}{
 		"type":       "init",
-		"grid":       client.playable,
+		"grid":       client.baseClient.Playable,
 		"difficulty": difficulty,
 	})
 
@@ -53,6 +53,6 @@ func WebsocketHandlerSolo(w http.ResponseWriter, r *http.Request) {
 		Payload: payload,
 	}
 
-	client.send <- grid
+	client.baseClient.Send <- grid
 
 }
