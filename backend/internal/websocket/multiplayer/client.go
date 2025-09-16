@@ -56,7 +56,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		if frame.FIN {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s", websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
-			c.baseClient.Send <- frame.Payload
+			c.baseClient.Send <- c.baseClient.DuplicateFrame(&frame)
 			c.baseClient.ResetFragmentation()
 		} else {
 			// Début d'un message fragmenté
@@ -92,7 +92,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		if frame.FIN {
 			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.baseClient.ClientId)
-			c.baseClient.Send <- frame.Payload
+			c.baseClient.Send <- c.baseClient.DuplicateFrame(&frame)
 			c.baseClient.ResetFragmentation()
 		} else {
 			log.Printf("Received continuation frame from client %s", c.baseClient.ClientId)
@@ -120,7 +120,7 @@ func (c *Client) writePump() {
 				return
 			}
 			c.baseClient.Mu.Lock()
-			_, err := c.baseClient.Conn.Write(message)
+			_, err := c.baseClient.Conn.Write(message.Payload)
 			c.baseClient.Mu.Unlock()
 
 			if err != nil {
