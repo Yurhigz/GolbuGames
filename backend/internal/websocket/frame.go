@@ -1,6 +1,9 @@
 package websocket
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"time"
+)
 
 // Ensemble des fonctions de lecture, écriture et parsing des frames websockets RFC6455
 
@@ -12,6 +15,12 @@ type Frame struct {
 	Payload  []byte
 	Length   int
 	RawFrame []byte
+}
+
+type BroadcastFrame struct {
+	Frame  *Frame
+	Sender string
+	SentAt time.Time
 }
 
 const (
@@ -193,7 +202,7 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 	return frame, frame.Length, nil
 }
 
-//  Fonction de construction des réponses côté serveur vers les clients
+// Fonction de construction des réponses côté serveur vers les clients
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	var frame []byte
 	var firstByte byte = 0b0000000
