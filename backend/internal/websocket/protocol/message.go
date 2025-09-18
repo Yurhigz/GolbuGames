@@ -8,8 +8,12 @@ const (
 )
 
 const (
-	SystemGameStart = "game_start"
-	SystemGameOver  = "game_over"
+	SystemGameStart = 1000
+	SystemGameOver  = 1001
+	PlayerJoined    = 1002
+	PlayerLeft      = 1003
+	InternalError   = 3000
+	ConnectionLost  = 3001
 )
 
 type ValidateMove struct {
