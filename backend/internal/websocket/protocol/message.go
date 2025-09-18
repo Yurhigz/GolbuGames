@@ -1,5 +1,7 @@
 package protocol
 
+import "encoding/json"
+
 const (
 	MessageTypeValidateMove = "validate_move"
 	MessageTypeChat         = "chat"
@@ -32,4 +34,17 @@ type SystemMessage struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 	Code    int    `json:"code"`
+}
+
+func NewSystemMessage(message string, code int) ([]byte, error) {
+	msg := SystemMessage{
+		Type:    MessageTypeSystem,
+		Message: message,
+		Code:    code,
+	}
+	marshallized, err := json.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return marshallized, nil
 }
