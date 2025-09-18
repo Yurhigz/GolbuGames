@@ -1,6 +1,11 @@
 package multiplayer
 
-import "sync"
+import (
+	"encoding/json"
+	"golbugames/backend/internal/websocket"
+	"golbugames/backend/internal/websocket/protocol"
+	"sync"
+)
 
 // Le fonctionnement avec un système de hubmanager va permettre de créer des rooms de communication.
 // A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer
@@ -17,7 +22,7 @@ type Hub struct {
 	clients    [2]*Client
 	register   chan *Client
 	unregister chan *Client
-	broadcast  chan []byte
+	broadcast  chan websocket.BroadcastFrame
 	hubId      string
 }
 
@@ -29,7 +34,7 @@ func NewHubManager() *HubManager {
 
 func newHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan []byte),
+		broadcast:  make(chan websocket.BroadcastFrame),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    [2]*Client{nil, nil},
@@ -54,33 +59,62 @@ func (h *Hub) run() {
 		case client := <-h.register:
 			if h.clients[0] == nil {
 				h.clients[0] = client
-				client.baseClient.Send <- []byte("Waiting for opponent...")
+				payload, _ := protocol.NewSystemMessage("Waiting for opponent...", 200)
+				resp := &websocket.Frame{
+					Opcode:  websocket.OpcodeText,
+					FIN:     true,
+					Payload: payload,
+				}
+				client.baseClient.Send <- resp
 			} else if h.clients[1] == nil {
 				h.clients[1] = client
-
-				message := []byte("Opponent found... Game starting!")
-				h.clients[0].baseClient.Send <- message
-				h.clients[1].baseClient.Send <- message
+				payload, _ := protocol.NewSystemMessage("Opponent found... Game will start", 200)
+				resp := &websocket.Frame{
+					Opcode:  websocket.OpcodeText,
+					FIN:     true,
+					Payload: payload,
+				}
+				h.clients[0].baseClient.Send <- resp
+				h.clients[1].baseClient.Send <- resp
 			}
 		case client := <-h.unregister:
+			payload, _ := protocol.NewSystemMessage("Opponent disconnected", protocol.PlayerLeft)
+			resp := &websocket.Frame{
+				Opcode:  websocket.OpcodeText,
+				FIN:     true,
+				Payload: payload,
+			}
 			if h.clients[0] == client {
 				h.clients[0] = nil
 				if h.clients[1] != nil {
-					h.clients[1].baseClient.Send <- []byte("Opponent disconnected")
+					h.clients[1].baseClient.Send <- resp
 				}
 			} else if h.clients[1] == client {
 				h.clients[1] = nil
 				if h.clients[0] != nil {
-					h.clients[0].baseClient.Send <- []byte("Opponent disconnected")
+					h.clients[0].baseClient.Send <- resp
 				}
 			}
 
 		case message := <-h.broadcast:
+			// Ici je dois renvoyer une frame enveloppée dans un broadcastframe à tous les clients du hub
+			respMsg := protocol.ChatMessage{
+				Type:    protocol.MessageTypeChat,
+				Sender:  message.Sender,
+				Message: string(message.Frame.Payload),
+			}
+			// A vérifier et tester /
+			payload, _ := json.Marshal(respMsg)
+			resp := &websocket.Frame{
+				Opcode:  websocket.OpcodeText,
+				FIN:     true,
+				Payload: payload,
+			}
 			if h.clients[0] != nil {
-				h.clients[0].baseClient.Send <- message
+				h.clients[0].baseClient.Send <- resp
 			}
 			if h.clients[1] != nil {
-				h.clients[1].baseClient.Send <- message
+				h.clients[1].baseClient.Send <- resp
 			}
 		}
 	}
