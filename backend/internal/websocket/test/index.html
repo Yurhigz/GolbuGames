@@ -102,7 +102,7 @@
 
     connectBtn.onclick = () => {
       if (ws) return;
-      ws = new WebSocket("ws://localhost:8080/ws"); // 🔧 adapte l'URL selon ton serveur
+      ws = new WebSocket("ws://localhost:3005/ws"); // 🔧 adapte l'URL selon ton serveur
 
       ws.onopen = () => {
         addMessage("✅ Connected to server");
