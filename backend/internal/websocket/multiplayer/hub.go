@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/protocol"
 	"sync"
@@ -15,6 +14,15 @@ import (
 // A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer
 // à une room, et on l'associera à la même room que son adversaire
 // On crée un hubmanager qui n'est ni plus ni moins qu'une liste des rooms
+const (
+	gameWaiting  = 0
+	gamesOngoing = 1
+	gameFinished = 2
+	gameAborted  = 3
+	gamePaused   = 4
+)
+
+type GameStatus int
 
 type HubManager struct {
 	hubs        map[string]*Hub
@@ -40,18 +48,18 @@ func NewHubManager() *HubManager {
 }
 
 func newHub(ctx context.Context) (*Hub, error) {
-	grid, err := repository.GetRandomDifficultyGridDB(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// grid, err := repository.GetRandomDifficultyGridDB(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return &Hub{
 		broadcast:  make(chan websocket.BroadcastFrame),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    [2]*Client{nil, nil},
-		playable:   grid.Board,
-		solution:   grid.Solution,
+		// playable:   grid.Board,
+		// solution:   grid.Solution,
 	}, nil
 }
 
@@ -171,7 +179,8 @@ func createId() string {
 	return fmt.Sprintf("hub_%d", time.Now().UnixNano())
 }
 
-func (hm *HubManager) MatchmakingLoop() {
+func (hm *HubManager) MatchmakingLoop(ctx context.Context) {
+	fmt.Printf("Starting matchmaking loop...\n")
 	for {
 		time.Sleep(5 * time.Second) // Ajuster la fréquence de vérification si nécessaire
 		hm.mu.Lock()
@@ -184,6 +193,7 @@ func (hm *HubManager) MatchmakingLoop() {
 			fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
 			availability := false
 			var availableHub *Hub
+			var err error
 			for _, hub := range hm.hubs {
 				if hub.gameState == gameWaiting && hub.clientCount() < 2 {
 					availability = true
@@ -193,21 +203,31 @@ func (hm *HubManager) MatchmakingLoop() {
 			}
 			if !availability {
 				fmt.Printf("No available hub found, creating a new one\n")
-				availableHub = hm.CreateHub(createId())
-			}
-
-			for _, client := range hm.ClientQueue {
-				if client.matchId == "" {
-					availableHub.register <- client
-					hm.RemoveClientFromQueue(client)
-					client.send <- NewTextFrame("You have been matched with an opponent!")
-					fmt.Printf("A match has been made\n")
-
+				availableHub, err = hm.CreateHub(ctx, createId())
+				if err != nil {
+					fmt.Printf("Error creating new hub: %v\n", err)
+					continue
 				}
-				if availableHub.clientCount() == 2 {
-					fmt.Printf("Hub %s is now full with 2 clients\n", availableHub.hubId)
-					availableHub.gameState = gamesOngoing
-					break
+
+				for _, client := range hm.ClientQueue {
+					if client.matchId == "" {
+						availableHub.register <- client
+						hm.RemoveClientFromQueue(client)
+						payload, _ := protocol.NewSystemMessage("You have been matched with an opponent!", 200)
+						resp := &websocket.Frame{
+							Opcode:  websocket.OpcodeText,
+							FIN:     true,
+							Payload: payload,
+						}
+						client.baseClient.Send <- resp
+						fmt.Printf("A match has been made\n")
+
+					}
+					if availableHub.clientCount() == 2 {
+						fmt.Printf("Hub %s is now full with 2 clients\n", availableHub.hubId)
+						availableHub.gameState = gamesOngoing
+						break
+					}
 				}
 			}
 
@@ -220,7 +240,7 @@ func (hm *HubManager) MatchmakingLoop() {
 				}
 			}
 			if longestWaitingTime != nil {
-				hub := hm.CreateHub(createId())
+				hub, _ := hm.CreateHub(ctx, createId())
 				time.Sleep(1000 * time.Millisecond)
 				hub.register <- longestWaitingTime
 				hm.RemoveClientFromQueue(longestWaitingTime)
