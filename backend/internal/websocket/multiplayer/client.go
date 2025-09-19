@@ -32,7 +32,10 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
 		log.Printf("Client %s closed the connection", c.baseClient.ClientId)
-		c.hub.unregister <- c
+		if c.hub != nil {
+			// vérifier pourquoi le hub n'est pas défini
+			c.hub.unregister <- c
+		}
 		return
 
 	case websocket.OpcodePing:
