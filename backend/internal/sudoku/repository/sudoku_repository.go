@@ -93,3 +93,35 @@ func GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.
 
 	return &sudokuGrid, nil
 }
+
+func GetRandomDifficultyGridDB(parentsContext context.Context) (*types.SudokuGrid, error) {
+	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	defer cancel()
+
+	// Première requête pour compter
+	var count int
+	countQuery := `SELECT COUNT(*) FROM sudoku_games`
+	err := database.DBPool.QueryRow(ctx, countQuery).Scan(&count)
+	if err != nil {
+		return nil, fmt.Errorf("[GetRandomGrid] failed to count grids: %v", err)
+	}
+
+	if count == 0 {
+		return nil, fmt.Errorf("[GetRandomGrid] no grid found")
+	}
+
+	offset := rand.IntN(count)
+
+	var sudokuGrid types.SudokuGrid
+	query := `
+        SELECT board, solution, difficulty
+        FROM sudoku_games 
+        LIMIT 1 OFFSET $1`
+
+	err = database.DBPool.QueryRow(ctx, query, offset).Scan(&sudokuGrid.Board, &sudokuGrid.Solution, &sudokuGrid.Difficulty)
+	if err != nil {
+		return nil, fmt.Errorf("[GetRandomGrid] failed to get random grid: %w", err)
+	}
+
+	return &sudokuGrid, nil
+}
