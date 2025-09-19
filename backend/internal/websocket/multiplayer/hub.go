@@ -1,7 +1,9 @@
 package multiplayer
 
 import (
+	"context"
 	"encoding/json"
+	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/protocol"
 	"sync"
@@ -24,6 +26,8 @@ type Hub struct {
 	unregister chan *Client
 	broadcast  chan websocket.BroadcastFrame
 	hubId      string
+	playable   []int
+	solution   []int
 }
 
 func NewHubManager() *HubManager {
@@ -32,21 +36,31 @@ func NewHubManager() *HubManager {
 	}
 }
 
-func newHub() *Hub {
+func newHub(ctx context.Context) (*Hub, error) {
+	grid, err := repository.GetRandomDifficultyGridDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Hub{
 		broadcast:  make(chan websocket.BroadcastFrame),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    [2]*Client{nil, nil},
-	}
+		playable:   grid.Board,
+		solution:   grid.Solution,
+	}, nil
 }
 
-func (hm *HubManager) CreateHub(matchId string) *Hub {
-	hub := newHub()
+func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, error) {
+	hub, err := newHub(ctx)
+	if err != nil {
+		return nil, err
+	}
 	hub.hubId = matchId
 	hm.hubs[matchId] = hub
 	go hub.run()
-	return hub
+	return hub, nil
 }
 
 func (hm *HubManager) GetHub(matchId string) *Hub {
