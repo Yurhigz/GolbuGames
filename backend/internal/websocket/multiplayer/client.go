@@ -5,6 +5,7 @@ import (
 	"golbugames/backend/internal/websocket/client"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -15,6 +16,8 @@ type Client struct {
 	hubManager *HubManager
 	matchId    string
 	queueTime  time.Time
+	mu         sync.Mutex
+	closed     bool
 }
 
 // Création d'un nouveau client
@@ -23,6 +26,42 @@ func newClient(conn net.Conn, hubManager *HubManager) *Client {
 	return &Client{
 		baseClient: client.NewBaseClient(conn),
 		hubManager: hubManager,
+		closed:     false,
+	}
+}
+
+// cleanup gère la fermeture propre du client
+func (c *Client) cleanup() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.closed {
+		return
+	}
+	c.closed = true
+
+	log.Printf("Cleaning up client %s", c.baseClient.ClientId)
+
+	// Retirer le client de la queue si il y est
+	c.hubManager.RemoveClientFromQueue(c)
+
+	// Désenregistrer du hub si assigné
+	if c.hub != nil {
+		select {
+		case c.hub.unregister <- c:
+		default:
+			log.Printf("Hub unregister channel blocked for client %s", c.baseClient.ClientId)
+		}
+	}
+
+	// Fermer la connexion
+	if c.baseClient != nil && c.baseClient.Conn != nil {
+		c.baseClient.Conn.Close()
+	}
+
+	// Fermer le canal Send si il existe
+	if c.baseClient != nil && c.baseClient.Send != nil {
+		close(c.baseClient.Send)
 	}
 }
 
@@ -112,8 +151,10 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
-		c.hub.unregister <- c
-		c.baseClient.Conn.Close()
+		if c.hub != nil {
+			c.hub.unregister <- c
+			c.baseClient.Conn.Close()
+		}
 	}()
 
 	for {
@@ -148,8 +189,11 @@ func (c *Client) writePump() {
 func (c *Client) readPump() {
 
 	defer func() {
-		c.hub.unregister <- c
-		c.baseClient.Conn.Close()
+		if c.hub != nil {
+			c.hub.unregister <- c
+			c.baseClient.Conn.Close()
+		}
+
 	}()
 
 	buffer := make([]byte, 0, 4096)
