@@ -6,14 +6,11 @@ import (
 	"fmt"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/protocol"
+	"log"
 	"sync"
 	"time"
 )
 
-// Le fonctionnement avec un système de hubmanager va permettre de créer des rooms de communication.
-// A partir du moment où un client ouvre une ws avec le serveur alors on va l'associer
-// à une room, et on l'associera à la même room que son adversaire
-// On crée un hubmanager qui n'est ni plus ni moins qu'une liste des rooms
 const (
 	gameWaiting  = 0
 	gamesOngoing = 1
@@ -39,6 +36,8 @@ type Hub struct {
 	hubId      string
 	playable   []int
 	solution   []int
+	mu         sync.RWMutex // Protection pour les opérations sur les clients
+	running    bool         // Flag pour indiquer si le hub est en cours d'exécution
 }
 
 func NewHubManager() *HubManager {
@@ -48,22 +47,20 @@ func NewHubManager() *HubManager {
 }
 
 func newHub(ctx context.Context) (*Hub, error) {
-	// grid, err := repository.GetRandomDifficultyGridDB(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	return &Hub{
-		broadcast:  make(chan websocket.BroadcastFrame),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
+		broadcast:  make(chan websocket.BroadcastFrame, 10), // Buffer pour éviter les blocages
+		register:   make(chan *Client, 10),
+		unregister: make(chan *Client, 10),
 		clients:    [2]*Client{nil, nil},
-		// playable:   grid.Board,
-		// solution:   grid.Solution,
+		running:    true,
+		gameState:  gameWaiting,
 	}, nil
 }
 
 func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, error) {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
 	hub, err := newHub(ctx)
 	if err != nil {
 		return nil, err
@@ -75,80 +72,193 @@ func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, erro
 }
 
 func (hm *HubManager) GetHub(matchId string) *Hub {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
 	return hm.hubs[matchId]
 }
 
 func (hm *HubManager) RemoveHub(matchId string) {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
 	if hub, exists := hm.hubs[matchId]; exists {
-		close(hub.register)
-		close(hub.unregister)
-		close(hub.broadcast)
+		hub.mu.Lock()
+		hub.running = false
+		hub.mu.Unlock()
+
+		// Fermer les canaux de manière sécurisée
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			close(hub.register)
+			close(hub.unregister)
+			close(hub.broadcast)
+		}()
+
 		delete(hm.hubs, matchId)
+		log.Printf("Hub %s removed", matchId)
 	}
 }
 
 func (h *Hub) run() {
-	for {
-		select {
-		case client := <-h.register:
-			if h.clients[0] == nil {
-				h.clients[0] = client
-				payload, _ := protocol.NewSystemMessage("Waiting for opponent...", 200)
-				resp := &websocket.Frame{
-					Opcode:  websocket.OpcodeText,
-					FIN:     true,
-					Payload: payload,
-				}
-				client.baseClient.Send <- resp
-			} else if h.clients[1] == nil {
-				h.clients[1] = client
-				payload, _ := protocol.NewSystemMessage("Opponent found... Game will start", 200)
-				resp := &websocket.Frame{
-					Opcode:  websocket.OpcodeText,
-					FIN:     true,
-					Payload: payload,
-				}
-				h.clients[0].baseClient.Send <- resp
-				h.clients[1].baseClient.Send <- resp
-			}
-		case client := <-h.unregister:
-			payload, _ := protocol.NewSystemMessage("Opponent disconnected", protocol.PlayerLeft)
-			resp := &websocket.Frame{
-				Opcode:  websocket.OpcodeText,
-				FIN:     true,
-				Payload: payload,
-			}
-			if h.clients[0] == client {
-				h.clients[0] = nil
-				if h.clients[1] != nil {
-					h.clients[1].baseClient.Send <- resp
-				}
-			} else if h.clients[1] == client {
-				h.clients[1] = nil
-				if h.clients[0] != nil {
-					h.clients[0].baseClient.Send <- resp
-				}
-			}
+	log.Printf("Hub %s started", h.hubId)
 
-		case message := <-h.broadcast:
-			// Ici je dois renvoyer une frame enveloppée dans un broadcastframe à tous les clients du hub
-			respMsg := protocol.ChatMessage{
-				Type:    protocol.MessageTypeChat,
-				Sender:  message.Sender,
-				Message: string(message.Frame.Payload),
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Hub %s panic recovered: %v", h.hubId, r)
+		}
+		log.Printf("Hub %s stopped", h.hubId)
+	}()
+
+	for h.running {
+		select {
+		case client, ok := <-h.register:
+			if !ok {
+				log.Printf("Register channel closed for hub %s", h.hubId)
+				return
 			}
-			// A vérifier et tester /
-			payload, _ := json.Marshal(respMsg)
-			resp := &websocket.Frame{
-				Opcode:  websocket.OpcodeText,
-				FIN:     true,
-				Payload: payload,
+			h.handleClientRegister(client)
+
+		case client, ok := <-h.unregister:
+			if !ok {
+				log.Printf("Unregister channel closed for hub %s", h.hubId)
+				return
 			}
-			if h.clients[0] != nil {
-				h.clients[0].baseClient.Send <- resp
+			h.handleClientUnregister(client)
+
+		case message, ok := <-h.broadcast:
+			if !ok {
+				log.Printf("Broadcast channel closed for hub %s", h.hubId)
+				return
 			}
-			if h.clients[1] != nil {
-				h.clients[1].baseClient.Send <- resp
+			h.handleBroadcast(message)
+		}
+	}
+}
+
+func (h *Hub) handleClientRegister(client *Client) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.clients[0] == nil {
+		h.clients[0] = client
+		client.hub = h // Assigner le hub au client
+		payload, _ := protocol.NewSystemMessage("Waiting for opponent...", 200)
+		resp := &websocket.Frame{
+			Opcode:  websocket.OpcodeText,
+			FIN:     true,
+			Payload: payload,
+		}
+		log.Printf("Client %s registered to hub %s as player 1", client.baseClient.ClientId, h.hubId)
+
+		// Envoyer de manière sécurisée
+		select {
+		case client.baseClient.Send <- resp:
+		default:
+			log.Printf("Failed to send message to client %s - channel full", client.baseClient.ClientId)
+		}
+
+	} else if h.clients[1] == nil {
+		h.clients[1] = client
+		client.hub = h // Assigner le hub au client
+		payload, _ := protocol.NewSystemMessage("Opponent found... Game will start", 200)
+		resp := &websocket.Frame{
+			Opcode:  websocket.OpcodeText,
+			FIN:     true,
+			Payload: payload,
+		}
+
+		log.Printf("Client %s registered to hub %s as player 2", client.baseClient.ClientId, h.hubId)
+
+		// Envoyer aux deux clients
+		for i, c := range h.clients {
+			if c != nil {
+				select {
+				case c.baseClient.Send <- resp:
+					log.Printf("Sent game start message to client %d", i)
+				default:
+					log.Printf("Failed to send message to client %d - channel full", i)
+				}
+			}
+		}
+
+		// Changer l'état du jeu
+		h.gameState = gamesOngoing
+	}
+}
+
+func (h *Hub) handleClientUnregister(client *Client) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	payload, _ := protocol.NewSystemMessage("Opponent disconnected", protocol.PlayerLeft)
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
+	}
+
+	if h.clients[0] == client {
+		h.clients[0] = nil
+		if h.clients[1] != nil {
+			select {
+			case h.clients[1].baseClient.Send <- resp:
+				log.Printf("Notified player 2 about player 1 disconnect")
+			default:
+				log.Printf("Failed to notify player 2 about disconnect")
+			}
+		}
+		log.Printf("Client unregistered from hub %s (was player 1)", h.hubId)
+
+	} else if h.clients[1] == client {
+		h.clients[1] = nil
+		if h.clients[0] != nil {
+			select {
+			case h.clients[0].baseClient.Send <- resp:
+				log.Printf("Notified player 1 about player 2 disconnect")
+			default:
+				log.Printf("Failed to notify player 1 about disconnect")
+			}
+		}
+		log.Printf("Client unregistered from hub %s (was player 2)", h.hubId)
+	}
+
+	// Si plus aucun client, marquer pour suppression
+	if h.clientCount() == 0 {
+		h.gameState = gameAborted
+		log.Printf("Hub %s is empty, marking for cleanup", h.hubId)
+	}
+}
+
+func (h *Hub) handleBroadcast(message websocket.BroadcastFrame) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	respMsg := protocol.ChatMessage{
+		Type:    protocol.MessageTypeChat,
+		Sender:  message.Sender,
+		Message: string(message.Frame.Payload),
+	}
+
+	payload, err := json.Marshal(respMsg)
+	if err != nil {
+		log.Printf("Error marshaling broadcast message: %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
+	}
+
+	// Diffuser à tous les clients connectés
+	for i, c := range h.clients {
+		if c != nil {
+			select {
+			case c.baseClient.Send <- resp:
+				log.Printf("Broadcasted message to client %d", i)
+			default:
+				log.Printf("Failed to broadcast to client %d - channel full", i)
 			}
 		}
 	}
@@ -157,9 +267,11 @@ func (h *Hub) run() {
 func (hm *HubManager) RemoveClientFromQueue(client *Client) {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
+
 	for i, c := range hm.ClientQueue {
 		if c == client {
 			hm.ClientQueue = append(hm.ClientQueue[:i], hm.ClientQueue[i+1:]...)
+			log.Printf("Client %s removed from matchmaking queue", client.baseClient.ClientId)
 			return
 		}
 	}
@@ -179,74 +291,85 @@ func createId() string {
 	return fmt.Sprintf("hub_%d", time.Now().UnixNano())
 }
 
+// handler matchmaking
 func (hm *HubManager) MatchmakingLoop(ctx context.Context) {
-	fmt.Printf("Starting matchmaking loop...\n")
+	log.Printf("Starting matchmaking loop...")
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
 	for {
-		time.Sleep(5 * time.Second) // Ajuster la fréquence de vérification si nécessaire
-		hm.mu.Lock()
-		queue := make([]*Client, len(hm.ClientQueue))
-		copy(queue, hm.ClientQueue)
+		select {
+		case <-ctx.Done():
+			log.Printf("Matchmaking loop stopped due to context cancellation")
+			return
+		case <-ticker.C:
+			hm.processMatchmaking(ctx)
+		}
+	}
+}
+
+// fonction métier pour le matchamking
+func (hm *HubManager) processMatchmaking(ctx context.Context) {
+	hm.mu.Lock()
+	queueLength := len(hm.ClientQueue)
+	hubsCount := len(hm.hubs)
+
+	if queueLength == 0 {
 		hm.mu.Unlock()
+		return
+	}
 
-		if len(hm.hubs) > 0 && len(queue) > 0 {
-			fmt.Printf("Current matchmaking queue length: %d\n", len(queue))
-			fmt.Printf("Current hubs count: %d\n", len(hm.hubs))
-			availability := false
-			var availableHub *Hub
-			var err error
-			for _, hub := range hm.hubs {
-				if hub.gameState == gameWaiting && hub.clientCount() < 2 {
-					availability = true
-					availableHub = hub
-					break
-				}
-			}
-			if !availability {
-				fmt.Printf("No available hub found, creating a new one\n")
-				availableHub, err = hm.CreateHub(ctx, createId())
-				if err != nil {
-					fmt.Printf("Error creating new hub: %v\n", err)
-					continue
-				}
+	queue := make([]*Client, queueLength)
+	copy(queue, hm.ClientQueue)
+	hm.mu.Unlock()
 
-				for _, client := range hm.ClientQueue {
-					if client.matchId == "" {
-						availableHub.register <- client
-						hm.RemoveClientFromQueue(client)
-						payload, _ := protocol.NewSystemMessage("You have been matched with an opponent!", 200)
-						resp := &websocket.Frame{
-							Opcode:  websocket.OpcodeText,
-							FIN:     true,
-							Payload: payload,
-						}
-						client.baseClient.Send <- resp
-						fmt.Printf("A match has been made\n")
+	log.Printf("Processing matchmaking - Queue: %d, Hubs: %d", queueLength, hubsCount)
 
-					}
-					if availableHub.clientCount() == 2 {
-						fmt.Printf("Hub %s is now full with 2 clients\n", availableHub.hubId)
-						availableHub.gameState = gamesOngoing
-						break
-					}
-				}
-			}
+	// Chercher un hub disponible
+	var availableHub *Hub
+	hm.mu.Lock()
+	for _, hub := range hm.hubs {
+		hub.mu.RLock()
+		if hub.gameState == gameWaiting && hub.clientCount() < 2 {
+			availableHub = hub
+			hub.mu.RUnlock()
+			break
+		}
+		hub.mu.RUnlock()
+	}
+	hm.mu.Unlock()
 
-		} else if len(queue) >= 1 {
-			var longestWaitingTime *Client
-			for _, client := range queue {
-				waiting_time := time.Since(client.queueTime)
-				if longestWaitingTime == nil || waiting_time > time.Since(longestWaitingTime.queueTime) {
-					longestWaitingTime = client
-				}
-			}
-			if longestWaitingTime != nil {
-				hub, _ := hm.CreateHub(ctx, createId())
-				time.Sleep(1000 * time.Millisecond)
-				hub.register <- longestWaitingTime
-				hm.RemoveClientFromQueue(longestWaitingTime)
-			}
-
+	// Si pas de hub disponible, en créer un
+	if availableHub == nil && queueLength > 0 {
+		log.Printf("No available hub found, creating a new one")
+		var err error
+		availableHub, err = hm.CreateHub(ctx, createId())
+		if err != nil {
+			log.Printf("Error creating new hub: %v", err)
+			return
 		}
 	}
 
+	// Assigner les clients au hub
+	if availableHub != nil {
+		clientsToAssign := make([]*Client, 0, 2)
+
+		hm.mu.Lock()
+		for _, client := range hm.ClientQueue {
+			if client.hub == nil && len(clientsToAssign) < 2-availableHub.clientCount() {
+				clientsToAssign = append(clientsToAssign, client)
+			}
+		}
+		hm.mu.Unlock()
+
+		for _, client := range clientsToAssign {
+			select {
+			case availableHub.register <- client:
+				hm.RemoveClientFromQueue(client)
+				log.Printf("Client %s assigned to hub %s", client.baseClient.ClientId, availableHub.hubId)
+			default:
+				log.Printf("Failed to register client %s to hub - channel full", client.baseClient.ClientId)
+			}
+		}
+	}
 }
