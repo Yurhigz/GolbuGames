@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"golbugames/backend/internal/websocket"
 	"net"
 	"sync"
@@ -31,9 +32,14 @@ type BaseClient struct {
 
 func NewBaseClient(conn net.Conn) *BaseClient {
 	return &BaseClient{
-		Conn: conn,
-		Send: make(chan *websocket.Frame, 256),
+		Conn:     conn,
+		Send:     make(chan *websocket.Frame, 256),
+		ClientId: createId(),
 	}
+}
+
+func createId() string {
+	return fmt.Sprintf("client_%d", time.Now().UnixNano())
 }
 
 func (c *BaseClient) ResetFragmentation() {
