@@ -141,8 +141,8 @@ func (h *Hub) handleClientRegister(client *Client) {
 
 	if h.clients[0] == nil {
 		h.clients[0] = client
-		client.hub = h // Assigner le hub au client
-		payload, _ := protocol.NewSystemMessage("Waiting for opponent...", 200)
+		client.hub = h                                                          // Assigner le hub au client
+		payload, _ := protocol.NewSystemMessage("Waiting for opponent...", 200) // il est dans la file d'attente côté frontend
 		resp := &websocket.Frame{
 			Opcode:  websocket.OpcodeText,
 			FIN:     true,
