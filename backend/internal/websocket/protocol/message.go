@@ -18,6 +18,11 @@ const (
 	ConnectionLost  = 3001
 )
 
+type Message struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
 type ValidateMove struct {
 	Type     string `json:"type"`
 	Position int    `json:"position"`
