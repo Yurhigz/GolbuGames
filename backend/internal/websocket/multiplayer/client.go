@@ -1,8 +1,10 @@
 package multiplayer
 
 import (
+	"encoding/json"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/client"
+	"golbugames/backend/internal/websocket/protocol"
 	"log"
 	"net"
 	"time"
@@ -90,30 +92,61 @@ func (c *Client) SendMessage(payload []byte) {
 // processMessage traite le contenu d'un message complet
 // Il faudra ensuite ajouter des handlers métiers qui seront ensuite réutiliser par la partie processMessage
 // schéma => client html => HandleFrame() => processMessage() => handlers métiers
+
+func (c *Client) HandlerChat() {
+
+}
+
+func (c *Client) HandlerMove() {
+
+}
+
+func (c *Client) HandlerSystemMessage() {
+
+}
 func (c *Client) ProcessMessage(payload []byte) {
-	log.Printf("Processing message from client %s: %s", c.baseClient.ClientId, string(payload))
-
-	c.SendMessage([]byte("Echo: " + string(payload)))
-
-	// Si le client est dans un hub, broadcaster le message
-	if c.hub != nil {
-		broadcastFrame := websocket.BroadcastFrame{
-			Frame: &websocket.Frame{
-				Opcode:  websocket.OpcodeText,
-				FIN:     true,
-				Payload: payload,
-			},
-			Sender: c.baseClient.ClientId,
-			SentAt: time.Now(),
-		}
-
-		select {
-		case c.hub.broadcast <- broadcastFrame:
-			log.Printf("Message broadcasted to hub %s", c.hub.hubId)
-		default:
-			log.Printf("Failed to broadcast message - hub channel full")
-		}
+	var msg protocol.Message
+	err := json.Unmarshal(payload, &msg)
+	if err != nil {
+		log.Printf("Invalid message format from client %s: %v", c.baseClient.ClientId, err)
+		return
 	}
+
+	switch msg.Type {
+	case protocol.MessageTypeChat:
+		c.HandlerChat()
+	case protocol.MessageTypeValidateMove:
+		c.HandlerMove()
+	case protocol.MessageTypeSystem:
+		c.HandlerSystemMessage()
+	default:
+		log.Printf("Unknown message type from client %s: %s", c.baseClient.ClientId, msg.Type)
+		return
+
+	}
+	// log.Printf("Processing message from client %s: %s", c.baseClient.ClientId, string(payload))
+
+	// c.SendMessage([]byte("Echo: " + string(payload)))
+
+	// // Si le client est dans un hub, broadcaster le message
+	// if c.hub != nil {
+	// 	broadcastFrame := websocket.BroadcastFrame{
+	// 		Frame: &websocket.Frame{
+	// 			Opcode:  websocket.OpcodeText,
+	// 			FIN:     true,
+	// 			Payload: payload,
+	// 		},
+	// 		Sender: c.baseClient.ClientId,
+	// 		SentAt: time.Now(),
+	// 	}
+
+	// 	select {
+	// 	case c.hub.broadcast <- broadcastFrame:
+	// 		log.Printf("Message broadcasted to hub %s", c.hub.hubId)
+	// 	default:
+	// 		log.Printf("Failed to broadcast message - hub channel full")
+	// 	}
+	// }
 }
 
 // Gestion des frames reçues
