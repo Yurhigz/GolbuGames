@@ -1,6 +1,9 @@
 package protocol
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 const (
 	MessageTypeValidateMove = "validate_move"
@@ -18,21 +21,28 @@ const (
 	ConnectionLost  = 3001
 )
 
-type Message struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+type TypeOnly struct {
+	Type string `json:"type"`
 }
 
-type ValidateMove struct {
+type ChatMessage struct {
+	Type    string    `json:"type"`
+	Sender  string    `json:"sender"`
+	Message string    `json:"message"`
+	SentAt  time.Time `json:"sentat"`
+}
+
+type GameMessage struct {
 	Type     string `json:"type"`
 	Position int    `json:"position"`
 	Value    int    `json:"value"`
 }
 
-type ChatMessage struct {
-	Type    string `json:"type"`
-	Sender  string `json:"sender"`
-	Message string `json:"message"`
+type ValidationMove struct {
+	Type     string `json:"type"`
+	Position int    `json:"position"`
+	Value    int    `json:"value"`
+	Valid    bool   `json:"valid"`
 }
 
 type SystemMessage struct {
