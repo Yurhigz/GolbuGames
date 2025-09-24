@@ -93,60 +93,93 @@ func (c *Client) SendMessage(payload []byte) {
 // Il faudra ensuite ajouter des handlers métiers qui seront ensuite réutiliser par la partie processMessage
 // schéma => client html => HandleFrame() => processMessage() => handlers métiers
 
-func (c *Client) HandlerChat() {
+func (c *Client) HandlerChat(msg protocol.ChatMessage) {
+
+	if c.hub == nil {
+		log.Printf("Client %s not in hub, cannot broadcast chat", c.baseClient.ClientId)
+		return
+	}
+
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error Marshalling msg : %v", err)
+	}
+
+	frame := websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
+	}
+	select {
+	case c.hub.broadcast <- frame:
+		log.Printf("Chat message broadcasted from %s", msg.Sender)
+	default:
+		log.Printf("Failed to broadcast chat - channel full or closed")
+	}
 
 }
 
-func (c *Client) HandlerMove() {
+func (c *Client) HandlerMove(msg protocol.GameMessage) {
+
+	valid := c.baseClient.ValidateMove(msg.Position, byte(msg.Value))
+
+	validationMove := protocol.ValidationMove{
+		Type:     msg.Type,
+		Position: msg.Position,
+		Value:    msg.Value,
+		Valid:    valid,
+	}
+
+	payload, err := json.Marshal(validationMove)
+	if err != nil {
+		log.Printf("Error marshalling validation move : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
+	}
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("Move validation verification sent to client %s channel", c.baseClient.ClientId)
+	default:
+		log.Printf("Failed to send to send channel - channel full or closed")
+	}
 
 }
 
-func (c *Client) HandlerSystemMessage() {
+func (c *Client) HandlerSystemMessage(msg protocol.SystemMessage) {
 
 }
+
 func (c *Client) ProcessMessage(payload []byte) {
-	var msg protocol.Message
-	err := json.Unmarshal(payload, &msg)
+	var TypeOnly protocol.TypeOnly
+	err := json.Unmarshal(payload, &TypeOnly)
 	if err != nil {
 		log.Printf("Invalid message format from client %s: %v", c.baseClient.ClientId, err)
 		return
 	}
 
-	switch msg.Type {
+	switch TypeOnly.Type {
 	case protocol.MessageTypeChat:
-		c.HandlerChat()
+		var chatMessage protocol.ChatMessage
+		json.Unmarshal(payload, &chatMessage)
+		c.HandlerChat(chatMessage)
 	case protocol.MessageTypeValidateMove:
-		c.HandlerMove()
+		var gameMessage protocol.GameMessage
+		json.Unmarshal(payload, &gameMessage)
+		c.HandlerMove(gameMessage)
 	case protocol.MessageTypeSystem:
-		c.HandlerSystemMessage()
+		var systemMessage protocol.SystemMessage
+		json.Unmarshal(payload, &systemMessage)
+		c.HandlerSystemMessage(systemMessage)
 	default:
-		log.Printf("Unknown message type from client %s: %s", c.baseClient.ClientId, msg.Type)
+		log.Printf("Unknown message type from client %s: %s", c.baseClient.ClientId, TypeOnly.Type)
 		return
 
 	}
-	// log.Printf("Processing message from client %s: %s", c.baseClient.ClientId, string(payload))
-
-	// c.SendMessage([]byte("Echo: " + string(payload)))
-
-	// // Si le client est dans un hub, broadcaster le message
-	// if c.hub != nil {
-	// 	broadcastFrame := websocket.BroadcastFrame{
-	// 		Frame: &websocket.Frame{
-	// 			Opcode:  websocket.OpcodeText,
-	// 			FIN:     true,
-	// 			Payload: payload,
-	// 		},
-	// 		Sender: c.baseClient.ClientId,
-	// 		SentAt: time.Now(),
-	// 	}
-
-	// 	select {
-	// 	case c.hub.broadcast <- broadcastFrame:
-	// 		log.Printf("Message broadcasted to hub %s", c.hub.hubId)
-	// 	default:
-	// 		log.Printf("Failed to broadcast message - hub channel full")
-	// 	}
-	// }
 }
 
 // Gestion des frames reçues
