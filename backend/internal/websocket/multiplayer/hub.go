@@ -2,7 +2,6 @@ package multiplayer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/protocol"
@@ -32,7 +31,7 @@ type Hub struct {
 	clients    [2]*Client
 	register   chan *Client
 	unregister chan *Client
-	broadcast  chan websocket.BroadcastFrame
+	broadcast  chan websocket.Frame
 	hubId      string
 	playable   []int
 	solution   []int
@@ -48,7 +47,7 @@ func NewHubManager() *HubManager {
 
 func newHub(ctx context.Context) (*Hub, error) {
 	return &Hub{
-		broadcast:  make(chan websocket.BroadcastFrame, 10), // Buffer pour éviter les blocages
+		broadcast:  make(chan websocket.Frame, 10), // Buffer pour éviter les blocages
 		register:   make(chan *Client, 10),
 		unregister: make(chan *Client, 10),
 		clients:    [2]*Client{nil, nil},
@@ -229,33 +228,27 @@ func (h *Hub) handleClientUnregister(client *Client) {
 	}
 }
 
-func (h *Hub) handleBroadcast(message websocket.BroadcastFrame) {
+func (h *Hub) handleBroadcast(message websocket.Frame) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	respMsg := protocol.ChatMessage{
-		Type:    protocol.MessageTypeChat,
-		Sender:  message.Sender,
-		Message: string(message.Frame.Payload),
-	}
+	// payload, err := json.Marshal(respMsg)
+	// if err != nil {
+	// 	log.Printf("Error marshaling broadcast message: %v", err)
+	// 	return
+	// }
 
-	payload, err := json.Marshal(respMsg)
-	if err != nil {
-		log.Printf("Error marshaling broadcast message: %v", err)
-		return
-	}
-
-	resp := &websocket.Frame{
-		Opcode:  websocket.OpcodeText,
-		FIN:     true,
-		Payload: payload,
-	}
+	// resp := &websocket.Frame{
+	// 	Opcode:  websocket.OpcodeText,
+	// 	FIN:     true,
+	// 	Payload: payload,
+	// }
 
 	// Diffuser à tous les clients connectés
 	for i, c := range h.clients {
 		if c != nil {
 			select {
-			case c.baseClient.Send <- resp:
+			case c.baseClient.Send <- &message:
 				log.Printf("Broadcasted message to client %d", i)
 			default:
 				log.Printf("Failed to broadcast to client %d - channel full", i)
