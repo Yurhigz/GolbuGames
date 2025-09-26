@@ -12,14 +12,32 @@ const (
 	MessageTypeError        = "error"
 )
 
+// Messages entrants (Frontend → Backend)
 const (
-	SystemGameStart = 1000
-	SystemGameOver  = 1001
-	PlayerJoined    = 1002
-	PlayerLeft      = 1003
-	InternalError   = 3000
-	ConnectionLost  = 3001
+	InboundChat         = "chat"
+	InboundGameMove     = "game_move"
+	InboundVictoryClaim = "victory_claim"
 )
+
+// Messages sortants (Backend → Frontend)
+const (
+	OutboundGameStart     = "game_start"
+	OutboundWaiting       = "waiting"
+	OutboundGameEnd       = "game_end"
+	OutboundMoveResponse  = "move_response"
+	OutboundChatBroadcast = "chat_broadcast"
+)
+
+const (
+	SystemGameStart    = 2000
+	SystemGameOver     = 2001
+	PlayerJoined       = 1000
+	PlayerLeft         = 1001
+	WaitingOpponent    = 1002
+	PlayerDisconnected = 1003
+)
+
+// ===== MESSAGES ENTRANTS =====
 
 type TypeOnly struct {
 	Type string `json:"type"`
@@ -38,6 +56,14 @@ type GameMessage struct {
 	Value    int    `json:"value"`
 }
 
+type VictoryClaim struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
+// ===== MESSAGES SORTANTS =====
+
 type ValidationMove struct {
 	Type     string `json:"type"`
 	Position int    `json:"position"`
@@ -49,6 +75,25 @@ type SystemMessage struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 	Code    int    `json:"code"`
+}
+
+type MoveValidationResponse struct {
+	Type     string `json:"type"`
+	Position int    `json:"position"`
+	Value    int    `json:"value"`
+	Valid    bool   `json:"valid"`
+}
+
+type GameStartNotification struct {
+	Type      string `json:"type"`
+	Grid      []int  `json:"grid"`
+	Countdown int    `json:"countdown"`
+}
+
+type GameEndNotification struct {
+	Type   string `json:"type"`
+	Winner string `json:"winner"`
+	Reason string `json:"reason"`
 }
 
 func NewSystemMessage(message string, code int) ([]byte, error) {
