@@ -65,7 +65,15 @@ func (c *Client) cleanup() {
 	}
 }
 
-// SendMessage envoie un message au client
+// Gestion des messages du backend vers le frontend
+func (c *Client) SendGameStart(payload []byte) {
+}
+
+func (c *Client) SendWaitingOpponent(payload []byte) {
+}
+
+func (c *Client) SendGameOver(payload []byte) {
+}
 func (c *Client) SendMessage(payload []byte) {
 	c.baseClient.Mu.Lock()
 	defer c.baseClient.Mu.Unlock()
@@ -150,10 +158,29 @@ func (c *Client) HandlerMove(msg protocol.GameMessage) {
 
 }
 
+// Envisager le cas où l'utilisateur déconnecte , fermeture du websocket depuis le frontend
+// gérer ça au niveau du handler ou au niveau du hub ?
 func (c *Client) HandlerSystemMessage(msg protocol.SystemMessage) {
+
+	switch msg.Code {
+
+	case protocol.SystemGameOver:
+		// Il faut envoyer à l'autre client que la partie est terminée
+		// Mettre à jour l'elo des joueurs dans la DB
+		// Mettre à jour le leaderboard dans la DB
+		// Ajouter la partie à l'historique dans la DB
+		// Envoyer aux deux clients une fin de partie
+		// Fermer le hub proprement, mettre fin à la websocket désallocation client
+
+	default:
+		log.Printf("Unknown System Message code : %v", msg.Code)
+		return
+
+	}
 
 }
 
+// Gestion des messages entrants depuis le frontend vers le backend
 func (c *Client) ProcessMessage(payload []byte) {
 	var TypeOnly protocol.TypeOnly
 	err := json.Unmarshal(payload, &TypeOnly)
