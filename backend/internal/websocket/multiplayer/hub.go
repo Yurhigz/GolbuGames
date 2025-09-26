@@ -140,8 +140,8 @@ func (h *Hub) handleClientRegister(client *Client) {
 
 	if h.clients[0] == nil {
 		h.clients[0] = client
-		client.hub = h                                                          // Assigner le hub au client
-		payload, _ := protocol.NewSystemMessage("Waiting for opponent...", 200) // il est dans la file d'attente côté frontend
+		client.hub = h                                                                               // Assigner le hub au client
+		payload, _ := protocol.NewSystemMessage("Waiting for opponent...", protocol.WaitingOpponent) // il est dans la file d'attente côté frontend
 		resp := &websocket.Frame{
 			Opcode:  websocket.OpcodeText,
 			FIN:     true,
@@ -159,7 +159,7 @@ func (h *Hub) handleClientRegister(client *Client) {
 	} else if h.clients[1] == nil {
 		h.clients[1] = client
 		client.hub = h // Assigner le hub au client
-		payload, _ := protocol.NewSystemMessage("Opponent found... Game will start", 200)
+		payload, _ := protocol.NewSystemMessage("Opponent found... Game will start", protocol.SystemGameStart)
 		resp := &websocket.Frame{
 			Opcode:  websocket.OpcodeText,
 			FIN:     true,
@@ -224,6 +224,8 @@ func (h *Hub) handleClientUnregister(client *Client) {
 	// Si plus aucun client, marquer pour suppression
 	if h.clientCount() == 0 {
 		h.gameState = gameAborted
+		// Contrôler le comportement dans ce cas
+		h.running = false
 		log.Printf("Hub %s is empty, marking for cleanup", h.hubId)
 	}
 }
