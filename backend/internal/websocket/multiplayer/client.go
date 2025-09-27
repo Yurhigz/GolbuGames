@@ -74,6 +74,7 @@ func (c *Client) SendWaitingOpponent(payload []byte) {
 
 func (c *Client) SendGameOver(payload []byte) {
 }
+
 func (c *Client) SendMessage(payload []byte) {
 	c.baseClient.Mu.Lock()
 	defer c.baseClient.Mu.Unlock()
@@ -160,13 +161,15 @@ func (c *Client) HandlerMove(msg protocol.GameMessage) {
 
 // Envisager le cas où l'utilisateur déconnecte , fermeture du websocket depuis le frontend
 // gérer ça au niveau du handler ou au niveau du hub ?
-func (c *Client) HandlerSystemMessage(msg protocol.SystemMessage) {
+func (c *Client) HandlerSystemMessage(msg protocol.VictoryClaim) {
 
-	switch msg.Code {
+	switch {
 
-	case protocol.SystemGameOver:
+	case msg.Message == protocol.InboundVictoryClaim:
+
 		// Il faut envoyer à l'autre client que la partie est terminée
 		// Mettre à jour l'elo des joueurs dans la DB
+
 		// Mettre à jour le leaderboard dans la DB
 		// Ajouter la partie à l'historique dans la DB
 		// Envoyer aux deux clients une fin de partie
@@ -199,9 +202,9 @@ func (c *Client) ProcessMessage(payload []byte) {
 		json.Unmarshal(payload, &gameMessage)
 		c.HandlerMove(gameMessage)
 	case protocol.MessageTypeSystem:
-		var systemMessage protocol.SystemMessage
-		json.Unmarshal(payload, &systemMessage)
-		c.HandlerSystemMessage(systemMessage)
+		var victoryClaim protocol.VictoryClaim
+		json.Unmarshal(payload, &victoryClaim)
+		c.HandlerSystemMessage(victoryClaim)
 	default:
 		log.Printf("Unknown message type from client %s: %s", c.baseClient.ClientId, TypeOnly.Type)
 		return
