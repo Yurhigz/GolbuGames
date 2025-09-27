@@ -3,6 +3,7 @@ package multiplayer
 import (
 	"context"
 	"fmt"
+	"golbugames/backend/internal/sudoku/repository"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/protocol"
 	"log"
@@ -27,6 +28,7 @@ type HubManager struct {
 }
 
 type Hub struct {
+	hubManager *HubManager
 	gameState  int
 	clients    [2]*Client
 	register   chan *Client
@@ -96,6 +98,43 @@ func (hm *HubManager) RemoveHub(matchId string) {
 		delete(hm.hubs, matchId)
 		log.Printf("Hub %s removed", matchId)
 	}
+}
+
+func (h *Hub) GetOpponent(client *Client) *Client {
+	if h.clients[0] == client {
+		return h.clients[1]
+	}
+	return h.clients[0]
+}
+
+func (h *Hub) HandleVictory(winner *Client) {
+	loser := h.GetOpponent(winner)
+
+	h.ProcessGameEnd(winner, loser, "matchCompleted")
+
+}
+
+// Handler métiers pour les différentes manières de finir une partie : victoire, déconnexion ...
+func (h *Hub) ProcessGameEnd(winner, loser *Client, reason string) {
+	if loser != nil {
+		loser.SendGameOver("opponent", reason)
+	}
+
+	go h.SaveGameResult(winner, loser, reason)
+	// Une fois les messages envoyés et les sauvegardes effectuées on clean et supprime le hub
+	// Définir une fonction cleanup côté hub
+	winner.cleanup()
+	if loser != nil {
+		loser.cleanup()
+	}
+	h.hubManager.RemoveHub(h.hubId)
+
+}
+
+// Logique métier de victoire
+// Gérer la partie contexte + structure avec timestamp
+func (h *Hub) SaveGameResult(winner, loser *Client, reason string) {
+	repository.SubmitMultiGameDB(ctx, winner, loser)
 }
 
 func (h *Hub) run() {
@@ -233,18 +272,6 @@ func (h *Hub) handleClientUnregister(client *Client) {
 func (h *Hub) handleBroadcast(message websocket.Frame) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-
-	// payload, err := json.Marshal(respMsg)
-	// if err != nil {
-	// 	log.Printf("Error marshaling broadcast message: %v", err)
-	// 	return
-	// }
-
-	// resp := &websocket.Frame{
-	// 	Opcode:  websocket.OpcodeText,
-	// 	FIN:     true,
-	// 	Payload: payload,
-	// }
 
 	// Diffuser à tous les clients connectés
 	for i, c := range h.clients {
