@@ -17,6 +17,9 @@ const (
 	gameFinished = 2
 	gameAborted  = 3
 	gamePaused   = 4
+	winP1        = 0
+	draw         = 1
+	winP2        = 2
 )
 
 type GameStatus int
@@ -28,17 +31,18 @@ type HubManager struct {
 }
 
 type Hub struct {
-	hubManager *HubManager
-	gameState  int
-	clients    [2]*Client
-	register   chan *Client
-	unregister chan *Client
-	broadcast  chan websocket.Frame
-	hubId      string
-	playable   []int
-	solution   []int
-	mu         sync.RWMutex // Protection pour les opérations sur les clients
-	running    bool         // Flag pour indiquer si le hub est en cours d'exécution
+	hubManager     *HubManager
+	gameState      int
+	clients        [2]*Client
+	register       chan *Client
+	unregister     chan *Client
+	broadcast      chan websocket.Frame
+	hubId          string
+	playable       []int
+	solution       []int
+	mu             sync.RWMutex // Protection pour les opérations sur les clients
+	running        bool         // Flag pour indiquer si le hub est en cours d'exécution
+	completionTime int
 }
 
 func NewHubManager() *HubManager {
@@ -117,12 +121,12 @@ func (h *Hub) HandleVictory(winner *Client) {
 // Handler métiers pour les différentes manières de finir une partie : victoire, déconnexion ...
 func (h *Hub) ProcessGameEnd(winner, loser *Client, reason string) {
 	if loser != nil {
-		loser.SendGameOver("opponent", reason)
+		// mettre à jour la fonction SendGameOver
+		loser.SendGameOver("opponent")
 	}
 
-	go h.SaveGameResult(winner, loser, reason)
+	go h.SaveGameResult(winner, loser)
 	// Une fois les messages envoyés et les sauvegardes effectuées on clean et supprime le hub
-	// Définir une fonction cleanup côté hub
 	winner.cleanup()
 	if loser != nil {
 		loser.cleanup()
@@ -133,10 +137,33 @@ func (h *Hub) ProcessGameEnd(winner, loser *Client, reason string) {
 
 // Logique métier de victoire
 // Gérer la partie contexte + structure avec timestamp
-func (h *Hub) SaveGameResult(winner, loser *Client, reason string) {
-	repository.SubmitMultiGameDB(ctx, winner, loser)
+func (h *Hub) SaveGameResult(winner, loser *Client) {
+	ctx := context.Background()
+
+	completionTime := h.completionTime
+
+	var winnerID, loserID int
+	var result int
+
+	// Gérer le getUserID avec la synchronisation DB et l'authentification
+
+	if winner == h.clients[0] {
+		result = winP1
+		winnerID = winner.getUserID()
+		loserID = loser.getUserID()
+	} else {
+		result = winP2
+		winnerID = loser.getUserID()
+		loserID = winner.getUserID()
+	}
+	repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime)
+
+	if err := repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime); err != nil {
+		log.Printf("Error saving game result: %v", err)
+	}
 }
 
+// Hub Running
 func (h *Hub) run() {
 	log.Printf("Hub %s started", h.hubId)
 
