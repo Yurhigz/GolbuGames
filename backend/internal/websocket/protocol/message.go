@@ -57,9 +57,10 @@ type GameMessage struct {
 }
 
 type VictoryClaim struct {
-	Type    string `json:"type"`
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Type           string `json:"type"`
+	Message        string `json:"message"`
+	CompletionTime int    `json:"completiontime"`
+	Code           int    `json:"code"`
 }
 
 // ===== MESSAGES SORTANTS =====
