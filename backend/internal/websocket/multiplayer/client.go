@@ -167,13 +167,11 @@ func (c *Client) HandlerSystemMessage(msg protocol.VictoryClaim) {
 
 	case msg.Message == protocol.InboundVictoryClaim:
 
-		// Il faut envoyer à l'autre client que la partie est terminée
-		// Mettre à jour l'elo des joueurs dans la DB
-
-		// Mettre à jour le leaderboard dans la DB
-		// Ajouter la partie à l'historique dans la DB
-		// Envoyer aux deux clients une fin de partie
-		// Fermer le hub proprement, mettre fin à la websocket désallocation client
+		// ensemble de la logique déléguée au hub
+		if c.hub != nil {
+			c.hub.HandleVictory(c)
+			c.hub.completionTime = msg.CompletionTime
+		}
 
 	default:
 		log.Printf("Unknown System Message code : %v", msg.Code)
