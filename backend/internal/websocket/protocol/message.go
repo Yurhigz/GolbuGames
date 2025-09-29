@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -29,12 +28,14 @@ const (
 )
 
 const (
-	SystemGameStart    = 2000
-	SystemGameOver     = 2001
-	PlayerJoined       = 1000
-	PlayerLeft         = 1001
-	WaitingOpponent    = 1002
-	PlayerDisconnected = 1003
+	SystemGameStart        = 2000
+	SystemGameOver         = 2001
+	PlayerJoined           = 1000
+	PlayerLeft             = 1001
+	WaitingOpponent        = 1002
+	PlayerDisconnected     = 1003
+	MessageGameStart       = "Opponent found... Game will start"
+	MessageWaitingOpponent = "Waiting for opponent..."
 )
 
 // ===== MESSAGES ENTRANTS =====
@@ -95,17 +96,4 @@ type GameEndNotification struct {
 	Type   string `json:"type"`
 	Winner string `json:"winner"`
 	Reason string `json:"reason"`
-}
-
-func NewSystemMessage(message string, code int) ([]byte, error) {
-	msg := SystemMessage{
-		Type:    MessageTypeSystem,
-		Message: message,
-		Code:    code,
-	}
-	marshallized, err := json.Marshal(msg)
-	if err != nil {
-		return nil, err
-	}
-	return marshallized, nil
 }
