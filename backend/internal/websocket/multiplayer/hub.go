@@ -156,7 +156,6 @@ func (h *Hub) SaveGameResult(winner, loser *Client) {
 		winnerID = loser.getUserID()
 		loserID = winner.getUserID()
 	}
-	repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime)
 
 	if err := repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime); err != nil {
 		log.Printf("Error saving game result: %v", err)
@@ -206,43 +205,16 @@ func (h *Hub) handleClientRegister(client *Client) {
 
 	if h.clients[0] == nil {
 		h.clients[0] = client
-		client.hub = h                                                                               // Assigner le hub au client
-		payload, _ := protocol.NewSystemMessage("Waiting for opponent...", protocol.WaitingOpponent) // il est dans la file d'attente côté frontend
-		resp := &websocket.Frame{
-			Opcode:  websocket.OpcodeText,
-			FIN:     true,
-			Payload: payload,
-		}
-		log.Printf("Client %s registered to hub %s as player 1", client.baseClient.ClientId, h.hubId)
-
-		// Envoyer de manière sécurisée
-		select {
-		case client.baseClient.Send <- resp:
-		default:
-			log.Printf("Failed to send message to client %s - channel full", client.baseClient.ClientId)
-		}
+		client.hub = h // Assigner le hub au client
+		h.clients[0].SendWaitingOpponent()
 
 	} else if h.clients[1] == nil {
 		h.clients[1] = client
 		client.hub = h // Assigner le hub au client
-		payload, _ := protocol.NewSystemMessage("Opponent found... Game will start", protocol.SystemGameStart)
-		resp := &websocket.Frame{
-			Opcode:  websocket.OpcodeText,
-			FIN:     true,
-			Payload: payload,
-		}
-
-		log.Printf("Client %s registered to hub %s as player 2", client.baseClient.ClientId, h.hubId)
-
 		// Envoyer aux deux clients
-		for i, c := range h.clients {
+		for _, c := range h.clients {
 			if c != nil {
-				select {
-				case c.baseClient.Send <- resp:
-					log.Printf("Sent game start message to client %d", i)
-				default:
-					log.Printf("Failed to send message to client %d - channel full", i)
-				}
+				c.SendGameStart()
 			}
 		}
 
