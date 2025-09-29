@@ -66,10 +66,79 @@ func (c *Client) cleanup() {
 }
 
 // Gestion des messages du backend vers le frontend
-func (c *Client) SendGameStart(payload []byte) {
+func (c *Client) SendGameStart() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	if c.closed {
+		return
+	}
+
+	msg := protocol.SystemMessage{
+		Type:    protocol.MessageTypeSystem,
+		Message: protocol.MessageGameStart,
+		Code:    protocol.SystemGameStart,
+	}
+
+	marshallized, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: marshallized,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("Opponent found confirmation message sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send confirmation message to client %s", c.baseClient.ClientId)
+
+	}
+
 }
 
-func (c *Client) SendWaitingOpponent(payload []byte) {
+func (c *Client) SendWaitingOpponent() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	if c.closed {
+		return
+	}
+
+	msg := protocol.SystemMessage{
+		Type:    protocol.MessageTypeSystem,
+		Message: protocol.MessageWaitingOpponent,
+		Code:    protocol.WaitingOpponent,
+	}
+
+	marshallized, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: marshallized,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("Waiting message sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send waiting message to client %s", c.baseClient.ClientId)
+
+	}
+}
+
+func (c *Client) SendLeavingOpponent() {
+
 }
 
 func (c *Client) SendGameOver(payload []byte) {
