@@ -195,7 +195,7 @@ func (h *Hub) run() {
 				return
 			}
 			opponent := h.GetOpponent(client)
-			if h.gameState == gamesOngoing && &opponent != nil {
+			if h.gameState == gamesOngoing && opponent != nil {
 				log.Printf("Game was running, player %v left, ending the game", client.baseClient.ClientId)
 				h.HandleVictory(opponent, protocol.PlayerLeft)
 			} else {
