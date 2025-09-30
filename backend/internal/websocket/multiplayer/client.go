@@ -146,8 +146,8 @@ func (c *Client) SendLeavingOpponent() {
 	}
 	payload, err := json.Marshal(protocol.SystemMessage{
 		Type:    protocol.MessageTypeSystem,
-		Message: winner,
-		Reason:  protocol.OutboundOpponentLeft,
+		Message: protocol.OutboundOpponentLeft,
+		Code:    protocol.PlayerDisconnected,
 	})
 
 	if err != nil {
@@ -302,7 +302,7 @@ func (c *Client) HandlerSystemMessage(msg protocol.VictoryClaim) {
 
 		// ensemble de la logique déléguée au hub
 		if c.hub != nil {
-			c.hub.HandleVictory(c)
+			c.hub.HandleVictory(c, protocol.SystemGameOver)
 			c.hub.completionTime = msg.CompletionTime
 		}
 

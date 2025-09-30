@@ -241,34 +241,17 @@ func (h *Hub) handleClientUnregister(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	payload, _ := protocol.NewSystemMessage("Opponent disconnected", protocol.PlayerLeft)
-	resp := &websocket.Frame{
-		Opcode:  websocket.OpcodeText,
-		FIN:     true,
-		Payload: payload,
-	}
-
 	if h.clients[0] == client {
 		h.clients[0] = nil
 		if h.clients[1] != nil {
-			select {
-			case h.clients[1].baseClient.Send <- resp:
-				log.Printf("Notified player 2 about player 1 disconnect")
-			default:
-				log.Printf("Failed to notify player 2 about disconnect")
-			}
+			h.clients[1].SendWaitingOpponent()
 		}
 		log.Printf("Client unregistered from hub %s (was player 1)", h.hubId)
 
 	} else if h.clients[1] == client {
 		h.clients[1] = nil
 		if h.clients[0] != nil {
-			select {
-			case h.clients[0].baseClient.Send <- resp:
-				log.Printf("Notified player 1 about player 2 disconnect")
-			default:
-				log.Printf("Failed to notify player 1 about disconnect")
-			}
+			h.clients[0].SendWaitingOpponent()
 		}
 		log.Printf("Client unregistered from hub %s (was player 2)", h.hubId)
 	}
