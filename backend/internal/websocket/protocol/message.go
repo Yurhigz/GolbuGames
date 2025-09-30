@@ -25,6 +25,7 @@ const (
 	OutboundGameEnd       = "game_end"
 	OutboundMoveResponse  = "move_response"
 	OutboundChatBroadcast = "chat_broadcast"
+	OutboundOpponentLeft  = "opponent_left"
 )
 
 const (
