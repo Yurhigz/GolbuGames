@@ -111,18 +111,25 @@ func (h *Hub) GetOpponent(client *Client) *Client {
 	return h.clients[0]
 }
 
-func (h *Hub) HandleVictory(winner *Client) {
+func (h *Hub) HandleVictory(winner *Client, reason int) {
 	loser := h.GetOpponent(winner)
 
-	h.ProcessGameEnd(winner, loser, "matchCompleted")
+	h.ProcessGameEnd(winner, loser, reason)
 
 }
 
 // Handler métiers pour les différentes manières de finir une partie : victoire, déconnexion ...
-func (h *Hub) ProcessGameEnd(winner, loser *Client, reason string) {
+func (h *Hub) ProcessGameEnd(winner, loser *Client, reason int) {
+
+	switch reason {
+	case protocol.PlayerDisconnected:
+
+	case protocol.SystemGameOver:
+	}
+
 	if loser != nil {
 		// mettre à jour la fonction SendGameOver
-		loser.SendGameOver("opponent")
+		loser.SendGameOver(winner.baseClient.ClientId)
 	}
 
 	go h.SaveGameResult(winner, loser)
@@ -142,19 +149,19 @@ func (h *Hub) SaveGameResult(winner, loser *Client) {
 
 	completionTime := h.completionTime
 
-	var winnerID, loserID int
+	var winnerID, loserID string
 	var result int
 
 	// Gérer le getUserID avec la synchronisation DB et l'authentification
 
 	if winner == h.clients[0] {
 		result = winP1
-		winnerID = winner.getUserID()
-		loserID = loser.getUserID()
+		winnerID = winner.baseClient.Pseudo
+		loserID = loser.baseClient.Pseudo
 	} else {
 		result = winP2
-		winnerID = loser.getUserID()
-		loserID = winner.getUserID()
+		winnerID = loser.baseClient.Pseudo
+		loserID = winner.baseClient.Pseudo
 	}
 
 	if err := repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime); err != nil {
@@ -187,7 +194,14 @@ func (h *Hub) run() {
 				log.Printf("Unregister channel closed for hub %s", h.hubId)
 				return
 			}
-			h.handleClientUnregister(client)
+			opponent := h.GetOpponent(client)
+			if h.gameState == gamesOngoing && &opponent != nil {
+				log.Printf("Game was running, player %v left, ending the game", client.baseClient.ClientId)
+				h.HandleVictory(opponent, protocol.PlayerLeft)
+			} else {
+				log.Printf("Hub was waiting for another player but player %v left", client.baseClient.ClientId)
+				h.handleClientUnregister(client)
+			}
 
 		case message, ok := <-h.broadcast:
 			if !ok {
