@@ -37,8 +37,8 @@ CREATE TABLE sudoku_games (
 DROP TABLE IF EXISTS games_scores CASCADE;
 CREATE TABLE games_scores (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    opponent_id INT, -- optionnel selon le mode de jeu
+    user_id VARCHAR(50) NOT NULL,
+    opponent_id VARCHAR(50), -- optionnel selon le mode de jeu
     game_mode VARCHAR(20) NOT NULL CHECK (game_mode IN ('solo', '1v1')),
     results INT , -- 0 player 1 won, 1 even , 2 player 2 won
     completion_time INT,  -- temps en secondes lors des 1v1

@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
+func updateUserStats(ctx context.Context, tx pgx.Tx, userId string, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
         UPDATE user_stats 
             SET total_games = total_games + $6,
@@ -52,7 +52,7 @@ func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw
 	return nil
 }
 
-func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int) error {
+func SubmitSoloGameDB(parentsContext context.Context, userId string, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête
@@ -86,7 +86,7 @@ func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int
 	return nil
 }
 
-func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, result, completionTime int) error {
+func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, result, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête
@@ -209,7 +209,6 @@ func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameS
 	return &gameHistory, nil
 }
 
-
 func GetTournamentId(parentsContext context.Context, tournamentName string) (int, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
@@ -305,4 +304,3 @@ func AddTournament(parentsContext context.Context, tournament types.Tournament) 
 
 	return nil
 }
-
