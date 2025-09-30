@@ -138,10 +138,74 @@ func (c *Client) SendWaitingOpponent() {
 }
 
 func (c *Client) SendLeavingOpponent() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+
+	if c.closed {
+		return
+	}
+	payload, err := json.Marshal(protocol.SystemMessage{
+		Type:    protocol.MessageTypeSystem,
+		Message: winner,
+		Reason:  protocol.OutboundOpponentLeft,
+	})
+
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		FIN:     true,
+		Opcode:  websocket.OpcodeText,
+		Payload: payload,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("ending game sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send ending message to client %s", c.baseClient.ClientId)
+
+	}
 
 }
 
-func (c *Client) SendGameOver(payload []byte) {
+// Il n'y a pas forcément la nécessité d'avoir le nom du winner mais on pourra le factoriser plus tard
+func (c *Client) SendGameOver(winner string) {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+
+	if c.closed {
+		return
+	}
+	payload, err := json.Marshal(protocol.GameEndNotification{
+		Type:   protocol.MessageTypeSystem,
+		Winner: winner,
+		Reason: protocol.OutboundGameEnd,
+	})
+
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		FIN:     true,
+		Opcode:  websocket.OpcodeText,
+		Payload: payload,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("ending game sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send ending message to client %s", c.baseClient.ClientId)
+
+	}
+
 }
 
 func (c *Client) SendMessage(payload []byte) {
