@@ -73,10 +73,10 @@ func (c *Client) SendGameStart() {
 		return
 	}
 
-	msg := protocol.SystemMessage{
-		Type:    protocol.MessageTypeSystem,
-		Message: protocol.MessageGameStart,
-		Code:    protocol.SystemGameStart,
+	msg := protocol.GameStartNotification{
+		Type:      protocol.MessageTypeSystem,
+		Grid:      c.hub.playable,
+		Countdown: protocol.OutboundCountdown,
 	}
 
 	marshallized, err := json.Marshal(msg)
