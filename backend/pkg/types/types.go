@@ -67,8 +67,8 @@ type UserStats struct {
 }
 
 type Game struct {
-	UserID          int    `json:"user_id"`
-	OpponentID      *int   `json:"opponent_id,omitempty"`
+	UserID          string `json:"user_id"`
+	OpponentID      string `json:"opponent_id,omitempty"`
 	GameMode        string `json:"game_mode"`
 	Results         *int   `json:"results,omitempty"`
 	Completion_time int    `json:"completion_time"`
