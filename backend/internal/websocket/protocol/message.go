@@ -26,6 +26,7 @@ const (
 	OutboundMoveResponse  = "move_response"
 	OutboundChatBroadcast = "chat_broadcast"
 	OutboundOpponentLeft  = "opponent_left"
+	OutboundCountdown     = 5
 )
 
 const (
