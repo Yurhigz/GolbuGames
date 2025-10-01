@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"golbugames/backend/internal/websocket"
 	"net"
@@ -28,6 +29,7 @@ type BaseClient struct {
 	Playable      []int
 	FrameBuffer   []byte
 	CurrentOpcode byte
+	Ctx           context.Context
 }
 
 func NewBaseClient(conn net.Conn) *BaseClient {
