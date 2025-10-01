@@ -82,7 +82,7 @@ func SubmitSoloGameDB(parentsContext context.Context, userId string, completionT
 		return fmt.Errorf("[SubmitSoloGame] cannot commit transaction: %w", err)
 	}
 
-	log.Printf("Solo game successfully submitted and stats updated for user %d", userId)
+	log.Printf("Solo game successfully submitted and stats updated for user %v", userId)
 	return nil
 }
 
