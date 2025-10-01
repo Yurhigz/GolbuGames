@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	ctx := context.Background()
 	parentContext := context.Background()
 	HubManager := multiplayer.NewHubManager()
 	go HubManager.MatchmakingLoop(parentContext)
