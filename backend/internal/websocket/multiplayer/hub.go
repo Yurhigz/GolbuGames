@@ -43,6 +43,7 @@ type Hub struct {
 	mu             sync.RWMutex // Protection pour les opérations sur les clients
 	running        bool         // Flag pour indiquer si le hub est en cours d'exécution
 	completionTime int
+	ctx            context.Context
 }
 
 func NewHubManager() *HubManager {
@@ -59,6 +60,7 @@ func newHub(ctx context.Context) (*Hub, error) {
 		clients:    [2]*Client{nil, nil},
 		running:    true,
 		gameState:  gameWaiting,
+		ctx:        ctx,
 	}, nil
 }
 
@@ -70,6 +72,15 @@ func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, erro
 	if err != nil {
 		return nil, err
 	}
+
+	grid, err := repository.GetRandomDifficultyGridDB(ctx)
+	if err != nil {
+		log.Printf("Error retrieving random grid : %v", err)
+		return nil, err
+	}
+	hub.playable = grid.Board
+	hub.solution = grid.Solution
+
 	hub.hubId = matchId
 	hm.hubs[matchId] = hub
 	go hub.run()
@@ -219,13 +230,13 @@ func (h *Hub) handleClientRegister(client *Client) {
 
 	if h.clients[0] == nil {
 		h.clients[0] = client
-		client.hub = h // Assigner le hub au client
+		client.hub = h
 		h.clients[0].SendWaitingOpponent()
 
 	} else if h.clients[1] == nil {
 		h.clients[1] = client
-		client.hub = h // Assigner le hub au client
-		// Envoyer aux deux clients
+		client.hub = h
+
 		for _, c := range h.clients {
 			if c != nil {
 				c.SendGameStart()
