@@ -86,3 +86,66 @@
   margin-top: 10px;
   font-style: italic;
 }
+
+/* 🎮 Style cyberpunk de la grille Sudoku */
+.sudoku-board {
+  background: #111;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 0 20px #00ffe7;
+  display: grid;
+  grid-template-rows: repeat(9, auto);
+  gap: 0;
+}
+
+.sudoku-row {
+  display: flex;
+}
+
+.sudoku-cell {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #555;
+  background: #1a1a1a;
+  color: #d6c935; /* jaune néon pour chiffres */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 4px #00ffe7;
+  cursor: pointer;
+  font-size: 22px;
+}
+
+/* Cases données (bleues) */
+.sudoku-cell.given {
+  background-color: #eef6ff !important;
+  font-weight: bold;
+  color: #111;
+  border-radius: 4px;
+}
+
+/* Bordures épaisses 3x3 */
+.sudoku-cell:nth-child(3n) {
+  border-right: 3px solid #00ffe7;
+}
+.sudoku-row:nth-child(3n) .sudoku-cell {
+  border-bottom: 3px solid #00ffe7;
+}
+.sudoku-row:first-child .sudoku-cell {
+  border-top: 3px solid #00ffe7;
+}
+.sudoku-cell:first-child {
+  border-left: 3px solid #00ffe7;
+}
+
+/* Hover */
+.sudoku-cell:hover {
+  background-color: #f0f0f0;
+  color: #000;
+}
+
+/* Case sélectionnée (violet néon) */
+.sudoku-cell.selected {
+  background-color: #00ffe733;
+  box-shadow: 0 0 8px #ff00cc;
+}
