@@ -76,6 +76,7 @@ func (c *Client) SendGameStart() {
 	msg := protocol.GameStartNotification{
 		Type:      protocol.MessageTypeSystem,
 		Grid:      c.hub.playable,
+		Message:   protocol.OutboundGameStart,
 		Countdown: protocol.OutboundCountdown,
 	}
 

@@ -20,7 +20,7 @@ const (
 
 // Messages sortants (Backend → Frontend)
 const (
-	OutboundGameStart     = "game_start"
+	OutboundGameStart     = "gameStarting"
 	OutboundWaiting       = "waiting"
 	OutboundGameEnd       = "game_end"
 	OutboundMoveResponse  = "move_response"
@@ -91,6 +91,7 @@ type MoveValidationResponse struct {
 type GameStartNotification struct {
 	Type      string `json:"type"`
 	Grid      []int  `json:"grid"`
+	Message   string `json:"message"`
 	Countdown int    `json:"countdown"`
 }
 
