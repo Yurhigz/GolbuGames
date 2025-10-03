@@ -49,7 +49,7 @@ func InitGridGeneration(ctx context.Context) error {
 
 				playable, err := sudoku.GeneratePlayableGrid(solved, difficulty)
 				if err != nil {
-					fmt.Printf("[ERROR] <GeneratePlayableGridWithDifficulty> %v", err)
+					fmt.Printf("[ERROR] <GeneratePlayableGridWithDifficulty> %v\n", err)
 					return
 				}
 
