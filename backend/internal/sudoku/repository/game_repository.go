@@ -98,7 +98,7 @@ func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, resu
 
 	// Insérer le score
 	_, err = tx.Exec(ctx,
-		`INSERT INTO games_scores (user_id, opponent_id, game_mode, result, completion_time) 
+		`INSERT INTO games_scores (user_id, opponent_id, game_mode, results, completion_time) 
 		 VALUES ($1, $2, '1v1', $3, $4)`,
 		user1, user2, result, completionTime)
 	if err != nil {
