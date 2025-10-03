@@ -73,9 +73,12 @@ func (c *Client) SendGameStart() {
 		return
 	}
 
+	c.baseClient.Playable = c.hub.playable
+	c.baseClient.Solution = c.hub.solution
+
 	msg := protocol.GameStartNotification{
 		Type:      protocol.MessageTypeSystem,
-		Grid:      c.hub.playable,
+		Grid:      c.baseClient.Playable,
 		Message:   protocol.OutboundGameStart,
 		Countdown: protocol.OutboundCountdown,
 	}
@@ -473,6 +476,13 @@ func (c *Client) readPump() {
 	buffer := make([]byte, 0, 4096)
 
 	for {
+
+		c.baseClient.Mu.Lock()
+		if c.closed {
+			c.baseClient.Mu.Unlock()
+			return
+		}
+		c.baseClient.Mu.Unlock()
 		temp := make([]byte, 1024)
 
 		if tcpConn, ok := c.baseClient.Conn.(*net.TCPConn); ok {
