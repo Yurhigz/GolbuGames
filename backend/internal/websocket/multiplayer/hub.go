@@ -7,6 +7,7 @@ import (
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/protocol"
 	"log"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -52,8 +53,12 @@ func NewHubManager() *HubManager {
 	}
 }
 
-func newHub(ctx context.Context) (*Hub, error) {
-	return &Hub{
+func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, error) {
+	hm.mu.Lock()
+	defer hm.mu.Unlock()
+
+	hub := &Hub{
+		hubManager: hm,
 		broadcast:  make(chan websocket.Frame, 10), // Buffer pour éviter les blocages
 		register:   make(chan *Client, 10),
 		unregister: make(chan *Client, 10),
@@ -61,16 +66,6 @@ func newHub(ctx context.Context) (*Hub, error) {
 		running:    true,
 		gameState:  gameWaiting,
 		ctx:        ctx,
-	}, nil
-}
-
-func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, error) {
-	hm.mu.Lock()
-	defer hm.mu.Unlock()
-
-	hub, err := newHub(ctx)
-	if err != nil {
-		return nil, err
 	}
 
 	grid, err := repository.GetRandomDifficultyGridDB(ctx)
@@ -134,19 +129,21 @@ func (h *Hub) ProcessGameEnd(winner, loser *Client, reason int) {
 
 	switch reason {
 	case protocol.PlayerDisconnected:
-
+		if winner != nil && !winner.closed {
+			winner.SendLeavingOpponent()
+		}
 	case protocol.SystemGameOver:
-	}
-
-	if loser != nil {
-		// mettre à jour la fonction SendGameOver
-		loser.SendGameOver(winner.baseClient.ClientId)
+		if loser != nil && !loser.closed {
+			loser.SendGameOver(winner.baseClient.ClientId)
+		}
 	}
 
 	go h.SaveGameResult(winner, loser)
 	// Une fois les messages envoyés et les sauvegardes effectuées on clean et supprime le hub
-	winner.cleanup()
-	if loser != nil {
+	if winner != nil && !winner.closed {
+		winner.cleanup()
+	}
+	if loser != nil && !loser.closed {
 		loser.cleanup()
 	}
 	h.hubManager.RemoveHub(h.hubId)
@@ -167,14 +164,14 @@ func (h *Hub) SaveGameResult(winner, loser *Client) {
 
 	if winner == h.clients[0] {
 		result = winP1
-		winnerID = winner.baseClient.Pseudo
-		loserID = loser.baseClient.Pseudo
+		winnerID = winner.baseClient.ClientId
+		loserID = loser.baseClient.ClientId
 	} else {
 		result = winP2
-		winnerID = loser.baseClient.Pseudo
-		loserID = winner.baseClient.Pseudo
+		winnerID = loser.baseClient.ClientId
+		loserID = winner.baseClient.ClientId
 	}
-
+	fmt.Printf("winnerId : %v \n loserId : %v \n result : %v \n completionTime: %v /n", winnerID, loserID, result, completionTime)
 	if err := repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime); err != nil {
 		log.Printf("Error saving game result: %v", err)
 	}
@@ -186,7 +183,8 @@ func (h *Hub) run() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Hub %s panic recovered: %v", h.hubId, r)
+			log.Printf("Hub %s panic recovered: %v\n%s", h.hubId, r, string(debug.Stack()))
+			// log.Printf("Hub %s panic recovered: %v", h.hubId, r)
 		}
 		log.Printf("Hub %s stopped", h.hubId)
 	}()
@@ -208,6 +206,9 @@ func (h *Hub) run() {
 			opponent := h.GetOpponent(client)
 			if h.gameState == gamesOngoing && opponent != nil {
 				log.Printf("Game was running, player %v left, ending the game", client.baseClient.ClientId)
+				h.mu.Lock()
+				h.completionTime = 0
+				h.mu.Unlock()
 				h.HandleVictory(opponent, protocol.PlayerLeft)
 			} else {
 				log.Printf("Hub was waiting for another player but player %v left", client.baseClient.ClientId)
