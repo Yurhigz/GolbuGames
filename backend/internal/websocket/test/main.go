@@ -18,14 +18,14 @@ func main() {
 
 	// A debug
 	// Init DB
-	err := database.InitDB(ctx)
+	err := database.InitDB(parentContext)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
 	// Init Sudoku Grids
 
-	err = config.InitGridGeneration(ctx)
+	err = config.InitGridGeneration(parentContext)
 	if err != nil {
 		log.Fatalf("Failed to generate Grids : %v", err)
 	}
