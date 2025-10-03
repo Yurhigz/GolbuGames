@@ -86,7 +86,7 @@ const Multi = () => {
       setMessage("🔍 Recherche d’un joueur...");
       ws.send(
         JSON.stringify({
-          type: "system_message",
+          type: "system",
           action: "join_matchmaking",
         })
       );
@@ -193,7 +193,7 @@ const Multi = () => {
   const handleQuit = () => {
     if (wsRef.current) {
       wsRef.current.send(
-        JSON.stringify({ type: "system_message", action: "quit" })
+        JSON.stringify({ type: "system", action: "quit", code: 1003 })
       );
       wsRef.current.close();
     }
