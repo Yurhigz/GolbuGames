@@ -172,7 +172,7 @@ const Multi = () => {
       }
     };
   };
-
+        
   const handleNumberSelect = (number) => {
     if (
       !selectedCell ||
@@ -180,11 +180,11 @@ const Multi = () => {
     )
       return;
 
-    const { row, col } = selectedCell;
+    const position = row * 9 + col;
 
     if (wsRef.current) {
       wsRef.current.send(
-        JSON.stringify({ type: "move", row, col, number })
+        JSON.stringify({ type: "validate_move", position, "value":number })
       );
     }
   };
