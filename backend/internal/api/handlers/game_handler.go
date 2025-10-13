@@ -16,14 +16,14 @@ func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
 	}
-	if game.GameMode == "1v1" || game.OpponentID != nil || game.Results != nil {
+	if game.GameMode == "1v1" || game.OpponentID != "" || game.Results != nil {
 		http.Error(w, "Invalid game mode or results for solo game", http.StatusBadRequest)
 		return
 	}
 
 	err = repository.SubmitSoloGameDB(r.Context(), game.UserID, game.Completion_time)
 	if err != nil {
-		log.Printf("Error submitting game for user %d: %v", game.UserID, err)
+		log.Printf("Error submitting game for user %v: %v", game.UserID, err)
 		http.Error(w, "Failed to submit game", http.StatusInternalServerError)
 		return
 	}
@@ -32,7 +32,7 @@ func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":         "Game submitted successfully",
-		"userId":          strconv.Itoa(game.UserID),
+		"userId":          game.UserID,
 		"completion_time": strconv.Itoa(game.Completion_time),
 	})
 
@@ -45,13 +45,13 @@ func SubmitMultiGame(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
 	}
-	if game.GameMode != "1v1" || game.OpponentID == nil || game.Results == nil {
+	if game.GameMode != "1v1" || game.OpponentID == "" || game.Results == nil {
 		http.Error(w, "Invalid game mode or results for multiplayer game", http.StatusBadRequest)
 		return
 	}
-	err = repository.SubmitMultiGameDB(r.Context(), game.UserID, *game.OpponentID, *game.Results, game.Completion_time)
+	err = repository.SubmitMultiGameDB(r.Context(), game.UserID, game.OpponentID, *game.Results, game.Completion_time)
 	if err != nil {
-		log.Printf("Error submitting game for user %d: %v", game.UserID, err)
+		log.Printf("Error submitting game for user %v: %v", game.UserID, err)
 		http.Error(w, "Failed to submit game", http.StatusInternalServerError)
 		return
 	}
@@ -60,8 +60,8 @@ func SubmitMultiGame(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":    "Game submitted successfully",
-		"userId":     strconv.Itoa(game.UserID),
-		"opponentId": strconv.Itoa(*game.OpponentID),
+		"userId":     game.UserID,
+		"opponentId": game.OpponentID,
 		"score":      strconv.Itoa(*game.Results),
 	})
 }

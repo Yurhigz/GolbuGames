@@ -1,8 +1,10 @@
 package multiplayer
 
 import (
+	"encoding/json"
 	"golbugames/backend/internal/websocket"
 	"golbugames/backend/internal/websocket/client"
+	"golbugames/backend/internal/websocket/protocol"
 	"log"
 	"net"
 	"time"
@@ -15,6 +17,7 @@ type Client struct {
 	hubManager *HubManager
 	matchId    string
 	queueTime  time.Time
+	closed     bool
 }
 
 // Création d'un nouveau client
@@ -23,6 +26,324 @@ func newClient(conn net.Conn, hubManager *HubManager) *Client {
 	return &Client{
 		baseClient: client.NewBaseClient(conn),
 		hubManager: hubManager,
+		closed:     false,
+	}
+}
+
+// cleanup gère la fermeture propre du client
+func (c *Client) cleanup() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+
+	if c.closed {
+		return
+	}
+	c.closed = true
+
+	log.Printf("Cleaning up client %s", c.baseClient.ClientId)
+
+	// Retirer le client de la queue si il y est
+	c.hubManager.RemoveClientFromQueue(c)
+
+	// Désenregistrer du hub si assigné
+	if c.hub != nil {
+		select {
+		case c.hub.unregister <- c:
+		default:
+			log.Printf("Hub unregister channel blocked for client %s", c.baseClient.ClientId)
+		}
+	}
+
+	// Fermer la connexion
+	if c.baseClient != nil && c.baseClient.Conn != nil {
+		c.baseClient.Conn.Close()
+	}
+
+	// Fermer le canal Send si il existe
+	if c.baseClient != nil && c.baseClient.Send != nil {
+		close(c.baseClient.Send)
+	}
+}
+
+// Gestion des messages du backend vers le frontend
+func (c *Client) SendGameStart() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	if c.closed {
+		return
+	}
+
+	c.baseClient.Playable = c.hub.playable
+	c.baseClient.Solution = c.hub.solution
+
+	msg := protocol.GameStartNotification{
+		Type:      protocol.MessageTypeSystem,
+		Grid:      c.baseClient.Playable,
+		Message:   protocol.OutboundGameStart,
+		Countdown: protocol.OutboundCountdown,
+	}
+
+	marshallized, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: marshallized,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("Opponent found confirmation message sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send confirmation message to client %s", c.baseClient.ClientId)
+
+	}
+
+}
+
+func (c *Client) SendWaitingOpponent() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	if c.closed {
+		return
+	}
+
+	msg := protocol.SystemMessage{
+		Type:    protocol.MessageTypeSystem,
+		Message: protocol.MessageWaitingOpponent,
+		Code:    protocol.WaitingOpponent,
+	}
+
+	marshallized, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: marshallized,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("Waiting message sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send waiting message to client %s", c.baseClient.ClientId)
+
+	}
+}
+
+func (c *Client) SendLeavingOpponent() {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+
+	if c.closed {
+		return
+	}
+	payload, err := json.Marshal(protocol.SystemMessage{
+		Type:    protocol.MessageTypeSystem,
+		Message: protocol.OutboundOpponentLeft,
+		Code:    protocol.PlayerDisconnected,
+	})
+
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		FIN:     true,
+		Opcode:  websocket.OpcodeText,
+		Payload: payload,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("ending game sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send ending message to client %s", c.baseClient.ClientId)
+
+	}
+
+}
+
+// Il n'y a pas forcément la nécessité d'avoir le nom du winner mais on pourra le factoriser plus tard
+func (c *Client) SendGameOver(winner string) {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+
+	if c.closed {
+		return
+	}
+	payload, err := json.Marshal(protocol.GameEndNotification{
+		Type:   protocol.MessageTypeSystem,
+		Winner: winner,
+		Reason: protocol.OutboundGameEnd,
+	})
+
+	if err != nil {
+		log.Printf("Error marhalizing : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		FIN:     true,
+		Opcode:  websocket.OpcodeText,
+		Payload: payload,
+	}
+
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("ending game sent to client %s", c.baseClient.ClientId)
+
+	default:
+		log.Printf("Failed to send ending message to client %s", c.baseClient.ClientId)
+
+	}
+
+}
+
+func (c *Client) SendMessage(payload []byte) {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+
+	if c.closed {
+		return
+	}
+
+	// Créer une frame WebSocket correctement formatée
+	frame := &websocket.Frame{
+		FIN:     true,
+		Opcode:  websocket.OpcodeText,
+		Payload: payload,
+	}
+
+	select {
+	case c.baseClient.Send <- frame:
+		log.Printf("Message queued for client %s", c.baseClient.ClientId)
+	default:
+		log.Printf("Failed to queue message for client %s - channel full", c.baseClient.ClientId)
+	}
+}
+
+// processMessage traite le contenu d'un message complet
+// Il faudra ensuite ajouter des handlers métiers qui seront ensuite réutiliser par la partie processMessage
+// schéma => client html => HandleFrame() => processMessage() => handlers métiers
+
+func (c *Client) HandlerChat(msg protocol.ChatMessage) {
+
+	if c.hub == nil {
+		log.Printf("Client %s not in hub, cannot broadcast chat", c.baseClient.ClientId)
+		return
+	}
+
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error Marshalling msg : %v", err)
+	}
+
+	frame := websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
+	}
+	select {
+	case c.hub.broadcast <- frame:
+		log.Printf("Chat message broadcasted from %s", msg.Sender)
+	default:
+		log.Printf("Failed to broadcast chat - channel full or closed")
+	}
+
+}
+
+func (c *Client) HandlerMove(msg protocol.GameMessage) {
+
+	valid := c.baseClient.ValidateMove(msg.Position, byte(msg.Value))
+
+	validationMove := protocol.ValidationMove{
+		Type:     msg.Type,
+		Position: msg.Position,
+		Value:    msg.Value,
+		Valid:    valid,
+	}
+
+	payload, err := json.Marshal(validationMove)
+	if err != nil {
+		log.Printf("Error marshalling validation move : %v", err)
+		return
+	}
+
+	resp := &websocket.Frame{
+		Opcode:  websocket.OpcodeText,
+		FIN:     true,
+		Payload: payload,
+	}
+	select {
+	case c.baseClient.Send <- resp:
+		log.Printf("Move validation verification sent to client %s channel", c.baseClient.ClientId)
+	default:
+		log.Printf("Failed to send to send channel - channel full or closed")
+	}
+
+}
+
+// Envisager le cas où l'utilisateur déconnecte , fermeture du websocket depuis le frontend
+// gérer ça au niveau du handler ou au niveau du hub ?
+func (c *Client) HandlerSystemMessage(msg protocol.VictoryClaim) {
+
+	switch {
+
+	case msg.Message == protocol.InboundVictoryClaim:
+
+		// ensemble de la logique déléguée au hub
+		if c.hub != nil {
+			c.hub.HandleVictory(c, protocol.SystemGameOver)
+			c.hub.completionTime = msg.CompletionTime
+		}
+
+	default:
+		log.Printf("Unknown System Message code : %v", msg.Code)
+		return
+
+	}
+
+}
+
+// Gestion des messages entrants depuis le frontend vers le backend
+func (c *Client) ProcessMessage(payload []byte) {
+	var TypeOnly protocol.TypeOnly
+	err := json.Unmarshal(payload, &TypeOnly)
+	if err != nil {
+		log.Printf("Invalid message format from client %s: %v", c.baseClient.ClientId, err)
+		return
+	}
+
+	switch TypeOnly.Type {
+	case protocol.MessageTypeChat:
+		var chatMessage protocol.ChatMessage
+		json.Unmarshal(payload, &chatMessage)
+		c.HandlerChat(chatMessage)
+	case protocol.MessageTypeValidateMove:
+		var gameMessage protocol.GameMessage
+		json.Unmarshal(payload, &gameMessage)
+		c.HandlerMove(gameMessage)
+	case protocol.MessageTypeSystem:
+		var victoryClaim protocol.VictoryClaim
+		json.Unmarshal(payload, &victoryClaim)
+		c.HandlerSystemMessage(victoryClaim)
+	default:
+		log.Printf("Unknown message type from client %s: %s", c.baseClient.ClientId, TypeOnly.Type)
+		return
+
 	}
 }
 
@@ -32,7 +353,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
 		log.Printf("Client %s closed the connection", c.baseClient.ClientId)
-		c.hub.unregister <- c
+		c.cleanup()
 		return
 
 	case websocket.OpcodePing:
@@ -43,6 +364,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		c.baseClient.Mu.Unlock()
 		if err != nil {
 			log.Printf("Error sending pong to client %s: %v", c.baseClient.ClientId, err)
+			c.cleanup()
 			return
 		}
 
@@ -56,7 +378,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		if frame.FIN {
 			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s", websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
-			c.baseClient.Send <- frame.Payload
+			c.ProcessMessage(frame.Payload)
 			c.baseClient.ResetFragmentation()
 		} else {
 			// Début d'un message fragmenté
@@ -92,7 +414,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		if frame.FIN {
 			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.baseClient.ClientId)
-			c.baseClient.Send <- frame.Payload
+			c.ProcessMessage(frame.Payload)
 			c.baseClient.ResetFragmentation()
 		} else {
 			log.Printf("Received continuation frame from client %s", c.baseClient.ClientId)
@@ -109,21 +431,25 @@ func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
 	defer func() {
 		ticker.Stop()
-		c.hub.unregister <- c
-		c.baseClient.Conn.Close()
+		c.cleanup()
 	}()
 
 	for {
 		select {
 		case message, ok := <-c.baseClient.Send:
 			if !ok {
+				log.Printf("Send channel closed for client %s", c.baseClient.ClientId)
 				return
 			}
+
+			frameBytes := message.ToBytes()
+
 			c.baseClient.Mu.Lock()
-			_, err := c.baseClient.Conn.Write(message)
+			_, err := c.baseClient.Conn.Write(frameBytes)
 			c.baseClient.Mu.Unlock()
 
 			if err != nil {
+				log.Printf("Error writing to client %s: %v", c.baseClient.ClientId, err)
 				return
 			}
 		case <-ticker.C:
@@ -133,6 +459,7 @@ func (c *Client) writePump() {
 			c.baseClient.Mu.Unlock()
 
 			if err != nil {
+				log.Printf("Error sending ping to client %s: %v", c.baseClient.ClientId, err)
 				return
 			}
 		}
@@ -144,15 +471,24 @@ func (c *Client) writePump() {
 
 func (c *Client) readPump() {
 
-	defer func() {
-		c.hub.unregister <- c
-		c.baseClient.Conn.Close()
-	}()
+	defer c.cleanup()
 
 	buffer := make([]byte, 0, 4096)
 
 	for {
+
+		c.baseClient.Mu.Lock()
+		if c.closed {
+			c.baseClient.Mu.Unlock()
+			return
+		}
+		c.baseClient.Mu.Unlock()
 		temp := make([]byte, 1024)
+
+		if tcpConn, ok := c.baseClient.Conn.(*net.TCPConn); ok {
+			tcpConn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		}
+
 		n, err := c.baseClient.Conn.Read(temp)
 		if err != nil {
 			log.Printf("Error reading from client %s: %v", c.baseClient.ClientId, err)

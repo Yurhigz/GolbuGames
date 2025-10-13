@@ -1,6 +1,9 @@
 package client
 
 import (
+	"context"
+	"fmt"
+	"golbugames/backend/internal/websocket"
 	"net"
 	"sync"
 	"time"
@@ -21,18 +24,24 @@ type BaseClient struct {
 	Elo           int
 	Conn          net.Conn
 	Mu            sync.Mutex
-	Send          chan []byte
+	Send          chan *websocket.Frame
 	Solution      []int
 	Playable      []int
 	FrameBuffer   []byte
 	CurrentOpcode byte
+	Ctx           context.Context
 }
 
 func NewBaseClient(conn net.Conn) *BaseClient {
 	return &BaseClient{
-		Conn: conn,
-		Send: make(chan []byte, 256),
+		Conn:     conn,
+		Send:     make(chan *websocket.Frame, 256),
+		ClientId: createId(),
 	}
+}
+
+func createId() string {
+	return fmt.Sprintf("client_%d", time.Now().UnixNano())
 }
 
 func (c *BaseClient) ResetFragmentation() {
@@ -46,4 +55,11 @@ func (c *BaseClient) ValidateMove(index int, value byte) bool {
 		return true
 	}
 	return false
+}
+
+func (c *BaseClient) DuplicateFrame(frame *websocket.Frame) *websocket.Frame {
+	f := *frame
+	f.Payload = make([]byte, len(frame.Payload))
+	copy(f.Payload, frame.Payload)
+	return &f
 }

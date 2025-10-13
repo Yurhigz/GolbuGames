@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw bool, completionTime int, isSolo bool) error {
+func updateUserStats(ctx context.Context, tx pgx.Tx, userId string, win, loss, draw bool, completionTime int, isSolo bool) error {
 	query := `
         UPDATE user_stats 
             SET total_games = total_games + $6,
@@ -52,7 +52,7 @@ func updateUserStats(ctx context.Context, tx pgx.Tx, userId int, win, loss, draw
 	return nil
 }
 
-func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int) error {
+func SubmitSoloGameDB(parentsContext context.Context, userId string, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête
@@ -82,11 +82,11 @@ func SubmitSoloGameDB(parentsContext context.Context, userId, completionTime int
 		return fmt.Errorf("[SubmitSoloGame] cannot commit transaction: %w", err)
 	}
 
-	log.Printf("Solo game successfully submitted and stats updated for user %d", userId)
+	log.Printf("Solo game successfully submitted and stats updated for user %v", userId)
 	return nil
 }
 
-func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, result, completionTime int) error {
+func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, result, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
 	// Usage des transactions car double requête
@@ -98,7 +98,7 @@ func SubmitMultiGameDB(parentsContext context.Context, user1, user2 int, result,
 
 	// Insérer le score
 	_, err = tx.Exec(ctx,
-		`INSERT INTO games_scores (user_id, opponent_id, game_mode, result, completion_time) 
+		`INSERT INTO games_scores (user_id, opponent_id, game_mode, results, completion_time) 
 		 VALUES ($1, $2, '1v1', $3, $4)`,
 		user1, user2, result, completionTime)
 	if err != nil {
@@ -209,7 +209,6 @@ func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameS
 	return &gameHistory, nil
 }
 
-
 func GetTournamentId(parentsContext context.Context, tournamentName string) (int, error) {
 	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()
@@ -305,4 +304,3 @@ func AddTournament(parentsContext context.Context, tournament types.Tournament) 
 
 	return nil
 }
-
