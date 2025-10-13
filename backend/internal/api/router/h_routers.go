@@ -2,11 +2,12 @@ package router
 
 import (
 	"golbugames/backend/internal/api/handlers"
+	"golbugames/backend/internal/websocket/multiplayer"
 	"golbugames/backend/internal/websocket/solo"
 	"net/http"
 )
 
-func InitRoutesSudoku(mux *http.ServeMux) {
+func InitRoutesSudoku(mux *http.ServeMux, hubManager *multiplayer.HubManager) {
 	// Users API
 	mux.HandleFunc("POST /create_user", handlers.CreateUser)
 	// 	mux.HandleFunc("POST /create_user", handlers.UserSignin)
@@ -38,5 +39,15 @@ func InitRoutesSudoku(mux *http.ServeMux) {
 
 	mux.HandleFunc("GET /tournaments", handlers.GetAllTournaments)
 	mux.HandleFunc("POST /add_tournament", handlers.AddTournament)
+
+	// ========== WEBSOCKET ENDPOINTS ==========
+
+	// WebSocket Solo
+	mux.HandleFunc("GET /ws/solo", solo.WebsocketHandlerSolo)
+
+	// WebSocket Multiplayer
+	mux.HandleFunc("GET /ws/multi", func(w http.ResponseWriter, r *http.Request) {
+		multiplayer.WebsocketHandler(w, r, hubManager)
+	})
 
 }
