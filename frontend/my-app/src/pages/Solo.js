@@ -6,6 +6,8 @@ import NumberSelector from '../components/NumberSelector';
 import './Solo.css';
 import { AuthContext } from "../contexts/AuthContext";
 
+let wsPort = 3002; // Port WebSocket
+
 const EndGameModal = ({ isOpen, onClose, points, time, errors }) => {
     if (!isOpen) return null;
     return (
@@ -162,7 +164,7 @@ const Solo = () => {
     const generateGridsIfNeeded = async (difficulty) => {
         try {
             const promises = Array.from({ length: 10 }).map(() =>
-                axios.post("http://127.0.0.1:3001/add_grid", { Difficulty: difficulty })
+                axios.post(`http://127.0.0.1:${websocketPort}/add_grid`, { Difficulty: difficulty })
 
             );
             await Promise.all(promises);
@@ -173,7 +175,7 @@ const Solo = () => {
 
     const fetchGridFromBackend = async (difficulty) => {
         try {
-            const res = await axios.get(`http://127.0.0.1:3001/grid?difficulty=${difficulty}`);
+            const res = await axios.get(`http://127.0.0.1:${websocketPort}/grid?difficulty=${difficulty}`);
             const data = res.data;
 
             const board = parseBoardArray(data.board);
@@ -195,7 +197,7 @@ const Solo = () => {
     const handleSelectDifficulty = async (difficulty) => {
         setSelectedDifficulty(difficulty);
 
-        const socket = new WebSocket(`ws://localhost:3001/grid?difficulty=${difficulty}`);
+        const socket = new WebSocket(`ws://localhost:${websocketPort}/grid?difficulty=${difficulty}`);
         socketRef.current = socket;
 
         socket.onopen = () => console.log("[WS] Connecté");
@@ -251,7 +253,7 @@ const Solo = () => {
 
     const submitGrid = async () => {
         try {
-            await axios.post("http://localhost:3001/submit_solo_game", {
+            await axios.post(`http://localhost:${websocketPort}/submit_solo_game`, {
                 user_id: user.id,
                 difficulty: selectedDifficulty,
                 completion_time: elapsedTime,
