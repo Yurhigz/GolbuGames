@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-// Ensemble des fonctions de lecture, écriture et parsing des frames websockets RFC6455
-
 type Frame struct {
 	FIN      bool
 	Opcode   byte
@@ -74,12 +72,10 @@ func payloadLen(b byte) byte {
 	return b & 0b01111111
 }
 
-func unmaskPayload(payload []byte, mask []byte) []byte {
-	results := make([]byte, len(payload))
-	for i := 0; i < len(payload); i++ {
-		results[i] = payload[i] ^ mask[i%4]
-	}
-	return results
+func unmaskPayload(payload []byte, mask []byte) {
+    for i := 0; i < len(payload); i++ {
+        payload[i] ^= mask[i%4]
+    }
 }
 
 func Ping(payload []byte) []byte {
@@ -193,7 +189,7 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 	frame.Payload = make([]byte, payloadLen)
 	copy(frame.Payload, buf[headerLen:totalLen])
 
-	frame.Payload = unmaskPayload(frame.Payload, mask)
+	unmaskPayload(frame.Payload, mask)
 
 	frame.Length = totalLen
 	frame.RawFrame = make([]byte, totalLen)
@@ -204,34 +200,44 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 
 // Fonction de construction des réponses côté serveur vers les clients
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
-	var frame []byte
-	var firstByte byte = 0b0000000
-	if fin {
-		firstByte |= 1 << 7
-	}
-	firstByte |= opcode
-	frame = append(frame, firstByte)
-
 	payloadLength := len(payload)
+    var headerLen int
 
 	switch {
-	case payloadLength < 126:
-		frame = append(frame, byte(payloadLength))
-	case payloadLength <= 65535:
-		frame = append(frame, byte(126))
-		extraBytes := make([]byte, 2)
-		binary.BigEndian.PutUint16(extraBytes, uint16(payloadLength))
-		frame = append(frame, extraBytes...)
-	default:
-		frame = append(frame, 127)
-		extraBytes := make([]byte, 8)
-		binary.BigEndian.PutUint64(extraBytes, uint64(payloadLength))
-		frame = append(frame, extraBytes...)
-	}
+    case payloadLength < 126:
+        headerLen = 2
+    case payloadLength <= 65535:
+        headerLen = 4
+    default:
+        headerLen = 10
+    }
 
-	frame = append(frame, payload...)
+	frame := make([]byte, headerLen+payloadLength)
 
-	return frame
+	// 1er octet : FIN + Opcode
+    var firstByte byte = 0
+    if fin {
+        firstByte |= 1 << 7
+    }
+    firstByte |= opcode
+    frame[0] = firstByte
+
+	// 2ème octet + longueur étendue
+    switch {
+    case payloadLength < 126:
+        frame[1] = byte(payloadLength)
+    case payloadLength <= 65535:
+        frame[1] = 126
+        binary.BigEndian.PutUint16(frame[2:4], uint16(payloadLength))
+    default:
+        frame[1] = 127
+        binary.BigEndian.PutUint64(frame[2:10], uint64(payloadLength))
+    }
+
+    copy(frame[headerLen:], payload)
+
+    return frame
+
 }
 
 func (f *Frame) ToBytes() []byte {
