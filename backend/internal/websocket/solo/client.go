@@ -23,27 +23,28 @@ func newSoloClient(conn net.Conn) *SoloClient {
 	}
 }
 
-func (c *SoloClient) handleFrame(frame websocket.Frame) {
+// fait que décider quoi répondre et pousse via TrySend.
+// Retourne true si la boucle de lecture doit s'arrêter (close reçu).
+func (c *SoloClient) handleFrame(frame websocket.Frame) (shouldStop bool) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
-		log.Printf("[INFO] Client %s closed the connection", c.baseClient.ClientId)
-		log.Printf("[INFO] Fermeture du client")
-		c.baseClient.Send <- websocket.CloseFrame(1000, "Normal Closure")
-		return
+		log.Printf("[INFO] Client %s ask for closure", c.baseClient.ClientId)
+		c.baseClient.TrySend(websocket.CloseFrame(1000, "Normal Closure"))
+		return true
 
 	case websocket.OpcodePing:
 		log.Printf("[INFO] Received ping from client %s", c.baseClient.ClientId)
-		pongFrame := websocket.Pong(frame.Payload)
-		c.baseClient.Mu.Lock()
-		_, err := c.baseClient.Conn.Write(pongFrame)
-		c.baseClient.Mu.Unlock()
-		if err != nil {
-			log.Printf("[ERR] Error sending pong to client %s: %v", c.baseClient.ClientId, err)
-			return
-		}
+		c.baseClient.TrySend(websocket.Frame{
+			Opcode:  websocket.OpcodePong,
+			FIN:     true,
+			Payload: frame.Payload,
+		}.ToBytesFrame())
+		return false
 
 	case websocket.OpcodePong:
 		log.Printf("[INFO] Received pong from client %s", c.baseClient.ClientId)
+		c.baseClient.Conn.SetReadDeadline(time.Now().Add(client.PongWait))
+		return false
 
 	case websocket.OpcodeText, websocket.OpcodeBinary:
 
@@ -53,7 +54,7 @@ func (c *SoloClient) handleFrame(frame websocket.Frame) {
 		}
 		if err := json.Unmarshal(frame.Payload, &move); err != nil {
 			log.Printf("[ERR] Invalid JSON: %v", err)
-			return
+			return false
 		}
 
 		valid := c.baseClient.ValidateMove(move.Position, move.Value)
@@ -67,10 +68,12 @@ func (c *SoloClient) handleFrame(frame websocket.Frame) {
 			)),
 		}
 
-		c.baseClient.Send <- resp
+		c.baseClient.TrySend(resp)
+		return false
 
 	default:
 		log.Printf("[INFO] Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.baseClient.ClientId)
+		return false
 	}
 }
 
