@@ -14,7 +14,6 @@ const (
 	Newline        = "\n"
 	Space          = " "
 	PingPeriod     = (PongWait * 9) / 10 // Période de ping pour garder la connexion active
-	PongTimeout    = 60 * time.Second    // Durée d'attente pour un pong avant de fermer la connexion
 	MaxMessageSize = 1024 * 1024
 )
 
@@ -25,17 +24,19 @@ type BaseClient struct {
 	Conn          net.Conn
 	Mu            sync.Mutex
 	Send          chan *websocket.Frame
+	Done		  chan struct{}
+	closeOnce	 sync.Once
 	Solution      []int
 	Playable      []int
 	FrameBuffer   []byte
 	CurrentOpcode byte
-	Ctx           context.Context
 }
 
 func NewBaseClient(conn net.Conn) *BaseClient {
 	return &BaseClient{
 		Conn:     conn,
 		Send:     make(chan *websocket.Frame, 256),
+		Done:     make(chan struct{}),
 		ClientId: createId(),
 	}
 }
@@ -44,17 +45,35 @@ func createId() string {
 	return fmt.Sprintf("client_%d", time.Now().UnixNano())
 }
 
+func (c *BaseClient) Close() {
+	c.closeOnce.Do(func() {
+		close(c.Done)
+		c.Conn.Close()
+	})
+}
+
+// TrySend tente d'envoyer une frame sans jamais bloquer indéfiniment :
+// si Done est fermé (writePump arrêté / connexion en cours de fermeture),
+// on abandonne au lieu de deadlock.
+func (c *BaseClient) TrySend(frame *websocket.Frame) bool {
+	select {
+	case c.Send <- frame:
+		return true
+	case <-c.Done:
+		return false
+	}
+}
+
 func (c *BaseClient) ResetFragmentation() {
 	c.FrameBuffer = nil
 	c.CurrentOpcode = 0
 }
 
 func (c *BaseClient) ValidateMove(index int, value byte) bool {
-	// Vérifie si la valeur correspond à la solution
-	if c.Solution[index] == int(value) {
-		return true
+	if index < 0 || index >= len(c.Solution) {
+		return false
 	}
-	return false
+	return c.Solution[index] == int(value)
 }
 
 func (c *BaseClient) DuplicateFrame(frame *websocket.Frame) *websocket.Frame {
