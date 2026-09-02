@@ -27,10 +27,10 @@ jobs:
         go-version: '1.25'
 
     - name: Vet
-      run: go vet ./..
+      run: go vet ./...
 
     - name: Test
-      run: go test -v ./..
+      run: go test -v ./...
 
     - name: Race Detector
-      run: go test -race ./..
+      run: go test -race ./...
