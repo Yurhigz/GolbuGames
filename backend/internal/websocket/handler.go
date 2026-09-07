@@ -11,11 +11,6 @@ import (
 	"strings"
 )
 
-// Point d'entrée HTTP->WS
-// Convertit HTTP en WebSocket (upgrade)
-// Initialise les nouvelles connexions
-// Valide les connexions entrantes
-
 const magicGUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 // Fonction de gestion de la clef secrete

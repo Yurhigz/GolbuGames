@@ -3,9 +3,9 @@ package multiplayer
 import (
 	"context"
 	"fmt"
-	"golbugames/backend/internal/sudoku/repository"
-	"golbugames/backend/internal/websocket"
-	"golbugames/backend/internal/websocket/protocol"
+	"golbugames/internal/sudoku/repository"
+	"golbugames/internal/websocket"
+	"golbugames/internal/websocket/protocol"
 	"log"
 	"runtime/debug"
 	"sync"

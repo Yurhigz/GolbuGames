@@ -3,10 +3,10 @@ package config
 import (
 	"context"
 	"fmt"
-	"golbugames/backend/internal/sudoku"
-	"golbugames/backend/internal/sudoku/repository"
-	"golbugames/backend/pkg/types"
-	"golbugames/backend/pkg/utils"
+	"golbugames/internal/sudoku"
+	"golbugames/internal/sudoku/repository"
+	"golbugames/pkg/types"
+	"golbugames/pkg/utils"
 	"runtime"
 	"sync"
 )

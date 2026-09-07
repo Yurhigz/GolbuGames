@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"fmt"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/internal/sudoku"
-	"golbugames/backend/pkg/types"
+	"golbugames/internal/database"
+	"golbugames/internal/sudoku"
+	"golbugames/pkg/types"
 	"log"
 	"time"
 

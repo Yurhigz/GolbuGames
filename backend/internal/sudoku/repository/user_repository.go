@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/pkg/types"
+	"golbugames/internal/database"
+	"golbugames/pkg/types"
 	"log"
 	"time"
 )

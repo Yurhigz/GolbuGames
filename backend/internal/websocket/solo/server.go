@@ -3,8 +3,8 @@ package solo
 import (
 	"encoding/json"
 	"fmt"
-	"golbugames/backend/internal/sudoku/repository"
-	"golbugames/backend/internal/websocket"
+	"golbugames/internal/sudoku/repository"
+	"golbugames/internal/websocket"
 	"log"
 	"net/http"
 )

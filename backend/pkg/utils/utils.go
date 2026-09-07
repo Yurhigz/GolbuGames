@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"golbugames/backend/pkg/types"
+	"golbugames/pkg/types"
 	"log"
 	"math/rand/v2"
 	"strconv"

@@ -1,7 +1,7 @@
 package router
 
 import (
-	"golbugames/backend/internal/websocket/multiplayer"
+	"golbugames/internal/websocket/multiplayer"
 	"net/http"
 )
 

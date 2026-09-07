@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
-	"golbugames/backend/config"
-	"golbugames/backend/internal/api/router"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/internal/websocket/multiplayer"
+	"golbugames/config"
+	"golbugames/internal/api/router"
+	"golbugames/internal/database"
+	"golbugames/internal/websocket/multiplayer"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -36,6 +38,10 @@ import (
 // }
 
 func main() {
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	ctx := context.Background()
 
 	// Init DB

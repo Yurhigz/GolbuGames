@@ -2,7 +2,7 @@ package multiplayer
 
 import (
 	"fmt"
-	"golbugames/backend/internal/websocket"
+	"golbugames/internal/websocket"
 	"log"
 	"net/http"
 	"time"

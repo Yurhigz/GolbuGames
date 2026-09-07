@@ -3,8 +3,8 @@ package solo
 import (
 	"encoding/json"
 	"fmt"
-	"golbugames/backend/internal/websocket"
-	"golbugames/backend/internal/websocket/client"
+	"golbugames/internal/websocket"
+	"golbugames/internal/websocket/client"
 	"io"
 	"log"
 	"net"
@@ -34,11 +34,11 @@ func (c *SoloClient) handleFrame(frame websocket.Frame) (shouldStop bool) {
 
 	case websocket.OpcodePing:
 		log.Printf("[INFO] Received ping from client %s", c.baseClient.ClientId)
-		c.baseClient.TrySend(websocket.Frame{
+		c.baseClient.TrySend(&websocket.Frame{
 			Opcode:  websocket.OpcodePong,
 			FIN:     true,
 			Payload: frame.Payload,
-		}.ToBytesFrame())
+		})
 		return false
 
 	case websocket.OpcodePong:

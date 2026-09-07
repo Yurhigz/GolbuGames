@@ -1,9 +1,8 @@
 package client
 
 import (
-	"context"
 	"fmt"
-	"golbugames/backend/internal/websocket"
+	"golbugames/internal/websocket"
 	"net"
 	"sync"
 	"time"
@@ -24,8 +23,8 @@ type BaseClient struct {
 	Conn          net.Conn
 	Mu            sync.Mutex
 	Send          chan *websocket.Frame
-	Done		  chan struct{}
-	closeOnce	 sync.Once
+	Done          chan struct{}
+	closeOnce     sync.Once
 	Solution      []int
 	Playable      []int
 	FrameBuffer   []byte

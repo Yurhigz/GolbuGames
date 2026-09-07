@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"fmt"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/pkg/types"
+	"golbugames/internal/database"
+	"golbugames/pkg/types"
 	"log"
 	"math/rand/v2"
 	"time"

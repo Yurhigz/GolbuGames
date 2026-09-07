@@ -2,9 +2,9 @@ package multiplayer
 
 import (
 	"encoding/json"
-	"golbugames/backend/internal/websocket"
-	"golbugames/backend/internal/websocket/client"
-	"golbugames/backend/internal/websocket/protocol"
+	"golbugames/internal/websocket"
+	"golbugames/internal/websocket/client"
+	"golbugames/internal/websocket/protocol"
 	"log"
 	"net"
 	"time"

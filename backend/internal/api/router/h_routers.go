@@ -1,9 +1,9 @@
 package router
 
 import (
-	"golbugames/backend/internal/api/handlers"
-	"golbugames/backend/internal/websocket/multiplayer"
-	"golbugames/backend/internal/websocket/solo"
+	"golbugames/internal/api/handlers"
+	"golbugames/internal/websocket/multiplayer"
+	"golbugames/internal/websocket/solo"
 	"net/http"
 )
 

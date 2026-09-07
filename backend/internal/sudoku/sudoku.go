@@ -3,8 +3,8 @@ package sudoku
 import (
 	"errors"
 	"fmt"
-	"golbugames/backend/pkg/types"
-	"golbugames/backend/pkg/utils"
+	"golbugames/pkg/types"
+	"golbugames/pkg/utils"
 	"math/rand"
 )
 
