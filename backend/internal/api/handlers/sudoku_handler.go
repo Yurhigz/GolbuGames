@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"golbugames/backend/internal/sudoku"
-	"golbugames/backend/internal/sudoku/repository"
-	"golbugames/backend/pkg/types"
-	"golbugames/backend/pkg/utils"
-	"log"
+	api_errors "golbugames/internal/api/errors"
+	"golbugames/internal/sudoku"
+	"golbugames/internal/sudoku/repository"
+	"golbugames/pkg/types"
+	"golbugames/pkg/utils"
+	"log/slog"
 	"net/http"
 )
 
@@ -17,10 +18,11 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 
 	if err != nil {
-		log.Printf("Erreur : %v", err)
-		http.Error(w, "invalid data format", http.StatusBadRequest)
+		slog.Error("Failed to decode request body", "error", err)
+		api_errors.WriteError(w, err)
 		return
 	}
+
 	difficulty := req.Difficulty
 	if difficulty == "" {
 		difficulty = "easy"
@@ -34,33 +36,48 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !validDifficulties[difficulty] {
-		http.Error(w, "Invalid difficulty level", http.StatusBadRequest)
+		slog.Error("Invalid difficulty level", "difficulty", difficulty)
+		api_errors.WriteError(w, api_errors.ErrInvalidDifficulty)
 		return
 	}
 
-	solvedGrid, _ := sudoku.GenerateSolvedGrid()
+	solvedGrid, err := sudoku.GenerateSolvedGrid()
+	if err != nil {
+		slog.Error("Failed to generate solved grid", "error", err)
+		api_errors.WriteError(w, err)
+		return
+	}
 	savedSolvedGrid := solvedGrid
-	playableGrid, _ := sudoku.GeneratePlayableGrid(solvedGrid, difficulty)
+	playableGrid, err := sudoku.GeneratePlayableGrid(solvedGrid, difficulty)
+	if err != nil {
+		slog.Error("Failed to generate playable grid", "error", err)
+		api_errors.WriteError(w, err)
+		return
+	}
 
 	boardStr := utils.GridTransformer(playableGrid)
 	solutionStr := utils.GridTransformer(savedSolvedGrid)
 
 	err = repository.AddGridDB(r.Context(), boardStr, solutionStr, difficulty)
 	if err != nil {
-		log.Printf("Error saving grid to DB: %v", err)
-		http.Error(w, "Failed to save grid", http.StatusInternalServerError)
+		slog.Error("Failed to save grid to DB", "error", err)
+		api_errors.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(
+	if err = json.NewEncoder(w).Encode(
 		map[string]string{
 			"message":    "Grid successfully created",
 			"board":      boardStr,
 			"solution":   solutionStr,
 			"difficulty": difficulty,
-		})
+		}); err != nil {
+		slog.Error("Failed to encode response", "error", err)
+		api_errors.WriteError(w, err)
+		return
+	}
 
 }
 
@@ -93,8 +110,8 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message":    "Grid sucessfully retrieved",
-// 		"board":      sudokuGrid.Board,
+		"message": "Grid sucessfully retrieved",
+		// 		"board":      sudokuGrid.Board,
 		"difficulty": sudokuGrid.Difficulty,
 	})
 }
@@ -102,13 +119,18 @@ func GetGrid(w http.ResponseWriter, r *http.Request) {
 func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 	leaderboard, err := repository.GetLeaderboard(r.Context())
 	if err != nil {
-		http.Error(w, "Internal retrieval error", http.StatusInternalServerError)
+		slog.Error("Failed to retrieve leaderboard", "error", err)
+		api_errors.WriteError(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(leaderboard)
+	if err = json.NewEncoder(w).Encode(leaderboard); err != nil {
+		slog.Error("Failed to encode response", "error", err)
+		api_errors.WriteError(w, err)
+		return
+	}
 }
 
 // func GetUserHistory(w http.ResponseWriter, r *http.Request) {
