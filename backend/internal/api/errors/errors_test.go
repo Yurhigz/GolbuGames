@@ -1,10 +1,15 @@
 package api_errors
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http/httptest"
 	"testing"
 )
+
+type MessageResponse struct {
+	Message string `json:"message"`
+}
 
 func TestWriteError(t *testing.T) {
 	tests := []struct {
@@ -25,14 +30,19 @@ func TestWriteError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 
+			var resp MessageResponse
 			WriteError(w, tt.err)
+
+			if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+				t.Fatalf("failed to decode response: %v", err)
+			}
 
 			if w.Code != tt.wantStatus {
 				t.Errorf("expected status %d, got %d", tt.wantStatus, w.Code)
 			}
 
-			if w.Body.String() != tt.wantMsg+"\n" {
-				t.Errorf("expected message %q, got %q", tt.wantMsg, w.Body.String())
+			if resp.Message != tt.wantMsg {
+				t.Errorf("expected message %q, got %q", tt.wantMsg, resp.Message)
 			}
 		})
 	}
@@ -52,16 +62,20 @@ func TestWriteErrorUnknownError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var resp MessageResponse
 			w := httptest.NewRecorder()
 
 			WriteError(w, tt.err)
+			if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+				t.Fatalf("failed to decode response: %v", err)
+			}
 
 			if w.Code != tt.wantStatus {
 				t.Errorf("expected status %d, got %d", tt.wantStatus, w.Code)
 			}
 
-			if w.Body.String() != tt.wantMsg+"\n" {
-				t.Errorf("expected message %q, got %q", tt.wantMsg, w.Body.String())
+			if resp.Message != tt.wantMsg {
+				t.Errorf("expected message %q, got %q", tt.wantMsg, resp.Message)
 			}
 
 		})
