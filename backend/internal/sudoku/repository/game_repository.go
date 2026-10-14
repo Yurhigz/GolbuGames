@@ -7,7 +7,6 @@ import (
 	"golbugames/internal/sudoku"
 	"golbugames/pkg/types"
 	"log"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -53,7 +52,7 @@ func updateUserStats(ctx context.Context, tx pgx.Tx, userId string, win, loss, d
 }
 
 func SubmitSoloGameDB(parentsContext context.Context, userId string, completionTime int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 	// Usage des transactions car double requête
 	tx, err := database.DBPool.Begin(ctx)
@@ -87,7 +86,7 @@ func SubmitSoloGameDB(parentsContext context.Context, userId string, completionT
 }
 
 func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, result, completionTime int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 	// Usage des transactions car double requête
 	tx, err := database.DBPool.Begin(ctx)
@@ -132,7 +131,7 @@ func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, resu
 }
 
 func GetEloDB(parentsContext context.Context, userId int) (int, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `SELECT elo_score FROM leaderboard WHERE id = $1`
@@ -148,7 +147,7 @@ func GetEloDB(parentsContext context.Context, userId int) (int, error) {
 }
 
 func UpdateEloDB(parentsContext context.Context, userId1, userId2 int, result string) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	userElo1, err := GetEloDB(ctx, userId1)
@@ -178,7 +177,7 @@ func UpdateEloDB(parentsContext context.Context, userId1, userId2 int, result st
 }
 
 func GetLeaderboard(parentsContext context.Context) (*[]sudoku.Leaderboard, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var leaderboardList []sudoku.Leaderboard
@@ -194,7 +193,7 @@ func GetLeaderboard(parentsContext context.Context) (*[]sudoku.Leaderboard, erro
 }
 
 func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameScore, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var gameHistory []sudoku.GameScore
@@ -210,7 +209,7 @@ func GetUserHistory(parentsContext context.Context, userId int) (*[]sudoku.GameS
 }
 
 func GetTournamentId(parentsContext context.Context, tournamentName string) (int, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var tournamentId int
@@ -226,7 +225,7 @@ func GetTournamentId(parentsContext context.Context, tournamentName string) (int
 }
 
 func GetAllTournaments(parentsContext context.Context) ([]types.Tournament, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var tournaments []types.Tournament
@@ -250,7 +249,7 @@ func GetAllTournaments(parentsContext context.Context) ([]types.Tournament, erro
 }
 
 func GetAllIDTournaments(parentsContext context.Context) ([]int, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var tournamentIds []int
@@ -275,7 +274,7 @@ func GetAllIDTournaments(parentsContext context.Context) ([]int, error) {
 }
 
 func RemoveTournament(parentsContext context.Context, tournamentId int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `DELETE FROM tournaments WHERE id = $1`
@@ -291,7 +290,7 @@ func RemoveTournament(parentsContext context.Context, tournamentId int) error {
 }
 
 func AddTournament(parentsContext context.Context, tournament types.Tournament) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `INSERT INTO tournaments (name, description, start_time, end_time) VALUES ($1, $2, $3, $4)`
