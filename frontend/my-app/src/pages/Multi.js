@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./Multi.css";
+import { WEBSOCKET_BASE_URL } from "../config/api";
 
 const Multi = () => {
   const [status, setStatus] = useState("idle"); // idle | searching | waiting | countdown | playing | finished | left
@@ -78,7 +79,7 @@ const Multi = () => {
   const handleMatchmaking = () => {
     if (wsRef.current) wsRef.current.close();
 
-    const ws = new WebSocket("ws://localhost:3005/ws");
+    const ws = new WebSocket(`${WEBSOCKET_BASE_URL}/ws/multi`);
     wsRef.current = ws;
 
     ws.onopen = () => {

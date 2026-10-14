@@ -7,6 +7,7 @@ import {Link, useNavigate} from "react-router-dom";
 import "./Login.css";
 import axios from "axios";
 import { AuthContext } from "../../contexts/AuthContext";
+import { API_BASE_URL } from "../../config/api";
 
 const sanitizeInput = (str) => {
     const temp = document.createElement("div");
@@ -62,7 +63,7 @@ const Login = () => {
 
         console.log("Connexion sécurisée :", identifiants);
         try {
-            const response = await axios.post("http://localhost:3001/login", {
+            const response = await axios.post(`${API_BASE_URL}/login`, {
                 Username: login,
                 Password: password,
                 Accountname: login,

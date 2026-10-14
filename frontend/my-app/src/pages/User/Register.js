@@ -8,6 +8,7 @@ import "./Register.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {AuthContext} from "../../contexts/AuthContext";
+import { API_BASE_URL } from "../../config/api";
 
 const sanitizeInput = (str) => {
     const temp = document.createElement("div");
@@ -71,7 +72,7 @@ const Register = () => {
 
 
         try {
-            const response = await axios.post("http://localhost:3001/create_user", {
+            const response = await axios.post(`${API_BASE_URL}/create_user`, {
                 Username: login,
                 Password: password,
                 Accountname: login,

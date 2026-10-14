@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
 import "./Profile.css";
 import { AuthContext } from "../contexts/AuthContext";
+import { API_BASE_URL } from "../config/api";
 
 const Profile = () => {
     const [newPassword, setNewPassword] = useState("");
@@ -26,7 +27,7 @@ const Profile = () => {
         if (!newPassword.trim()) return;
 
         try {
-            const response = await fetch("http://localhost:3001/updateuser", {
+            const response = await fetch(`${API_BASE_URL}/updateuser`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

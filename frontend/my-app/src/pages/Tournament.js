@@ -3,6 +3,7 @@ import axios from "axios";
 import { Input } from "../components/Input";
 import { Card } from "../components/Card";
 import "./Tournament.css";
+import { API_BASE_URL } from "../config/api";
 
 
 // Anti-XSS : échappe le HTML
@@ -28,7 +29,7 @@ const Tournament = () => {
     // 🔹 Fonction pour récupérer les tournois depuis le backend
     const fetchTournaments = async () => {
         try {
-            const response = await axios.get("http://localhost:3001/tournaments");
+            const response = await axios.get(`${API_BASE_URL}/tournaments`);
             if (response.data && response.data.tournaments) {
                 setTournaments(response.data.tournaments);
             }
@@ -92,7 +93,7 @@ const Tournament = () => {
 
         try {
             // 👉 Envoi au backend
-            const response = await axios.post("http://localhost:3001/add_tournament", {
+            const response = await axios.post(`${API_BASE_URL}/add_tournament`, {
                 Name: name,
                 Description: description,
                 StartTime: new Date().toISOString(),
