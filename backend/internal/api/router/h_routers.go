@@ -2,14 +2,15 @@ package router
 
 import (
 	"golbugames/internal/api/handlers"
+	"golbugames/internal/api/middleware"
 	"golbugames/internal/websocket/multiplayer"
 	"golbugames/internal/websocket/solo"
 	"net/http"
 )
 
-func InitRoutesSudoku(mux *http.ServeMux, hubManager *multiplayer.HubManager) {
+func InitRoutesSudoku(mux *http.ServeMux, hubManager *multiplayer.HubManager, jwtManager *middleware.JWTManager) {
 	// Users API
-	mux.HandleFunc("POST /create_user", handlers.CreateUser)
+	mux.HandleFunc("POST /create_user", handlers.CreateUserWithJWT(jwtManager))
 	// 	mux.HandleFunc("POST /create_user", handlers.UserSignin)
 	mux.HandleFunc("DELETE /delete_user/{id}", handlers.DeleteUser)
 	mux.HandleFunc("GET /user/{id}", handlers.GetUser)
@@ -18,7 +19,7 @@ func InitRoutesSudoku(mux *http.ServeMux, hubManager *multiplayer.HubManager) {
 
 	mux.HandleFunc("GET /user_stats/{id}", handlers.GetUserStats)
 	mux.HandleFunc("GET /user_id", handlers.GetUserId)
-	mux.HandleFunc("POST /login", handlers.UserLogin)
+	mux.HandleFunc("POST /login", handlers.UserLoginWithJWT(jwtManager))
 
 	// Sudoku API
 	mux.HandleFunc("POST /add_grid", handlers.AddGrid)
