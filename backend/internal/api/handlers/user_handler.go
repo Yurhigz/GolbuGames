@@ -17,6 +17,16 @@ import (
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
+	createUser(w, r, nil)
+}
+
+func CreateUserWithJWT(manager *middleware.JWTManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		createUser(w, r, manager)
+	}
+}
+
+func createUser(w http.ResponseWriter, r *http.Request, manager *middleware.JWTManager) {
 
 	var userReg types.UserRegistration
 	err := json.NewDecoder(r.Body).Decode(&userReg)
@@ -46,6 +56,20 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := repository.GetUserIdDB(r.Context(), userReg.Username, userReg.Accountname)
+	if err != nil {
+		http.Error(w, "user was created but could not be retrieved", http.StatusInternalServerError)
+		return
+	}
+	if manager == nil {
+		http.Error(w, "JWT signer is not configured", http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := manager.Generate(strconv.Itoa(user.ID), user.Username, []string{"user"})
+	if err != nil {
+		http.Error(w, "could not create access token", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -53,6 +77,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		"message":  "Utilisateur créé avec succès",
 		"username": userReg.Username,
 		"user_id":  strconv.Itoa(user.ID),
+		"access_token": accessToken,
 	})
 
 }
@@ -247,6 +272,16 @@ func UserSignin(w http.ResponseWriter, r *http.Request) {
 // à ajouter dans le handler login
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
+	userLogin(w, r, nil)
+}
+
+func UserLoginWithJWT(manager *middleware.JWTManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userLogin(w, r, manager)
+	}
+}
+
+func userLogin(w http.ResponseWriter, r *http.Request, manager *middleware.JWTManager) {
 	var user types.User
 	var userLogin *types.User
 
@@ -268,16 +303,24 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-	// if !utils.HashPasswordCompare(userLogin.Password, user.Password) {
-	// 	log.Printf("Password mismatch for user %s", user.Username)
-	// 	http.Error(w, "Invalid username or password", http.StatusUnauthorized)
-	// 	return
-	// }
+	if err := bcrypt.CompareHashAndPassword([]byte(userLogin.Password), []byte(user.Password)); err != nil {
+		log.Printf("Password mismatch for user %s", user.Username)
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+	if manager == nil {
+		http.Error(w, "JWT signer is not configured", http.StatusInternalServerError)
+		return
+	}
 
-	// Gérer la partie refresh token avec la fonction RefreshToken
-	jwtToken, err := middleware.GenerateJWT(strconv.Itoa(userLogin.ID), userLogin.Username, []string{"user"})
+	jwtToken, err := manager.Generate(strconv.Itoa(userLogin.ID), userLogin.Username, []string{"user"})
+	if err != nil {
+		http.Error(w, "could not create access token", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"access_token": jwtToken,
 		"user_id":      strconv.Itoa(userLogin.ID),
