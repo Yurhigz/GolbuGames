@@ -386,7 +386,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 				websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
 
 			// Vérification de la taille
-			if len(frame.Payload) > client.MaxMessageSize {
+			if uint64(len(frame.Payload)) > websocket.MaxPayloadSize() {
 				log.Printf("First frame too large from client %s", c.baseClient.ClientId)
 				c.baseClient.ResetFragmentation()
 				return
@@ -403,7 +403,7 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		}
 
 		// Vérification de la taille totale
-		if len(c.baseClient.FrameBuffer)+len(frame.Payload) > client.MaxMessageSize {
+		if uint64(len(c.baseClient.FrameBuffer)+len(frame.Payload)) > websocket.MaxPayloadSize() {
 			log.Printf("Message too large from client %s", c.baseClient.ClientId)
 			c.baseClient.ResetFragmentation()
 			return

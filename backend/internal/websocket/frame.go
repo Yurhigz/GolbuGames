@@ -2,6 +2,8 @@ package websocket
 
 import (
 	"encoding/binary"
+	"fmt"
+	"sync/atomic"
 	"time"
 )
 
@@ -37,8 +39,26 @@ const (
 	mediumPayloadHeaderLen = 8
 	largeIndicatorHeader   = 10
 	largePayloadHeaderLen  = 14
-	MaxPayloadSize         = 1024 * 1024
+	DefaultMaxPayloadSize  = 1024 * 1024
 )
+
+var configuredMaxPayloadSize atomic.Uint64
+
+func init() {
+	configuredMaxPayloadSize.Store(DefaultMaxPayloadSize)
+}
+
+func ConfigureMaxPayloadSize(size uint64) error {
+	if size < 125 || size > 16*1024*1024 {
+		return fmt.Errorf("WebSocket payload limit must be between 125 and 16777216 bytes")
+	}
+	configuredMaxPayloadSize.Store(size)
+	return nil
+}
+
+func MaxPayloadSize() uint64 {
+	return configuredMaxPayloadSize.Load()
+}
 
 func isFinalFrame(b byte) bool {
 	return b&(1<<7) != 0
@@ -73,9 +93,9 @@ func payloadLen(b byte) byte {
 }
 
 func unmaskPayload(payload []byte, mask []byte) {
-    for i := 0; i < len(payload); i++ {
-        payload[i] ^= mask[i%4]
-    }
+	for i := 0; i < len(payload); i++ {
+		payload[i] ^= mask[i%4]
+	}
 }
 
 func Ping(payload []byte) []byte {
@@ -170,11 +190,11 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 			return frame, 0, ErrIncompleteFrame
 		}
 		payloadLen64 := binary.BigEndian.Uint64(buf[2:10])
-		if payloadLen64 > uint64(MaxPayloadSize) {
-			return frame, 0, ErrPayloadTooLarge
-		}
 		payloadLen = int(payloadLen64)
 		headerLen = 14 // 2 + 8 + 4
+	}
+	if uint64(payloadLen) > configuredMaxPayloadSize.Load() {
+		return frame, 0, ErrPayloadTooLarge
 	}
 
 	totalLen := headerLen + payloadLen
@@ -201,42 +221,42 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 // Fonction de construction des réponses côté serveur vers les clients
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	payloadLength := len(payload)
-    var headerLen int
+	var headerLen int
 
 	switch {
-    case payloadLength < 126:
-        headerLen = 2
-    case payloadLength <= 65535:
-        headerLen = 4
-    default:
-        headerLen = 10
-    }
+	case payloadLength < 126:
+		headerLen = 2
+	case payloadLength <= 65535:
+		headerLen = 4
+	default:
+		headerLen = 10
+	}
 
 	frame := make([]byte, headerLen+payloadLength)
 
 	// 1er octet : FIN + Opcode
-    var firstByte byte = 0
-    if fin {
-        firstByte |= 1 << 7
-    }
-    firstByte |= opcode
-    frame[0] = firstByte
+	var firstByte byte = 0
+	if fin {
+		firstByte |= 1 << 7
+	}
+	firstByte |= opcode
+	frame[0] = firstByte
 
 	// 2ème octet + longueur étendue
-    switch {
-    case payloadLength < 126:
-        frame[1] = byte(payloadLength)
-    case payloadLength <= 65535:
-        frame[1] = 126
-        binary.BigEndian.PutUint16(frame[2:4], uint16(payloadLength))
-    default:
-        frame[1] = 127
-        binary.BigEndian.PutUint64(frame[2:10], uint64(payloadLength))
-    }
+	switch {
+	case payloadLength < 126:
+		frame[1] = byte(payloadLength)
+	case payloadLength <= 65535:
+		frame[1] = 126
+		binary.BigEndian.PutUint16(frame[2:4], uint16(payloadLength))
+	default:
+		frame[1] = 127
+		binary.BigEndian.PutUint64(frame[2:10], uint64(payloadLength))
+	}
 
-    copy(frame[headerLen:], payload)
+	copy(frame[headerLen:], payload)
 
-    return frame
+	return frame
 
 }
 

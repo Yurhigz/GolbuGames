@@ -9,11 +9,10 @@ import (
 )
 
 const (
-	PongWait       = 60 * time.Second // Durée d'attente pour un pong
-	Newline        = "\n"
-	Space          = " "
-	PingPeriod     = (PongWait * 9) / 10 // Période de ping pour garder la connexion active
-	MaxMessageSize = 1024 * 1024
+	PongWait   = 60 * time.Second // Durée d'attente pour un pong
+	Newline    = "\n"
+	Space      = " "
+	PingPeriod = (PongWait * 9) / 10 // Période de ping pour garder la connexion active
 )
 
 type BaseClient struct {
