@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:18
     container_name: postgresgg
     environment:
       POSTGRES_USER: ${BDD_USER}
@@ -10,8 +8,38 @@ services:
     ports:
       - "${BDD_PORT_IN}:${BDD_PORT_OUT}"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./backend/internal/database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+  react-dev:
+    image: node:22-alpine
+    container_name: react_dev_env
+    working_dir: /app
+    volumes:
+      - ./frontend/my-app:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - FAST_REFRESH=true
+      - WDS_SOCKET_PORT=3000
+    stdin_open: true
+    tty: true
+    command: sh -c "npm install && npm start"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    env_file:
+      - ./backend/.env
+    ports:
+      - "3002:3002"
+    depends_on:
+      - postgres
 
 volumes:
   postgres-data:
