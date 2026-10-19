@@ -10,7 +10,7 @@ CREATE TABLE users (
     user_id VARCHAR(50) NOT NULL UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
     accountname VARCHAR(50) NOT NULL,
-    password VARCHAR(100) NOT NULL, --system de hash avant insertion
+    password VARCHAR(100) NOT NULL, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -22,7 +22,7 @@ CREATE TABLE sessions (
     user_id VARCHAR(50) NOT NULL,
     token VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE -- Suppression en cascade en cas de suppresion d'un utilisateur, mécanisme à confirmer
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE 
 );
 
 DROP TABLE IF EXISTS sudoku_games CASCADE;
@@ -122,6 +122,4 @@ CREATE TABLE cookies (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-
-
-)
+);

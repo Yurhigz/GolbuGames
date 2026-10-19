@@ -2,74 +2,99 @@ package main
 
 import (
 	"context"
-	"golbugames/backend/config"
-	"golbugames/backend/internal/api/router"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/internal/websocket/multiplayer"
-	"log"
+	"errors"
+	"golbugames/config"
+	"golbugames/internal/api/middleware"
+	"golbugames/internal/api/router"
+	"golbugames/internal/database"
+	"golbugames/internal/websocket"
+	"golbugames/internal/websocket/multiplayer"
+	"log/slog"
 	"net/http"
-	"time"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
-// Middleware CORS global
-// func corsMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		// Skip CORS headers pour WebSocket
-// 		if strings.HasPrefix(r.URL.Path, "/ws/") {
-// 			next.ServeHTTP(w, r)
-// 			return
-// 		}
-
-// 		// CORS pour REST API
-// 		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-// 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-// 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-// 		w.Header().Set("Access-Control-Allow-Credentials", "true") // Important pour les cookies
-
-// 		if r.Method == "OPTIONS" {
-// 			w.WriteHeader(http.StatusOK)
-// 			return
-// 		}
-
-// 		next.ServeHTTP(w, r)
-// 	})
-// }
-
 func main() {
-	ctx := context.Background()
+	if err := run(); err != nil {
+		slog.Error("application stopped", "error", err)
+		os.Exit(1)
+	}
+}
 
-	// Init DB
-	err := database.InitDB(ctx)
+func run() error {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
+	settings, err := config.Load()
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		return err
+	}
+	if err := websocket.ConfigureMaxPayloadSize(settings.Payload.WebSocketMaxBytes); err != nil {
+		return err
 	}
 
-	// Init Sudoku Grids
+	jwtManager, err := middleware.NewJWTManager(settings.JWT)
+	if err != nil {
+		return err
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	err = database.InitDB(ctx, database.PoolSettings{
+		URL:                  settings.Database.URL,
+		MinConnections:       settings.Database.MinConnections,
+		MaxConnections:       settings.Database.MaxConnections,
+		MaxConnectionAge:     settings.Database.MaxConnectionAge,
+		MaxConnectionIdle:    settings.Database.MaxConnectionIdle,
+		ConnectTimeout:       settings.Database.ConnectTimeout,
+		QueryTimeout:         settings.Database.QueryTimeout,
+		BulkOperationTimeout: settings.Database.BulkOperationTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer database.CloseDB()
 
 	err = config.InitGridGeneration(ctx)
 	if err != nil {
-		log.Fatalf("Failed to generate Grids : %v", err)
+		return err
 	}
 
-	// Init du multijoueurs HubManager
 	hubManager := multiplayer.NewHubManager()
 	go hubManager.MatchmakingLoop(ctx)
 
-	// Init router
-	r := router.NewRouter(hubManager)
+	r := router.NewRouter(hubManager, jwtManager)
 	r.InitRoutes()
-	// handler := corsMiddleware(r)
 
 	server := &http.Server{
-		Addr:         ":3002",
-		Handler:      r, // Le middleware wrappé
-		ReadTimeout:  60 * time.Second,
-		WriteTimeout: 60 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:              settings.HTTP.Address,
+		Handler:           middleware.NewHTTPHandler(r, settings),
+		ReadTimeout:       settings.HTTP.ReadTimeout,
+		ReadHeaderTimeout: settings.HTTP.ReadHeaderTimeout,
+		WriteTimeout:      settings.HTTP.WriteTimeout,
+		IdleTimeout:       settings.HTTP.IdleTimeout,
+		MaxHeaderBytes:    settings.HTTP.MaxHeaderBytes,
 	}
 
-	log.Print("Listening on :3002...")
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), settings.HTTP.ShutdownTimeout)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error("graceful shutdown failed", "error", err)
+		}
+	}()
+
+	slog.Info("HTTP server listening", "address", settings.HTTP.Address)
+	err = server.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
 	}
+	<-shutdownDone
+	return nil
 }

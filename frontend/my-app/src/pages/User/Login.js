@@ -2,24 +2,12 @@
 import { useRef, useState, useContext } from "react";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
-import {Link, useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import "./Login.css";
 import axios from "axios";
 import { AuthContext } from "../../contexts/AuthContext";
-
-const sanitizeInput = (str) => {
-    const temp = document.createElement("div");
-    temp.textContent = str;
-    return temp.innerHTML;
-};
-
-const validatePassword = (password) => {
-    const hasMinLength = password.length >= 6;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    return hasMinLength && hasUppercase && hasNumber;
-};
+import { API_BASE_URL } from "../../config/api";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -29,40 +17,19 @@ const Login = () => {
     const [error, setError] = useState("");
     const { AuthLogin } = useContext(AuthContext);
 
-    const handleLogin = async () => {
-        const rawLogin = loginRef.current.value;
-        const rawPassword = passwordRef.current.value;
-
-        const login = sanitizeInput(rawLogin.trim());
-        const password = sanitizeInput(rawPassword.trim());
+    const handleLogin = async (event) => {
+        event.preventDefault();
+        const login = loginRef.current.value.trim();
+        const password = passwordRef.current.value;
 
         if (!login || !password) {
             setError("Veuillez remplir tous les champs.");
             return;
         }
 
-        if (login.length > 20 || password.length > 20) {
-            setError("Les champs ne doivent pas dépasser 20 caractères.");
-            return;
-        }
-
-        if (!validatePassword(password)) {
-            setError("Le mot de passe doit contenir au moins 6 caractères, une lettre majuscule et un chiffre.");
-            return;
-        }
-
-        setError(""); // Réinitialise les erreurs
-
-
-        const identifiants = {
-            login: loginRef.current.value,
-            password: passwordRef.current.value,
-        };
-
-
-        console.log("Connexion sécurisée :", identifiants);
+        setError("");
         try {
-            const response = await axios.post("http://localhost:3001/login", {
+            const response = await axios.post(`${API_BASE_URL}/login`, {
                 Username: login,
                 Password: password,
                 Accountname: login,
@@ -72,8 +39,7 @@ const Login = () => {
 
             AuthLogin({ id: user_id, username }, access_token);
             navigate("/");
-        } catch (err) {
-            console.error("Erreur login:", err);
+        } catch {
             setError("Login échoué !");
         }
 
@@ -82,13 +48,26 @@ const Login = () => {
     return (
         <div className="login-container">
             <h2 className="login-title">Connexion</h2>
-            <div className="input-group">
-                <Input type="text" placeholder="Nom d'utilisateur" ref={loginRef} />
-            </div>
-            <div className="input-group">
-                <Input type="password" placeholder="Mot de passe" ref={passwordRef} />
-            </div>
-            <Button onClick={handleLogin}>Connexion</Button>
+            <form onSubmit={handleLogin}>
+                <div className="input-group">
+                    <Input
+                        type="text"
+                        placeholder="Nom d'utilisateur"
+                        autoComplete="username"
+                        ref={loginRef}
+                    />
+                </div>
+                <div className="input-group">
+                    <Input
+                        type="password"
+                        placeholder="Mot de passe"
+                        autoComplete="current-password"
+                        ref={passwordRef}
+                    />
+                </div>
+                {error && <p className="form-error" role="alert">{error}</p>}
+                <Button type="submit">Connexion</Button>
+            </form>
             <div className="register-link">
                 <p>Pas encore de compte ? <Link to="/register">Créer un compte</Link></p>
             </div>

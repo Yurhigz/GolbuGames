@@ -1,20 +1,18 @@
 package client
 
 import (
-	"context"
 	"fmt"
-	"golbugames/backend/internal/websocket"
+	"golbugames/internal/websocket"
 	"net"
 	"sync"
 	"time"
 )
 
 const (
-	PongWait       = 60 * time.Second // Durée d'attente pour un pong
-	Newline        = "\n"
-	Space          = " "
-	PingPeriod     = (PongWait * 9) / 10 // Période de ping pour garder la connexion active
-	MaxMessageSize = 1024 * 1024
+	PongWait   = 60 * time.Second
+	Newline    = "\n"
+	Space      = " "
+	PingPeriod = (PongWait * 9) / 10
 )
 
 type BaseClient struct {
@@ -24,8 +22,8 @@ type BaseClient struct {
 	Conn          net.Conn
 	Mu            sync.Mutex
 	Send          chan *websocket.Frame
-	Done		  chan struct{}
-	closeOnce	 sync.Once
+	Done          chan struct{}
+	closeOnce     sync.Once
 	Solution      []int
 	Playable      []int
 	FrameBuffer   []byte
@@ -52,9 +50,6 @@ func (c *BaseClient) Close() {
 	})
 }
 
-// TrySend tente d'envoyer une frame sans jamais bloquer indéfiniment :
-// si Done est fermé (writePump arrêté / connexion en cours de fermeture),
-// on abandonne au lieu de deadlock.
 func (c *BaseClient) TrySend(frame *websocket.Frame) bool {
 	select {
 	case c.Send <- frame:

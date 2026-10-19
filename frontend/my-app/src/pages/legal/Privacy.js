@@ -7,17 +7,17 @@ const Privacy = () => {
             <p><strong>Date de dernière mise à jour :</strong> 19 août 2025</p>
 
             <h3>1. Informations Collectées</h3>
-            <p>
+            <div>
                 Nous pouvons collecter :
                 <ul>
                     <li><strong>Informations personnelles :</strong> nom, adresse email, pseudo, mot de passe lors de l’inscription.</li>
                     <li><strong>Données d’utilisation :</strong> scores, niveaux de jeu, grilles complétées, interactions avec le site.</li>
                     <li><strong>Informations techniques :</strong> adresse IP, type de navigateur, système d’exploitation, pages visitées.</li>
                 </ul>
-            </p>
+            </div>
 
             <h3>2. Utilisation des Informations</h3>
-            <p>
+            <div>
                 Vos informations sont utilisées pour :
                 <ul>
                     <li>Fournir et améliorer les services de GolbuGames.</li>
@@ -26,16 +26,16 @@ const Privacy = () => {
                     <li>Communiquer avec vous en cas de mise à jour ou de support.</li>
                     <li>Prévenir les fraudes et protéger le site contre les abus.</li>
                 </ul>
-            </p>
+            </div>
 
             <h3>3. Partage des Informations</h3>
-            <p>
+            <div>
                 GolbuGames ne vend ni ne loue vos informations personnelles. Elles peuvent être partagées uniquement :
                 <ul>
                     <li>Avec des prestataires techniques pour le fonctionnement du site (ex. hébergement, analytics).</li>
                     <li>Si la loi l’exige ou pour protéger nos droits et notre sécurité.</li>
                 </ul>
-            </p>
+            </div>
 
             <h3>4. Cookies et Technologies Similaires</h3>
             <p>
@@ -50,7 +50,7 @@ const Privacy = () => {
             </p>
 
             <h3>6. Vos Droits</h3>
-            <p>
+            <div>
                 Vous avez le droit de :
                 <ul>
                     <li>Accéder à vos données personnelles.</li>
@@ -58,7 +58,7 @@ const Privacy = () => {
                     <li>Vous opposer au traitement de certaines données.</li>
                     <li>Retirer votre consentement à tout moment (en contactant support@golbugames.com).</li>
                 </ul>
-            </p>
+            </div>
 
             <h3>7. Conservation des Données</h3>
             <p>

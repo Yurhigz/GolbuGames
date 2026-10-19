@@ -1,0 +1,17 @@
+FROM golang:1.26.4-alpine AS builder
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /out/backend ./cmd/app
+
+FROM alpine:3.22
+
+COPY --from=builder /out/backend /backend
+
+USER 65532:65532
+EXPOSE 3002
+ENTRYPOINT ["/backend"]

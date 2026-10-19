@@ -3,6 +3,7 @@ import axios from "axios";
 import "./Friends.css";
 import { Input } from "../components/Input";
 import { AuthContext } from "../contexts/AuthContext";
+import { API_BASE_URL, authHeaders } from "../config/api";
 
 const Friends = () => {
     const { user } = useContext(AuthContext);
@@ -16,7 +17,7 @@ const Friends = () => {
     useEffect(() => {
         if (!user) return;
 
-        axios.get(`http://localhost:3001/friends/${user.id}`)
+        axios.get(`${API_BASE_URL}/friends/${user.id}`)
             .then((res) => {
                 const friendsData = res.data.friends.map((f) => ({
                     id: f.id,
@@ -32,11 +33,14 @@ const Friends = () => {
     const handleAddFriend = () => {
         if (!friendUsername.trim() || !user) return;
 
-        axios.post(`http://localhost:3001/add_friend`, {
+        axios.post(`${API_BASE_URL}/add_friend`, {
             user_id: parseInt(user.id, 10),
             friend_username: friendUsername
         }, {
-            headers: { "Content-Type": "application/json" }
+            headers: {
+                "Content-Type": "application/json",
+                ...authHeaders()
+            }
         })
             .then((res) => {
                 const newFriend = res.data.friend;
@@ -51,7 +55,9 @@ const Friends = () => {
         if (!user) return;
 
         setRemovingIds((prev) => [...prev, id]);
-        axios.delete(`http://localhost:3001/delete_friend/${user.id}/${id}`)
+        axios.delete(`${API_BASE_URL}/delete_friend/${user.id}/${id}`, {
+            headers: authHeaders()
+        })
             .then(() => setFriends((prev) => prev.filter((f) => f.id !== id)))
             .catch(() => alert("Impossible de supprimer l'ami pour le moment."))
             .finally(() => setRemovingIds((prev) => prev.filter((rid) => rid !== id)));

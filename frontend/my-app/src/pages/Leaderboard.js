@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardContent } from "../components/Card";
 import "./Leaderboard.css";
+import { API_BASE_URL } from "../config/api";
 
 const Leaderboard = () => {
     const [players, setPlayers] = useState([]);
@@ -12,7 +13,7 @@ const Leaderboard = () => {
         const fetchLeaderboard = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const response = await axios.get("http://localhost:3001/leaderboard", {
+                const response = await axios.get(`${API_BASE_URL}/leaderboard`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

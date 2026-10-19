@@ -3,17 +3,16 @@ package repository
 import (
 	"context"
 	"fmt"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/pkg/types"
+	"golbugames/internal/database"
+	"golbugames/pkg/types"
 	"log"
 	"math/rand/v2"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
 
 func AddGridDB(parentsContext context.Context, board, solution, difficulty string) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `INSERT INTO sudoku_games (board, solution, difficulty) VALUES ($1, $2, $3)`
@@ -29,7 +28,7 @@ func AddGridDB(parentsContext context.Context, board, solution, difficulty strin
 }
 
 func BulkAddingGrids(parentsContext context.Context, bulkGrids []*types.SudokuGrid) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 10*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.BulkOperationTimeout)
 	defer cancel()
 
 	_, err := database.DBPool.CopyFrom(ctx, pgx.Identifier{"sudoku_games"}, []string{"board", "solution", "difficulty"}, pgx.CopyFromSlice(len(bulkGrids), func(i int) ([]any, error) {
@@ -46,7 +45,7 @@ func BulkAddingGrids(parentsContext context.Context, bulkGrids []*types.SudokuGr
 }
 
 func GetGridDB(parentsContext context.Context, id int) (string, string, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `SELECT board,solution FROM sudoku_games WHERE id = $1`
@@ -62,10 +61,9 @@ func GetGridDB(parentsContext context.Context, id int) (string, string, error) {
 }
 
 func GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.SudokuGrid, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
-	// Première requête pour compter
 	var count int
 	countQuery := `SELECT COUNT(*) FROM sudoku_games WHERE difficulty = $1`
 	err := database.DBPool.QueryRow(ctx, countQuery, difficulty).Scan(&count)
@@ -95,10 +93,9 @@ func GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.
 }
 
 func GetRandomDifficultyGridDB(parentsContext context.Context) (*types.SudokuGrid, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
-	// Première requête pour compter
 	var count int
 	countQuery := `SELECT COUNT(*) FROM sudoku_games`
 	err := database.DBPool.QueryRow(ctx, countQuery).Scan(&count)

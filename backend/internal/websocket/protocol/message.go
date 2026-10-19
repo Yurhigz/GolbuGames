@@ -11,21 +11,21 @@ const (
 	MessageTypeError        = "error"
 )
 
-// Messages entrants (Frontend → Backend)
+// Messages entrants (Frontend -> backend)
 const (
 	InboundChat         = "chat"
 	InboundGameMove     = "game_move"
 	InboundVictoryClaim = "victory_claim"
 )
 
-// Messages sortants (Backend → Frontend)
+// Messages sortants (Backend -> Frontend)
 const (
 	OutboundGameStart     = "gameStarting"
-	OutboundWaiting       = "waiting"
-	OutboundGameEnd       = "game_end"
+	OutboundWaiting       = "waitingOpponent"
+	OutboundGameEnd       = "gameEnding"
 	OutboundMoveResponse  = "move_response"
 	OutboundChatBroadcast = "chat_broadcast"
-	OutboundOpponentLeft  = "opponent_left"
+	OutboundOpponentLeft  = "opponentLeft"
 	OutboundCountdown     = 5
 )
 
@@ -37,7 +37,7 @@ const (
 	WaitingOpponent        = 1002
 	PlayerDisconnected     = 1003
 	MessageGameStart       = "Opponent found... Game will start"
-	MessageWaitingOpponent = "Waiting for opponent..."
+	MessageWaitingOpponent = OutboundWaiting
 )
 
 // ===== MESSAGES ENTRANTS =====
@@ -61,6 +61,7 @@ type GameMessage struct {
 
 type VictoryClaim struct {
 	Type           string `json:"type"`
+	Action         string `json:"action"`
 	Message        string `json:"message"`
 	CompletionTime int    `json:"completiontime"`
 	Code           int    `json:"code"`
@@ -96,7 +97,8 @@ type GameStartNotification struct {
 }
 
 type GameEndNotification struct {
-	Type   string `json:"type"`
-	Winner string `json:"winner"`
-	Reason string `json:"reason"`
+	Type    string `json:"type"`
+	Message string `json:"message"`
+	Winner  string `json:"winner"`
+	Reason  string `json:"reason"`
 }

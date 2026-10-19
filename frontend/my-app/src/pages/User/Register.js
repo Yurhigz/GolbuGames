@@ -1,5 +1,5 @@
 
-import {useContext, useRef, useState} from "react";
+import { useContext, useRef, useState } from "react";
 
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
@@ -7,13 +7,8 @@ import { Link } from "react-router-dom";
 import "./Register.css";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import {AuthContext} from "../../contexts/AuthContext";
-
-const sanitizeInput = (str) => {
-    const temp = document.createElement("div");
-    temp.textContent = str;
-    return temp.innerHTML;
-};
+import { AuthContext } from "../../contexts/AuthContext";
+import { API_BASE_URL } from "../../config/api";
 
 const validatePassword = (password) => {
     const hasMinLength = password.length >= 6;
@@ -32,14 +27,11 @@ const Register = () => {
     const [error, setError] = useState("");
     const { AuthLogin } = useContext(AuthContext);
 
-    const handleRegister = async () => {
-        const rawLogin = loginRef.current.value;
-        const rawPassword = passwordRef.current.value;
-        const rawConfirmPassword = confirmPasswordRef.current.value;
-
-        const login = sanitizeInput(rawLogin.trim());
-        const password = sanitizeInput(rawPassword.trim());
-        const confirmPassword = sanitizeInput(rawConfirmPassword.trim());
+    const handleRegister = async (event) => {
+        event.preventDefault();
+        const login = loginRef.current.value.trim();
+        const password = passwordRef.current.value;
+        const confirmPassword = confirmPasswordRef.current.value;
 
         if (!login || !password || !confirmPassword) {
             setError("Veuillez remplir tous les champs.");
@@ -61,28 +53,18 @@ const Register = () => {
             return;
         }
 
-        setError(""); // Réinitialiser les erreurs
-
-
-        const newUser = {
-            login: loginRef.current.value,
-            password: passwordRef.current.value,
-        };
-
-
+        setError("");
         try {
-            const response = await axios.post("http://localhost:3001/create_user", {
+            const response = await axios.post(`${API_BASE_URL}/create_user`, {
                 Username: login,
                 Password: password,
                 Accountname: login,
             });
             const { access_token } = response.data;
-            AuthLogin({ id: response.data.user_id, login }, access_token);
+            AuthLogin({ id: response.data.user_id, username: login }, access_token);
             navigate("/");
-            console.log("Réponse serveur :", response.data);
-        } catch (error) {
+        } catch {
             setError("Erreur lors de la requête");
-            console.error("Erreur lors de la requête :", error);
         }
 
     };
@@ -90,13 +72,37 @@ const Register = () => {
     return (
         <div className="register-container">
             <h2 className="register-title">Créer un compte</h2>
-            <div className="input-group">
-                <Input type="text" placeholder="Nom d'utilisateur" ref={loginRef} />
-            </div>
-            <div className="input-group">
-                <Input type="password" placeholder="Mot de passe" ref={passwordRef} />
-            </div>
-            <Button onClick={handleRegister}>S'inscrire</Button>
+            <form onSubmit={handleRegister}>
+                <div className="input-group">
+                    <Input
+                        type="text"
+                        placeholder="Nom d'utilisateur"
+                        autoComplete="username"
+                        maxLength={20}
+                        ref={loginRef}
+                    />
+                </div>
+                <div className="input-group">
+                    <Input
+                        type="password"
+                        placeholder="Mot de passe"
+                        autoComplete="new-password"
+                        maxLength={20}
+                        ref={passwordRef}
+                    />
+                </div>
+                <div className="input-group">
+                    <Input
+                        type="password"
+                        placeholder="Confirmer le mot de passe"
+                        autoComplete="new-password"
+                        maxLength={20}
+                        ref={confirmPasswordRef}
+                    />
+                </div>
+                {error && <p className="form-error" role="alert">{error}</p>}
+                <Button type="submit">S'inscrire</Button>
+            </form>
             <div className="login-link">
                 <p>Déjà un compte ? <Link to="/login">Se connecter</Link></p>
             </div>

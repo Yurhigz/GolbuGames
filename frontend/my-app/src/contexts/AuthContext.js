@@ -1,17 +1,29 @@
 // src/context/AuthContext.js
 import { createContext, useState, useEffect } from "react";
-import {redirect} from "react-router-dom";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Charger le user depuis localStorage au démarrage
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        try {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                const parsedUser = JSON.parse(storedUser);
+                if (!parsedUser || typeof parsedUser !== "object" || !parsedUser.id) {
+                    throw new Error("Stored user data is invalid");
+                }
+                setUser(parsedUser);
+            }
+        } catch (error) {
+            console.error("Impossible de restaurer la session utilisateur :", error);
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -25,11 +37,10 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
-        redirect('/')
     };
 
     return (
-        <AuthContext.Provider value={{ user, AuthLogin, AuthLogout }}>
+        <AuthContext.Provider value={{ user, isLoading, AuthLogin, AuthLogout }}>
             {children}
         </AuthContext.Provider>
     );

@@ -5,31 +5,27 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"golbugames/backend/internal/database"
-	"golbugames/backend/pkg/types"
+	"golbugames/internal/database"
+	"golbugames/pkg/types"
 	"log"
-	"time"
 )
 
 func AddUserDB(parentsContext context.Context, username, accountname, password string) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
-	// Usage de transaction pour garantir l'intégrité des données car il y a deux requêtes
 	tx, err := database.DBPool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("[AddUser] cannot start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// vérification de l'unicité de l'utilisateur
 	var exists bool
 	err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&exists)
 	if exists {
 		return fmt.Errorf("[AddUser] username <%v> already exists", username)
 	}
 
-	// Insérer l'utilisateur
 	var userId int
 	err = tx.QueryRow(ctx,
 		`INSERT INTO users (username, accountname, password)
@@ -40,7 +36,6 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 		return fmt.Errorf("[AddUser] Error inserting user [%s]: %w", username, err)
 	}
 
-	// Initialiser les stats
 	_, err = tx.Exec(ctx,
 		`INSERT INTO user_stats 
 		 (user_id, total_games, total_wins, total_losses, total_draws, total_time, average_time) 
@@ -50,18 +45,17 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 		return fmt.Errorf("[AddUser] Error initializing user stats: %w", err)
 	}
 
-	// Commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("[AddUser] Error committing transaction: %w", err)
 	}
 
-	log.Printf("User added successfully with initialized stats: %s - %s", username, password)
+	log.Printf("User added successfully with initialized stats: %s", username)
 	return nil
 }
 
 func DeleteUserDB(parentsContext context.Context, id_user int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `DELETE FROM users WHERE id = $1`
@@ -77,7 +71,7 @@ func DeleteUserDB(parentsContext context.Context, id_user int) error {
 }
 
 func GetUserDB(parentsContext context.Context, id_user int) (*types.User, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var user types.User
@@ -93,7 +87,7 @@ func GetUserDB(parentsContext context.Context, id_user int) (*types.User, error)
 }
 
 func UserLoginDB(parentsContext context.Context, username, password string) (bool, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1 AND password = $2)`
@@ -109,7 +103,7 @@ func UserLoginDB(parentsContext context.Context, username, password string) (boo
 }
 
 func GetUserIdDB(parentsContext context.Context, username, accountname string) (*types.User, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	var user types.User
@@ -125,7 +119,7 @@ func GetUserIdDB(parentsContext context.Context, username, accountname string) (
 }
 
 func UpdateUserPasswordDB(parentsContext context.Context, id_user int, password string) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `UPDATE users SET password = $1 WHERE id = $2`
@@ -142,7 +136,7 @@ func UpdateUserPasswordDB(parentsContext context.Context, id_user int, password 
 }
 
 func GetUserStatsDB(parentsContext context.Context, id_user int) (*types.UserStats, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	_, err := GetUserDB(parentsContext, id_user)
@@ -164,7 +158,7 @@ func GetUserStatsDB(parentsContext context.Context, id_user int) (*types.UserSta
 }
 
 func GetUserFriends(parentsContext context.Context, id_user int) ([]types.User, error) {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `SELECT u.id, u.username
@@ -199,7 +193,7 @@ func GetUserFriends(parentsContext context.Context, id_user int) ([]types.User, 
 }
 
 func AddFriend(parentsContext context.Context, userId, friendId int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `INSERT INTO friendlist (user_id, friend_id) VALUES ($1, $2)`
@@ -214,7 +208,7 @@ func AddFriend(parentsContext context.Context, userId, friendId int) error {
 }
 
 func RemoveFriend(parentsContext context.Context, userId, friendId int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `DELETE FROM friendlist WHERE user_id = $1 AND friend_id = $2`
@@ -228,7 +222,7 @@ func RemoveFriend(parentsContext context.Context, userId, friendId int) error {
 }
 
 func BlockUser(parentsContext context.Context, userId, friendId int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `INSERT INTO blocked_users (user_id, blocked_user_id) VALUES ($1, $2)`
@@ -242,7 +236,7 @@ func BlockUser(parentsContext context.Context, userId, friendId int) error {
 }
 
 func UnblockUser(parentsContext context.Context, userId, friendId int) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `DELETE FROM blocked_users WHERE user_id = $1 AND blocked_user_id = $2`
@@ -265,7 +259,7 @@ func GenerateRefreshToken() (string, error) {
 }
 
 func StoreRefreshToken(parentsContext context.Context, userId int, refreshToken string) error {
-	ctx, cancel := context.WithTimeout(parentsContext, 2*time.Second)
+	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
 	query := `INSERT INTO refresh_tokens (user_id, token) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET token = $2`

@@ -19,6 +19,8 @@
     top: 0;
     background-color: #1a1a1a;
     padding-top: 20px;
+    display: flex;
+    flex-direction: column;
     transition: transform 0.3s ease;
     z-index: 100;
 }
@@ -44,6 +46,38 @@
 
 .nav-item span {
     font-size: 1.1rem;
+}
+
+.theme-switcher {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: auto 16px 24px;
+    padding: 14px;
+    border-top: 1px solid #444;
+}
+
+.theme-switcher-label {
+    grid-column: 1 / -1;
+    color: #aaa;
+    font-size: 0.85rem;
+}
+
+.theme-option {
+    padding: 9px 6px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: #ddd;
+    background: #242424;
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.theme-option[aria-pressed="true"] {
+    color: #111;
+    background: #00ffe7;
+    border-color: #00ffe7;
 }
 
 @media (max-width: 1500px) {

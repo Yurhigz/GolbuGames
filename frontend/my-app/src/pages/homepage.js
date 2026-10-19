@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { AuthContext } from "../contexts/AuthContext";
 import "./homepage.css";
 
 const Home = () => {
+    const { user, isLoading } = useContext(AuthContext);
     const [grid, setGrid] = useState(
         Array(9).fill(null).map(() => Array(9).fill(null))
     );
@@ -44,14 +46,14 @@ const Home = () => {
                 <div className="welcome-section">
                     <h1>GolbuGames</h1>
                     <p className="subtitle">Jouer au Sudoku en Ligne</p>
-                    {/*<div className="game-modes">*/}
-                    {/*    <Link to="/multi" className="mode-button">Mode Multijoueur</Link>*/}
-                    {/*    <Link to="/solo" className="mode-button">Mode Solo</Link>*/}
-                    {/*</div>*/}
                 </div>
             </div>
             <div className="game-modes">
-                <Link to="/multi" className="mode-button">Mode Multijoueur</Link>
+                {isLoading ? null : user ? (
+                    <Link to="/multi" className="mode-button">Mode Multijoueur</Link>
+                ) : (
+                    <Link to="/login" className="mode-button">Connexion pour jouer en multijoueur</Link>
+                )}
                 <Link to="/solo" className="mode-button">Mode Solo</Link>
             </div>
         </div>

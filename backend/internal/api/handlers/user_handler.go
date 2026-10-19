@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golbugames/backend/internal/api/middleware"
-	"golbugames/backend/internal/sudoku/repository"
-	"golbugames/backend/pkg/types"
-	"golbugames/backend/pkg/utils"
+	"golbugames/internal/api/middleware"
+	"golbugames/internal/sudoku/repository"
+	"golbugames/pkg/types"
+	"golbugames/pkg/utils"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,6 +17,16 @@ import (
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
+	createUser(w, r, nil)
+}
+
+func CreateUserWithJWT(manager *middleware.JWTManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		createUser(w, r, manager)
+	}
+}
+
+func createUser(w http.ResponseWriter, r *http.Request, manager *middleware.JWTManager) {
 
 	var userReg types.UserRegistration
 	err := json.NewDecoder(r.Body).Decode(&userReg)
@@ -24,7 +34,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid data format", http.StatusBadRequest)
 		return
 	}
-	// revoir les vérifications pour les usernames et passwords
 	if userReg.Username == "" || userReg.Password == "" || userReg.Accountname == "" {
 		http.Error(w, "username, account name and password are required", http.StatusBadRequest)
 		return
@@ -32,13 +41,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userReg.Password), bcrypt.DefaultCost)
 	if err != nil {
-		// gérer l'erreur
 		http.Error(w, "Erreur lors du hash du mot de passe", http.StatusInternalServerError)
 		return
 	}
 
 	err = repository.AddUserDB(r.Context(), userReg.Username, userReg.Accountname, string(hashedPassword))
-	// Vérifier les duplicatas d'utilisateurs
 	if err != nil {
 		log.Printf("%v", err)
 		http.Error(w, "Error while adding a new user to the database", http.StatusInternalServerError)
@@ -46,18 +53,38 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := repository.GetUserIdDB(r.Context(), userReg.Username, userReg.Accountname)
+	if err != nil {
+		http.Error(w, "user was created but could not be retrieved", http.StatusInternalServerError)
+		return
+	}
+	if manager == nil {
+		http.Error(w, "JWT signer is not configured", http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := manager.Generate(strconv.Itoa(user.ID), user.Username, []string{"user"})
+	if err != nil {
+		http.Error(w, "could not create access token", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
-		"message":  "Utilisateur créé avec succès",
-		"username": userReg.Username,
-		"user_id":  strconv.Itoa(user.ID),
+		"message":      "Utilisateur créé avec succès",
+		"username":     userReg.Username,
+		"user_id":      strconv.Itoa(user.ID),
+		"access_token": accessToken,
 	})
 
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
 
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
@@ -69,6 +96,10 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	if id <= 0 {
 		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		return
+	}
+	if strconv.Itoa(id) != claims.UserID {
+		http.Error(w, "cannot delete another user's account", http.StatusForbidden)
 		return
 	}
 
@@ -155,6 +186,11 @@ func GetUserId(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
 
 	var pwdUpdate types.PasswordUpdate
 	err := json.NewDecoder(r.Body).Decode(&pwdUpdate)
@@ -165,6 +201,11 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 
 	if pwdUpdate.NewPassword == "" {
 		http.Error(w, "new password is required", http.StatusBadRequest)
+		return
+	}
+	pwdUpdate.ID, err = strconv.Atoi(claims.UserID)
+	if err != nil {
+		http.Error(w, "invalid authenticated user ID", http.StatusUnauthorized)
 		return
 	}
 
@@ -197,7 +238,6 @@ func UpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Il faudra intégrer la validation par mail de l'inscription de l'utilisateur.
 func UserSignin(w http.ResponseWriter, r *http.Request) {
 	var userRegistration types.UserRegistration
 
@@ -212,8 +252,6 @@ func UserSignin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "username, account name and password are required", http.StatusBadRequest)
 		return
 	}
-
-	// hashage du mot de passe avant sauvegarde dans la DB
 
 	userRegistration.Password, err = utils.HashPassword(userRegistration.Password)
 	if err != nil {
@@ -242,11 +280,17 @@ func UserSignin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Compléter avec l'ajout de la génération du token JWT + Token de refraichissement
-// sert à vérifier si l'utilisateur existe et à générer un token JWT
-// à ajouter dans le handler login
-
 func UserLogin(w http.ResponseWriter, r *http.Request) {
+	userLogin(w, r, nil)
+}
+
+func UserLoginWithJWT(manager *middleware.JWTManager) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userLogin(w, r, manager)
+	}
+}
+
+func userLogin(w http.ResponseWriter, r *http.Request, manager *middleware.JWTManager) {
 	var user types.User
 	var userLogin *types.User
 
@@ -261,63 +305,37 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// récupération de l'utilisateur dans la base de données à l'aide de son nom d'utilisateur et ID
 	userLogin, err = repository.GetUserIdDB(r.Context(), user.Username, user.Accountname)
 	if err != nil {
 		log.Printf("Error retrieving user %s: %v", user.Username, err)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-	// if !utils.HashPasswordCompare(userLogin.Password, user.Password) {
-	// 	log.Printf("Password mismatch for user %s", user.Username)
-	// 	http.Error(w, "Invalid username or password", http.StatusUnauthorized)
-	// 	return
-	// }
+	if err := bcrypt.CompareHashAndPassword([]byte(userLogin.Password), []byte(user.Password)); err != nil {
+		log.Printf("Password mismatch for user %s", user.Username)
+		http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+	if manager == nil {
+		http.Error(w, "JWT signer is not configured", http.StatusInternalServerError)
+		return
+	}
 
-	// Gérer la partie refresh token avec la fonction RefreshToken
-	jwtToken, err := middleware.GenerateJWT(strconv.Itoa(userLogin.ID), userLogin.Username, []string{"user"})
+	jwtToken, err := manager.Generate(strconv.Itoa(userLogin.ID), userLogin.Username, []string{"user"})
+	if err != nil {
+		http.Error(w, "could not create access token", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
 		"access_token": jwtToken,
 		"user_id":      strconv.Itoa(userLogin.ID),
 		"username":     userLogin.Username,
 	})
-	// 	refreshToken, err := RefreshToken(r.Context(), strconv.Itoa(userLogin.ID))
-	//
-	// 	repository.StoreRefreshToken(r.Context(), userLogin.ID, refreshToken)
-	//
-	// 	if err != nil {
-	// 		log.Printf("Error generating JWT for user %s: %v", userLogin.Username, err)
-	// 		http.Error(w, "Error generating token", http.StatusInternalServerError)
-	// 		return
-	// 	}
-	//
-	// 	// Code à vérifier pour le token de refraichissement et à corriger côté DB
-	// 	http.SetCookie(w, &http.Cookie{
-	// 		Name:     "refresh_token",
-	// 		Value:    refreshToken,
-	// 		HttpOnly: true,
-	// 		Secure:   true,
-	// 		SameSite: http.SameSiteStrictMode,
-	// 		Path:     "/refresh",
-	// 		Expires:  time.Now().Add(30 * 24 * time.Hour),
-	// 	})
-	//
-	// 	w.Header().Set("Content-Type", "application/json")
-	// 	json.NewEncoder(w).Encode(map[string]string{
-	// 		"access_token": jwtToken,
-	// 	})
-	//
-	//     w.Header().Set("Content-Type", "application/json")
-	//     json.NewEncoder(w).Encode(map[string]string{
-	//         "access_token": jwtToken,
-	//     })
-
 }
 
-// sert à rafraîchir le token JWT à l'aide du token de rafraîchissement
-// mais n'est pas encore implémenté
 func RefreshToken(parentsContext context.Context, refreshToken string) (string, error) {
 	_, cancel := context.WithTimeout(parentsContext, 2*time.Second)
 	defer cancel()

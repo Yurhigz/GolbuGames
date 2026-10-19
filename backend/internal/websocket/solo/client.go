@@ -3,15 +3,13 @@ package solo
 import (
 	"encoding/json"
 	"fmt"
-	"golbugames/backend/internal/websocket"
-	"golbugames/backend/internal/websocket/client"
+	"golbugames/internal/websocket"
+	"golbugames/internal/websocket/client"
 	"io"
 	"log"
 	"net"
 	"time"
 )
-
-// structure client pour solo
 
 type SoloClient struct {
 	baseClient *client.BaseClient
@@ -23,8 +21,6 @@ func newSoloClient(conn net.Conn) *SoloClient {
 	}
 }
 
-// fait que décider quoi répondre et pousse via TrySend.
-// Retourne true si la boucle de lecture doit s'arrêter (close reçu).
 func (c *SoloClient) handleFrame(frame websocket.Frame) (shouldStop bool) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
@@ -34,11 +30,11 @@ func (c *SoloClient) handleFrame(frame websocket.Frame) (shouldStop bool) {
 
 	case websocket.OpcodePing:
 		log.Printf("[INFO] Received ping from client %s", c.baseClient.ClientId)
-		c.baseClient.TrySend(websocket.Frame{
+		c.baseClient.TrySend(&websocket.Frame{
 			Opcode:  websocket.OpcodePong,
 			FIN:     true,
 			Payload: frame.Payload,
-		}.ToBytesFrame())
+		})
 		return false
 
 	case websocket.OpcodePong:
@@ -145,7 +141,6 @@ func (c *SoloClient) readPump() {
 
 		buffer = append(buffer, temp[:n]...)
 
-		// Traiter toutes les frames complètes dans le buffer
 		for len(buffer) > 0 {
 			frame, framelen, err := websocket.ParseFrame(buffer)
 			if err != nil {
