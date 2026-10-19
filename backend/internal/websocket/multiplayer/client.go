@@ -10,27 +10,48 @@ import (
 	"time"
 )
 
-// structure client pour multijoueurs
 type Client struct {
 	baseClient *client.BaseClient
 	hub        *Hub
 	hubManager *HubManager
-	matchId    string
 	queueTime  time.Time
+	userID     string
+	username   string
 	closed     bool
 }
 
-// Création d'un nouveau client
+func (c *Client) setHub(hub *Hub) bool {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	if c.closed {
+		return false
+	}
+	c.hub = hub
+	return true
+}
 
-func newClient(conn net.Conn, hubManager *HubManager) *Client {
+func (c *Client) getHub() *Hub {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	return c.hub
+}
+
+func (c *Client) isClosed() bool {
+	c.baseClient.Mu.Lock()
+	defer c.baseClient.Mu.Unlock()
+	return c.closed
+}
+
+func newClient(conn net.Conn, hubManager *HubManager, userID, username string) *Client {
 	return &Client{
 		baseClient: client.NewBaseClient(conn),
 		hubManager: hubManager,
+		userID:     userID,
+		username:   username,
 		closed:     false,
 	}
 }
 
-// cleanup gère la fermeture propre du client
 func (c *Client) cleanup() {
 	c.baseClient.Mu.Lock()
 	defer c.baseClient.Mu.Unlock()
@@ -42,10 +63,8 @@ func (c *Client) cleanup() {
 
 	log.Printf("Cleaning up client %s", c.baseClient.ClientId)
 
-	// Retirer le client de la queue si il y est
 	c.hubManager.RemoveClientFromQueue(c)
 
-	// Désenregistrer du hub si assigné
 	if c.hub != nil {
 		select {
 		case c.hub.unregister <- c:
@@ -54,18 +73,15 @@ func (c *Client) cleanup() {
 		}
 	}
 
-	// Fermer la connexion
 	if c.baseClient != nil && c.baseClient.Conn != nil {
 		c.baseClient.Conn.Close()
 	}
 
-	// Fermer le canal Send si il existe
 	if c.baseClient != nil && c.baseClient.Send != nil {
 		close(c.baseClient.Send)
 	}
 }
 
-// Gestion des messages du backend vers le frontend
 func (c *Client) SendGameStart() {
 	c.baseClient.Mu.Lock()
 	defer c.baseClient.Mu.Unlock()
@@ -176,7 +192,6 @@ func (c *Client) SendLeavingOpponent() {
 
 }
 
-// Il n'y a pas forcément la nécessité d'avoir le nom du winner mais on pourra le factoriser plus tard
 func (c *Client) SendGameOver(winner string) {
 	c.baseClient.Mu.Lock()
 	defer c.baseClient.Mu.Unlock()
@@ -185,9 +200,10 @@ func (c *Client) SendGameOver(winner string) {
 		return
 	}
 	payload, err := json.Marshal(protocol.GameEndNotification{
-		Type:   protocol.MessageTypeSystem,
-		Winner: winner,
-		Reason: protocol.OutboundGameEnd,
+		Type:    protocol.MessageTypeSystem,
+		Message: protocol.OutboundGameEnd,
+		Winner:  winner,
+		Reason:  protocol.OutboundGameEnd,
 	})
 
 	if err != nil {
@@ -220,7 +236,6 @@ func (c *Client) SendMessage(payload []byte) {
 		return
 	}
 
-	// Créer une frame WebSocket correctement formatée
 	frame := &websocket.Frame{
 		FIN:     true,
 		Opcode:  websocket.OpcodeText,
@@ -235,20 +250,25 @@ func (c *Client) SendMessage(payload []byte) {
 	}
 }
 
-// processMessage traite le contenu d'un message complet
-// Il faudra ensuite ajouter des handlers métiers qui seront ensuite réutiliser par la partie processMessage
-// schéma => client html => HandleFrame() => processMessage() => handlers métiers
-
 func (c *Client) HandlerChat(msg protocol.ChatMessage) {
 
-	if c.hub == nil {
+	hub := c.getHub()
+	if hub == nil {
 		log.Printf("Client %s not in hub, cannot broadcast chat", c.baseClient.ClientId)
 		return
 	}
 
+	if len(msg.Message) == 0 || len(msg.Message) > 500 {
+		log.Printf("Ignoring invalid chat message from %s", c.baseClient.ClientId)
+		return
+	}
+	msg.Type = protocol.MessageTypeChat
+	msg.Sender = c.username
+	msg.SentAt = time.Now()
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		log.Printf("Error Marshalling msg : %v", err)
+		return
 	}
 
 	frame := websocket.Frame{
@@ -257,7 +277,7 @@ func (c *Client) HandlerChat(msg protocol.ChatMessage) {
 		Payload: payload,
 	}
 	select {
-	case c.hub.broadcast <- frame:
+	case hub.broadcast <- frame:
 		log.Printf("Chat message broadcasted from %s", msg.Sender)
 	default:
 		log.Printf("Failed to broadcast chat - channel full or closed")
@@ -266,59 +286,26 @@ func (c *Client) HandlerChat(msg protocol.ChatMessage) {
 }
 
 func (c *Client) HandlerMove(msg protocol.GameMessage) {
-
-	valid := c.baseClient.ValidateMove(msg.Position, byte(msg.Value))
-
-	validationMove := protocol.ValidationMove{
-		Type:     msg.Type,
-		Position: msg.Position,
-		Value:    msg.Value,
-		Valid:    valid,
-	}
-
-	payload, err := json.Marshal(validationMove)
-	if err != nil {
-		log.Printf("Error marshalling validation move : %v", err)
+	hub := c.getHub()
+	if hub == nil {
+		log.Printf("Ignoring move from client %s outside a game", c.baseClient.ClientId)
 		return
 	}
-
-	resp := &websocket.Frame{
-		Opcode:  websocket.OpcodeText,
-		FIN:     true,
-		Payload: payload,
-	}
-	select {
-	case c.baseClient.Send <- resp:
-		log.Printf("Move validation verification sent to client %s channel", c.baseClient.ClientId)
-	default:
-		log.Printf("Failed to send to send channel - channel full or closed")
-	}
-
+	hub.HandleMove(c, msg)
 }
 
-// Envisager le cas où l'utilisateur déconnecte , fermeture du websocket depuis le frontend
-// gérer ça au niveau du handler ou au niveau du hub ?
 func (c *Client) HandlerSystemMessage(msg protocol.VictoryClaim) {
-
-	switch {
-
-	case msg.Message == protocol.InboundVictoryClaim:
-
-		// ensemble de la logique déléguée au hub
-		if c.hub != nil {
-			c.hub.HandleVictory(c, protocol.SystemGameOver)
-			c.hub.completionTime = msg.CompletionTime
-		}
-
-	default:
-		log.Printf("Unknown System Message code : %v", msg.Code)
+	if msg.Action == "quit" {
+		c.cleanup()
 		return
-
 	}
-
+	if msg.Message == protocol.InboundVictoryClaim {
+		log.Printf("Ignoring client-supplied victory claim from %s", c.baseClient.ClientId)
+		return
+	}
+	log.Printf("Unknown system message from client %s", c.baseClient.ClientId)
 }
 
-// Gestion des messages entrants depuis le frontend vers le backend
 func (c *Client) ProcessMessage(payload []byte) {
 	var TypeOnly protocol.TypeOnly
 	err := json.Unmarshal(payload, &TypeOnly)
@@ -330,15 +317,24 @@ func (c *Client) ProcessMessage(payload []byte) {
 	switch TypeOnly.Type {
 	case protocol.MessageTypeChat:
 		var chatMessage protocol.ChatMessage
-		json.Unmarshal(payload, &chatMessage)
+		if err := json.Unmarshal(payload, &chatMessage); err != nil {
+			log.Printf("Invalid chat message from client %s: %v", c.baseClient.ClientId, err)
+			return
+		}
 		c.HandlerChat(chatMessage)
 	case protocol.MessageTypeValidateMove:
 		var gameMessage protocol.GameMessage
-		json.Unmarshal(payload, &gameMessage)
+		if err := json.Unmarshal(payload, &gameMessage); err != nil {
+			log.Printf("Invalid move message from client %s: %v", c.baseClient.ClientId, err)
+			return
+		}
 		c.HandlerMove(gameMessage)
 	case protocol.MessageTypeSystem:
 		var victoryClaim protocol.VictoryClaim
-		json.Unmarshal(payload, &victoryClaim)
+		if err := json.Unmarshal(payload, &victoryClaim); err != nil {
+			log.Printf("Invalid system message from client %s: %v", c.baseClient.ClientId, err)
+			return
+		}
 		c.HandlerSystemMessage(victoryClaim)
 	default:
 		log.Printf("Unknown message type from client %s: %s", c.baseClient.ClientId, TypeOnly.Type)
@@ -346,8 +342,6 @@ func (c *Client) ProcessMessage(payload []byte) {
 
 	}
 }
-
-// Gestion des frames reçues
 
 func (c *Client) handleFrame(frame websocket.Frame) {
 	switch frame.Opcode {
@@ -372,20 +366,16 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		log.Printf("Received pong from client %s", c.baseClient.ClientId)
 
 	case websocket.OpcodeText, websocket.OpcodeBinary:
-		// Premier frame d'un nouveau message
 		c.baseClient.CurrentOpcode = frame.Opcode
 
 		if frame.FIN {
-			// Message complet en un seul frame
 			log.Printf("Received complete %s message from client %s", websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
-			c.ProcessMessage(frame.Payload)
+			c.ProcessMessage(c.baseClient.FrameBuffer)
 			c.baseClient.ResetFragmentation()
 		} else {
-			// Début d'un message fragmenté
 			log.Printf("Received first frame of fragmented %s message from client %s",
 				websocket.OpcodeToString(frame.Opcode), c.baseClient.ClientId)
 
-			// Vérification de la taille
 			if uint64(len(frame.Payload)) > websocket.MaxPayloadSize() {
 				log.Printf("First frame too large from client %s", c.baseClient.ClientId)
 				c.baseClient.ResetFragmentation()
@@ -396,13 +386,11 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		}
 
 	case websocket.OpcodeContinuation:
-		// Frame de continuation
 		if c.baseClient.FrameBuffer == nil || c.baseClient.CurrentOpcode == 0 {
 			log.Printf("Received continuation frame without initial frame from client %s", c.baseClient.ClientId)
 			return
 		}
 
-		// Vérification de la taille totale
 		if uint64(len(c.baseClient.FrameBuffer)+len(frame.Payload)) > websocket.MaxPayloadSize() {
 			log.Printf("Message too large from client %s", c.baseClient.ClientId)
 			c.baseClient.ResetFragmentation()
@@ -412,7 +400,6 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		c.baseClient.FrameBuffer = append(c.baseClient.FrameBuffer, frame.Payload...)
 
 		if frame.FIN {
-			// Message complet
 			log.Printf("Received final continuation frame from client %s", c.baseClient.ClientId)
 			c.ProcessMessage(frame.Payload)
 			c.baseClient.ResetFragmentation()
@@ -424,8 +411,6 @@ func (c *Client) handleFrame(frame websocket.Frame) {
 		log.Printf("Received unknown frame type (0x%02x) from client %s", frame.Opcode, c.baseClient.ClientId)
 	}
 }
-
-// WritePump envoie les messages du canal Send au client
 
 func (c *Client) writePump() {
 	ticker := time.NewTicker(54 * time.Second)
@@ -453,7 +438,6 @@ func (c *Client) writePump() {
 				return
 			}
 		case <-ticker.C:
-			// Envoyer un ping
 			c.baseClient.Mu.Lock()
 			_, err := c.baseClient.Conn.Write(websocket.Ping([]byte("ping")))
 			c.baseClient.Mu.Unlock()
@@ -466,8 +450,6 @@ func (c *Client) writePump() {
 	}
 
 }
-
-// ReadPump lit les messages du client et les traite
 
 func (c *Client) readPump() {
 
@@ -501,22 +483,17 @@ func (c *Client) readPump() {
 
 		buffer = append(buffer, temp[:n]...)
 
-		// Traiter toutes les frames complètes dans le buffer
 		for len(buffer) > 0 {
 			frame, frameLen, err := websocket.ParseFrame(buffer)
 			if err != nil {
 				if err == websocket.ErrIncompleteFrame {
-					// Frame incomplète, attendre plus de données
 					break
 				}
 				log.Printf("Error parsing frame from client %s: %v", c.baseClient.ClientId, err)
 				return
 			}
-
-			// Traiter la frame parsée
 			c.handleFrame(frame)
 
-			// Retirer la frame traitée du buffer
 			buffer = buffer[frameLen:]
 		}
 	}

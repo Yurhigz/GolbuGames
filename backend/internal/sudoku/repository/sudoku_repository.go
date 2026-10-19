@@ -64,7 +64,6 @@ func GetRandomGridDB(parentsContext context.Context, difficulty string) (*types.
 	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
-	// Première requête pour compter
 	var count int
 	countQuery := `SELECT COUNT(*) FROM sudoku_games WHERE difficulty = $1`
 	err := database.DBPool.QueryRow(ctx, countQuery, difficulty).Scan(&count)
@@ -97,7 +96,6 @@ func GetRandomDifficultyGridDB(parentsContext context.Context) (*types.SudokuGri
 	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
-	// Première requête pour compter
 	var count int
 	countQuery := `SELECT COUNT(*) FROM sudoku_games`
 	err := database.DBPool.QueryRow(ctx, countQuery).Scan(&count)

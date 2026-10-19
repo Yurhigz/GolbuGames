@@ -149,7 +149,6 @@ func extractPayload(buf []byte) []byte {
 	return buf[payloadStart:]
 }
 
-// Fonction de décodage des messages clients
 func ParseFrame(buf []byte) (Frame, int, error) {
 	bufLength := len(buf)
 	frame := Frame{}
@@ -171,7 +170,6 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 	payloadLenIndicator := payloadLen(secondByte)
 	var payloadLen int
 	var headerLen int
-	// Check if len buf > headerlen + payloadlen (incorporer fonction pour déterminer au préalable longueur du payload)
 
 	switch {
 	case payloadLenIndicator < 126:
@@ -218,7 +216,6 @@ func ParseFrame(buf []byte) (Frame, int, error) {
 	return frame, frame.Length, nil
 }
 
-// Fonction de construction des réponses côté serveur vers les clients
 func BuildFrame(payload []byte, opcode byte, fin bool) []byte {
 	payloadLength := len(payload)
 	var headerLen int

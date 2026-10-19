@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"golbugames/config"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -110,22 +111,3 @@ func HasRole(claims *CustomClaims, requiredRole string) bool {
 	}
 	return false
 }
-
-// func VerifyToken(tokenString string) error {
-// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-// 		return secretKey, nil
-// 	})
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if !token.Valid {
-// 		return fmt.Errorf("invalid token")
-// 	}
-
-// 	return nil
-// }
-
-// https://medium.com/@cheickzida/golang-implementing-jwt-token-authentication-bba9bfd84d60
-// https://www.sohamkamani.com/golang/jwt-authentication/

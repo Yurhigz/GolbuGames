@@ -14,21 +14,18 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
 
-	// Usage de transaction pour garantir l'intégrité des données car il y a deux requêtes
 	tx, err := database.DBPool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("[AddUser] cannot start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// vérification de l'unicité de l'utilisateur
 	var exists bool
 	err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username = $1)", username).Scan(&exists)
 	if exists {
 		return fmt.Errorf("[AddUser] username <%v> already exists", username)
 	}
 
-	// Insérer l'utilisateur
 	var userId int
 	err = tx.QueryRow(ctx,
 		`INSERT INTO users (username, accountname, password)
@@ -39,7 +36,6 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 		return fmt.Errorf("[AddUser] Error inserting user [%s]: %w", username, err)
 	}
 
-	// Initialiser les stats
 	_, err = tx.Exec(ctx,
 		`INSERT INTO user_stats 
 		 (user_id, total_games, total_wins, total_losses, total_draws, total_time, average_time) 
@@ -49,13 +45,12 @@ func AddUserDB(parentsContext context.Context, username, accountname, password s
 		return fmt.Errorf("[AddUser] Error initializing user stats: %w", err)
 	}
 
-	// Commit transaction
 	err = tx.Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("[AddUser] Error committing transaction: %w", err)
 	}
 
-	log.Printf("User added successfully with initialized stats: %s - %s", username, password)
+	log.Printf("User added successfully with initialized stats: %s", username)
 	return nil
 }
 

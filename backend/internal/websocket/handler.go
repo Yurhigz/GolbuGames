@@ -23,7 +23,7 @@ func secretKeyVerification(clientKey string) (string, error) {
 	return base64.StdEncoding.EncodeToString(hash[:]), nil
 }
 
-func UpgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
+func UpgradeConnection(w http.ResponseWriter, r *http.Request, selectedSubprotocol ...string) (net.Conn, error) {
 
 	if !strings.Contains(strings.ToLower(r.Header.Get("Connection")), "upgrade") ||
 		strings.ToLower(r.Header.Get("Upgrade")) != "websocket" {
@@ -40,6 +40,21 @@ func UpgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 		return nil, err
 	}
 
+	protocolHeader := r.Header.Get("Sec-WebSocket-Protocol")
+	if len(selectedSubprotocol) > 0 && selectedSubprotocol[0] != "" {
+		selected := selectedSubprotocol[0]
+		found := false
+		for _, offered := range strings.Split(protocolHeader, ",") {
+			if strings.TrimSpace(offered) == selected {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, errors.New("requested WebSocket subprotocol was not offered")
+		}
+	}
+
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		return nil, errors.New("webserver doesn't support hijacking")
@@ -53,9 +68,13 @@ func UpgradeConnection(w http.ResponseWriter, r *http.Request) (net.Conn, error)
 		"HTTP/1.1 101 Switching Protocols\r\n"+
 			"Upgrade: websocket\r\n"+
 			"Connection: Upgrade\r\n"+
-			"Sec-WebSocket-Accept: %s\r\n\r\n",
+			"Sec-WebSocket-Accept: %s\r\n",
 		acceptKey,
 	)
+	if len(selectedSubprotocol) > 0 && selectedSubprotocol[0] != "" {
+		response += fmt.Sprintf("Sec-WebSocket-Protocol: %s\r\n", selectedSubprotocol[0])
+	}
+	response += "\r\n"
 
 	if _, err := buf.WriteString(response); err != nil {
 		conn.Close()

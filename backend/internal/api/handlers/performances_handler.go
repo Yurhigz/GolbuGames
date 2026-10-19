@@ -23,7 +23,7 @@ func GetUserStats(w http.ResponseWriter, r *http.Request) {
 
 	userStats, err = repository.GetUserStatsDB(r.Context(), id)
 	if err != nil {
-		slog.Error("Error retrieving stats for user", "id", userStats.ID, "error", err)
+		slog.Error("Error retrieving stats for user", "id", id, "error", err)
 		api_errors.WriteError(w, err)
 		return
 	}

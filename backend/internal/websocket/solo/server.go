@@ -9,7 +9,6 @@ import (
 	"net/http"
 )
 
-// WebsocketHandler Solo
 func WebsocketHandlerSolo(w http.ResponseWriter, r *http.Request) {
 	difficulty := r.URL.Query().Get("difficulty")
 

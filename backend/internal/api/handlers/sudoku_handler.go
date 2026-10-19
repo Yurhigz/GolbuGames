@@ -81,7 +81,6 @@ func AddGrid(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// En cours de traitement avec le Websocket
 func GetGrid(w http.ResponseWriter, r *http.Request) {
 
 	difficulty := r.URL.Query().Get("difficulty")
@@ -132,13 +131,3 @@ func GetLeaderboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-// func GetUserHistory(w http.ResponseWriter, r *http.Request) {
-// 	// Historique des parties
-// 	// Progression
-// }
-
-// func SaveGameProgress(w http.ResponseWriter, r *Request) {
-// 	// Sauvegarde l'état actuel
-// 	// Permet de reprendre plus tard
-// }

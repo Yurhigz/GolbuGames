@@ -2,6 +2,7 @@ package multiplayer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"golbugames/internal/sudoku/repository"
 	"golbugames/internal/websocket"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,6 +31,7 @@ type HubManager struct {
 	hubs        map[string]*Hub
 	mu          sync.Mutex
 	ClientQueue []*Client
+	gamesEnded  atomic.Uint64
 }
 
 type Hub struct {
@@ -41,10 +44,17 @@ type Hub struct {
 	hubId          string
 	playable       []int
 	solution       []int
-	mu             sync.RWMutex // Protection pour les opérations sur les clients
-	running        bool         // Flag pour indiquer si le hub est en cours d'exécution
+	mu             sync.RWMutex
 	completionTime int
+	startedAt      time.Time
 	ctx            context.Context
+	cancel         context.CancelFunc
+}
+
+type Metrics struct {
+	WaitingPlayers  int    `json:"waiting_players"`
+	ActiveGames     int    `json:"active_games"`
+	GamesEndedTotal uint64 `json:"games_ended_total"`
 }
 
 func NewHubManager() *HubManager {
@@ -54,30 +64,35 @@ func NewHubManager() *HubManager {
 }
 
 func (hm *HubManager) CreateHub(ctx context.Context, matchId string) (*Hub, error) {
-	hm.mu.Lock()
-	defer hm.mu.Unlock()
+	hubCtx, cancel := context.WithCancel(ctx)
+	grid, err := repository.GetRandomDifficultyGridDB(hubCtx)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
 
 	hub := &Hub{
 		hubManager: hm,
-		broadcast:  make(chan websocket.Frame, 10), // Buffer pour éviter les blocages
+		broadcast:  make(chan websocket.Frame, 10),
 		register:   make(chan *Client, 10),
 		unregister: make(chan *Client, 10),
-		clients:    [2]*Client{nil, nil},
-		running:    true,
 		gameState:  gameWaiting,
-		ctx:        ctx,
+		hubId:      matchId,
+		playable:   append([]int(nil), grid.Board...),
+		solution:   append([]int(nil), grid.Solution...),
+		ctx:        hubCtx,
+		cancel:     cancel,
 	}
 
-	grid, err := repository.GetRandomDifficultyGridDB(ctx)
-	if err != nil {
-		log.Printf("Error retrieving random grid : %v", err)
-		return nil, err
+	hm.mu.Lock()
+	if _, exists := hm.hubs[matchId]; exists {
+		hm.mu.Unlock()
+		cancel()
+		return nil, fmt.Errorf("hub %q already exists", matchId)
 	}
-	hub.playable = grid.Board
-	hub.solution = grid.Solution
-
-	hub.hubId = matchId
 	hm.hubs[matchId] = hub
+	hm.mu.Unlock()
+
 	go hub.run()
 	return hub, nil
 }
@@ -90,136 +105,189 @@ func (hm *HubManager) GetHub(matchId string) *Hub {
 
 func (hm *HubManager) RemoveHub(matchId string) {
 	hm.mu.Lock()
-	defer hm.mu.Unlock()
-
-	if hub, exists := hm.hubs[matchId]; exists {
-		hub.mu.Lock()
-		hub.running = false
-		hub.mu.Unlock()
-
-		// Fermer les canaux de manière sécurisée
-		go func() {
-			time.Sleep(100 * time.Millisecond)
-			close(hub.register)
-			close(hub.unregister)
-			close(hub.broadcast)
-		}()
-
+	hub, exists := hm.hubs[matchId]
+	if exists {
 		delete(hm.hubs, matchId)
+	}
+	hm.mu.Unlock()
+
+	if exists {
+		hub.cancel()
 		log.Printf("Hub %s removed", matchId)
 	}
 }
 
 func (h *Hub) GetOpponent(client *Client) *Client {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 	if h.clients[0] == client {
 		return h.clients[1]
 	}
-	return h.clients[0]
+	if h.clients[1] == client {
+		return h.clients[0]
+	}
+	return nil
+}
+
+func (h *Hub) isOngoing() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.gameState == gamesOngoing
+}
+
+func (h *Hub) HandleMove(client *Client, move protocol.GameMessage) {
+	h.mu.Lock()
+	isPlayer := h.clients[0] == client || h.clients[1] == client
+	valid := h.gameState == gamesOngoing &&
+		isPlayer &&
+		move.Position >= 0 &&
+		move.Position < len(h.solution) &&
+		move.Value >= 1 &&
+		move.Value <= 9 &&
+		move.Position < len(h.playable) &&
+		h.playable[move.Position] == 0 &&
+		h.solution[move.Position] == move.Value
+
+	if valid {
+		h.playable[move.Position] = move.Value
+	}
+	clients := h.clients
+	complete := valid && h.gameState == gamesOngoing && h.isBoardComplete()
+	h.mu.Unlock()
+
+	payload, err := jsonMarshalMove(move, valid)
+	if err != nil {
+		log.Printf("Error marshalling move validation: %v", err)
+		return
+	}
+	if valid {
+		for _, player := range clients {
+			if player != nil {
+				player.SendMessage(payload)
+			}
+		}
+	} else {
+		client.SendMessage(payload)
+	}
+
+	if complete {
+		h.HandleVictory(client, protocol.SystemGameOver)
+	}
+}
+
+func jsonMarshalMove(move protocol.GameMessage, valid bool) ([]byte, error) {
+	return json.Marshal(protocol.ValidationMove{
+		Type:     protocol.MessageTypeValidateMove,
+		Position: move.Position,
+		Value:    move.Value,
+		Valid:    valid,
+	})
+}
+
+func (h *Hub) isBoardComplete() bool {
+	for _, value := range h.playable {
+		if value == 0 {
+			return false
+		}
+	}
+	return len(h.playable) == 81
 }
 
 func (h *Hub) HandleVictory(winner *Client, reason int) {
-	loser := h.GetOpponent(winner)
+	h.mu.Lock()
+	if h.gameState != gamesOngoing || (h.clients[0] != winner && h.clients[1] != winner) {
+		h.mu.Unlock()
+		return
+	}
+	loser := h.clients[0]
+	if loser == winner {
+		loser = h.clients[1]
+	}
+	if loser == nil {
+		h.mu.Unlock()
+		return
+	}
+	if reason == protocol.SystemGameOver && !h.isBoardComplete() {
+		h.mu.Unlock()
+		return
+	}
+
+	h.gameState = gameFinished
+	h.completionTime = int(time.Since(h.startedAt).Seconds())
+	if h.completionTime < 1 {
+		h.completionTime = 1
+	}
+	h.hubManager.gamesEnded.Add(1)
+	h.mu.Unlock()
 
 	h.ProcessGameEnd(winner, loser, reason)
-
 }
 
-// Handler métiers pour les différentes manières de finir une partie : victoire, déconnexion ...
 func (h *Hub) ProcessGameEnd(winner, loser *Client, reason int) {
-
 	switch reason {
-	case protocol.PlayerDisconnected:
-		if winner != nil && !winner.closed {
-			winner.SendLeavingOpponent()
-		}
+	case protocol.PlayerLeft, protocol.PlayerDisconnected:
+		winner.SendLeavingOpponent()
 	case protocol.SystemGameOver:
-		if loser != nil && !loser.closed {
-			loser.SendGameOver(winner.baseClient.ClientId)
-		}
+		winner.SendGameOver(winner.username)
+		loser.SendGameOver(winner.username)
 	}
 
-	go h.SaveGameResult(winner, loser)
-	// Une fois les messages envoyés et les sauvegardes effectuées on clean et supprime le hub
-	if winner != nil && !winner.closed {
-		winner.cleanup()
-	}
-	if loser != nil && !loser.closed {
-		loser.cleanup()
-	}
+	go h.SaveGameResult(winner)
 	h.hubManager.RemoveHub(h.hubId)
-
 }
 
-// Logique métier de victoire
-// Gérer la partie contexte + structure avec timestamp
-func (h *Hub) SaveGameResult(winner, loser *Client) {
-	ctx := context.Background()
-
-	completionTime := h.completionTime
-
-	var winnerID, loserID string
-	var result int
-
-	// Gérer le getUserID avec la synchronisation DB et l'authentification
-
-	if winner == h.clients[0] {
-		result = winP1
-		winnerID = winner.baseClient.ClientId
-		loserID = loser.baseClient.ClientId
-	} else {
+func (h *Hub) SaveGameResult(winner *Client) {
+	h.mu.RLock()
+	player1, player2 := h.clients[0], h.clients[1]
+	result := winP1
+	if winner == player2 {
 		result = winP2
-		winnerID = loser.baseClient.ClientId
-		loserID = winner.baseClient.ClientId
 	}
-	fmt.Printf("winnerId : %v \n loserId : %v \n result : %v \n completionTime: %v /n", winnerID, loserID, result, completionTime)
-	if err := repository.SubmitMultiGameDB(ctx, winnerID, loserID, result, completionTime); err != nil {
-		log.Printf("Error saving game result: %v", err)
+	completionTime := h.completionTime
+	h.mu.RUnlock()
+
+	if player1 == nil || player2 == nil {
+		log.Printf("Cannot save result for hub %s: both players are required", h.hubId)
+		return
+	}
+	if err := repository.SubmitMultiGameDB(
+		context.Background(),
+		player1.userID,
+		player2.userID,
+		result,
+		completionTime,
+	); err != nil {
+		log.Printf("Error saving game result for hub %s: %v", h.hubId, err)
 	}
 }
 
-// Hub Running
 func (h *Hub) run() {
 	log.Printf("Hub %s started", h.hubId)
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Hub %s panic recovered: %v\n%s", h.hubId, r, string(debug.Stack()))
-			// log.Printf("Hub %s panic recovered: %v", h.hubId, r)
 		}
 		log.Printf("Hub %s stopped", h.hubId)
 	}()
 
-	for h.running {
+	for {
 		select {
-		case client, ok := <-h.register:
-			if !ok {
-				log.Printf("Register channel closed for hub %s", h.hubId)
-				return
-			}
+		case <-h.ctx.Done():
+			return
+		case client := <-h.register:
 			h.handleClientRegister(client)
-
-		case client, ok := <-h.unregister:
-			if !ok {
-				log.Printf("Unregister channel closed for hub %s", h.hubId)
-				return
+		case client := <-h.unregister:
+			if h.isOngoing() {
+				opponent := h.GetOpponent(client)
+				if opponent != nil {
+					h.HandleVictory(opponent, protocol.PlayerLeft)
+					continue
+				}
 			}
-			opponent := h.GetOpponent(client)
-			if h.gameState == gamesOngoing && opponent != nil {
-				log.Printf("Game was running, player %v left, ending the game", client.baseClient.ClientId)
-				h.mu.Lock()
-				h.completionTime = 0
-				h.mu.Unlock()
-				h.HandleVictory(opponent, protocol.PlayerLeft)
-			} else {
-				log.Printf("Hub was waiting for another player but player %v left", client.baseClient.ClientId)
-				h.handleClientUnregister(client)
+			if h.handleClientUnregister(client) {
+				h.hubManager.RemoveHub(h.hubId)
 			}
-
-		case message, ok := <-h.broadcast:
-			if !ok {
-				log.Printf("Broadcast channel closed for hub %s", h.hubId)
-				return
-			}
+		case message := <-h.broadcast:
 			h.handleBroadcast(message)
 		}
 	}
@@ -229,67 +297,65 @@ func (h *Hub) handleClientRegister(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
+	if h.gameState != gameWaiting || client.isClosed() {
+		return
+	}
 	if h.clients[0] == nil {
-		h.clients[0] = client
-		client.hub = h
-		h.clients[0].SendWaitingOpponent()
-
-	} else if h.clients[1] == nil {
-		h.clients[1] = client
-		client.hub = h
-
-		for _, c := range h.clients {
-			if c != nil {
-				c.SendGameStart()
-			}
+		if !client.setHub(h) {
+			return
 		}
+		h.clients[0] = client
+	} else if h.clients[1] == nil {
+		if !client.setHub(h) {
+			return
+		}
+		h.clients[1] = client
+	} else {
+		return
+	}
+	if h.clients[1] == nil {
+		h.clients[0].SendWaitingOpponent()
+		return
+	}
 
-		// Changer l'état du jeu
-		h.gameState = gamesOngoing
+	h.gameState = gamesOngoing
+	h.startedAt = time.Now()
+	for _, player := range h.clients {
+		player.SendGameStart()
 	}
 }
 
-func (h *Hub) handleClientUnregister(client *Client) {
+func (h *Hub) handleClientUnregister(client *Client) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	if h.clients[0] == client {
 		h.clients[0] = nil
-		if h.clients[1] != nil {
-			h.clients[1].SendWaitingOpponent()
-		}
-		log.Printf("Client unregistered from hub %s (was player 1)", h.hubId)
-
 	} else if h.clients[1] == client {
 		h.clients[1] = nil
-		if h.clients[0] != nil {
-			h.clients[0].SendWaitingOpponent()
-		}
-		log.Printf("Client unregistered from hub %s (was player 2)", h.hubId)
+	} else {
+		return h.clientCount() == 0
 	}
 
-	// Si plus aucun client, marquer pour suppression
 	if h.clientCount() == 0 {
 		h.gameState = gameAborted
-		// Contrôler le comportement dans ce cas
-		h.running = false
-		log.Printf("Hub %s is empty, marking for cleanup", h.hubId)
+		return true
 	}
+	for _, player := range h.clients {
+		if player != nil {
+			player.SendWaitingOpponent()
+		}
+	}
+	return false
 }
 
 func (h *Hub) handleBroadcast(message websocket.Frame) {
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	// Diffuser à tous les clients connectés
-	for i, c := range h.clients {
-		if c != nil {
-			select {
-			case c.baseClient.Send <- &message:
-				log.Printf("Broadcasted message to client %d", i)
-			default:
-				log.Printf("Failed to broadcast to client %d - channel full", i)
-			}
+	clients := h.clients
+	h.mu.RUnlock()
+	for _, client := range clients {
+		if client != nil {
+			client.SendMessage(message.Payload)
 		}
 	}
 }
@@ -298,8 +364,8 @@ func (hm *HubManager) RemoveClientFromQueue(client *Client) {
 	hm.mu.Lock()
 	defer hm.mu.Unlock()
 
-	for i, c := range hm.ClientQueue {
-		if c == client {
+	for i, queued := range hm.ClientQueue {
+		if queued == client {
 			hm.ClientQueue = append(hm.ClientQueue[:i], hm.ClientQueue[i+1:]...)
 			log.Printf("Client %s removed from matchmaking queue", client.baseClient.ClientId)
 			return
@@ -309,8 +375,8 @@ func (hm *HubManager) RemoveClientFromQueue(client *Client) {
 
 func (h *Hub) clientCount() int {
 	count := 0
-	for _, c := range h.clients {
-		if c != nil {
+	for _, client := range h.clients {
+		if client != nil {
 			count++
 		}
 	}
@@ -321,7 +387,6 @@ func createId() string {
 	return fmt.Sprintf("hub_%d", time.Now().UnixNano())
 }
 
-// handler matchmaking
 func (hm *HubManager) MatchmakingLoop(ctx context.Context) {
 	log.Printf("Starting matchmaking loop...")
 	ticker := time.NewTicker(2 * time.Second)
@@ -338,68 +403,78 @@ func (hm *HubManager) MatchmakingLoop(ctx context.Context) {
 	}
 }
 
-// fonction métier pour le matchamking
 func (hm *HubManager) processMatchmaking(ctx context.Context) {
 	hm.mu.Lock()
-	queueLength := len(hm.ClientQueue)
-	hubsCount := len(hm.hubs)
-
-	if queueLength == 0 {
+	if len(hm.ClientQueue) == 0 {
 		hm.mu.Unlock()
 		return
 	}
-
-	queue := make([]*Client, queueLength)
-	copy(queue, hm.ClientQueue)
-	hm.mu.Unlock()
-
-	log.Printf("Processing matchmaking - Queue: %d, Hubs: %d", queueLength, hubsCount)
-
-	// Chercher un hub disponible
+	queue := append([]*Client(nil), hm.ClientQueue...)
 	var availableHub *Hub
-	hm.mu.Lock()
 	for _, hub := range hm.hubs {
 		hub.mu.RLock()
-		if hub.gameState == gameWaiting && hub.clientCount() < 2 {
+		available := hub.gameState == gameWaiting && hub.clientCount() < 2
+		hub.mu.RUnlock()
+		if available {
 			availableHub = hub
-			hub.mu.RUnlock()
 			break
 		}
-		hub.mu.RUnlock()
 	}
 	hm.mu.Unlock()
 
-	// Si pas de hub disponible, en créer un
-	if availableHub == nil && queueLength > 0 {
-		log.Printf("No available hub found, creating a new one")
+	if availableHub == nil {
 		var err error
 		availableHub, err = hm.CreateHub(ctx, createId())
 		if err != nil {
-			log.Printf("Error creating new hub: %v", err)
+			log.Printf("Error creating multiplayer hub: %v", err)
 			return
 		}
 	}
 
-	// Assigner les clients au hub
-	if availableHub != nil {
-		clientsToAssign := make([]*Client, 0, 2)
+	availableHub.mu.RLock()
+	availableSlots := 2 - availableHub.clientCount()
+	availableHub.mu.RUnlock()
+	if availableSlots <= 0 {
+		return
+	}
+	if availableSlots > len(queue) {
+		availableSlots = len(queue)
+	}
 
-		hm.mu.Lock()
-		for _, client := range hm.ClientQueue {
-			if client.hub == nil && len(clientsToAssign) < 2-availableHub.clientCount() {
-				clientsToAssign = append(clientsToAssign, client)
-			}
+	for _, client := range queue[:availableSlots] {
+		select {
+		case availableHub.register <- client:
+			hm.RemoveClientFromQueue(client)
+			log.Printf("Client %s assigned to hub %s", client.baseClient.ClientId, availableHub.hubId)
+		case <-ctx.Done():
+			return
+		case <-availableHub.ctx.Done():
+			return
 		}
-		hm.mu.Unlock()
+	}
+}
 
-		for _, client := range clientsToAssign {
-			select {
-			case availableHub.register <- client:
-				hm.RemoveClientFromQueue(client)
-				log.Printf("Client %s assigned to hub %s", client.baseClient.ClientId, availableHub.hubId)
-			default:
-				log.Printf("Failed to register client %s to hub - channel full", client.baseClient.ClientId)
-			}
+func (hm *HubManager) MetricsSnapshot() Metrics {
+	hm.mu.Lock()
+	waitingPlayers := len(hm.ClientQueue)
+	hubs := make([]*Hub, 0, len(hm.hubs))
+	for _, hub := range hm.hubs {
+		hubs = append(hubs, hub)
+	}
+	hm.mu.Unlock()
+
+	activeGames := 0
+	for _, hub := range hubs {
+		hub.mu.RLock()
+		if hub.gameState == gamesOngoing {
+			activeGames++
 		}
+		hub.mu.RUnlock()
+	}
+
+	return Metrics{
+		WaitingPlayers:  waitingPlayers,
+		ActiveGames:     activeGames,
+		GamesEndedTotal: hm.gamesEnded.Load(),
 	}
 }

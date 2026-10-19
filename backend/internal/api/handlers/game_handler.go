@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	api_errors "golbugames/internal/api/errors"
+	"golbugames/internal/api/middleware"
 	"golbugames/internal/sudoku/repository"
 	"golbugames/pkg/types"
 	"log/slog"
@@ -11,6 +12,12 @@ import (
 )
 
 func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var game types.Game
 	err := json.NewDecoder(r.Body).Decode(&game)
 	if err != nil {
@@ -19,12 +26,13 @@ func SubmitSoloGame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if game.UserID == "" || game.GameMode != "solo" || game.Completion_time <= 0 || game.OpponentID != "" || game.Results != nil || game.Difficulty == "" {
+	if game.GameMode != "solo" || game.Completion_time <= 0 || game.OpponentID != "" || game.Results != nil || game.Difficulty == "" {
 		slog.Error("Missing required fields for solo game", "game_mode", game.GameMode, "completion_time", game.Completion_time, "opponent_id", game.OpponentID, "results", game.Results)
 		api_errors.WriteError(w, api_errors.ErrBadRequest)
 		return
 	}
 
+	game.UserID = claims.UserID
 	err = repository.SubmitSoloGameDB(r.Context(), game.UserID, game.Completion_time)
 	if err != nil {
 		slog.Error("Error submitting game for user %v: %v", game.UserID, err)

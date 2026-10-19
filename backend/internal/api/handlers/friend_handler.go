@@ -8,6 +8,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"golbugames/internal/api/middleware"
 )
 
 func GetUserFriends(w http.ResponseWriter, r *http.Request) {
@@ -38,11 +40,21 @@ func GetUserFriends(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveFriend(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
 		slog.Error("invalid user id", "user_id", strId, "error", err)
 		api_errors.WriteError(w, api_errors.ErrInvalidUserID)
+		return
+	}
+	if strconv.Itoa(id) != claims.UserID {
+		http.Error(w, "cannot modify another user's friends", http.StatusForbidden)
 		return
 	}
 
@@ -73,6 +85,12 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddFriend(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middleware.ClaimsFromContext(r.Context())
+	if !ok {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	var req types.AddFriendRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -80,6 +98,12 @@ func AddFriend(w http.ResponseWriter, r *http.Request) {
 		api_errors.WriteError(w, api_errors.ErrBadRequest)
 		return
 	}
+	userID, err := strconv.Atoi(claims.UserID)
+	if err != nil {
+		http.Error(w, "invalid authenticated user ID", http.StatusUnauthorized)
+		return
+	}
+	req.UserID = userID
 
 	friend, err := repository.GetUserIdDB(r.Context(), req.FriendUsername, req.FriendUsername)
 	if err != nil {

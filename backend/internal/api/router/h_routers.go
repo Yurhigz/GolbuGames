@@ -12,34 +12,34 @@ func InitRoutesSudoku(mux *http.ServeMux, hubManager *multiplayer.HubManager, jw
 	// Users API
 	mux.HandleFunc("POST /create_user", handlers.CreateUserWithJWT(jwtManager))
 	// 	mux.HandleFunc("POST /create_user", handlers.UserSignin)
-	mux.HandleFunc("DELETE /delete_user/{id}", handlers.DeleteUser)
+	mux.Handle("DELETE /delete_user/{id}", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.DeleteUser)))
 	mux.HandleFunc("GET /user/{id}", handlers.GetUser)
 
-	mux.HandleFunc("POST /updateuser", handlers.UpdateUserPassword)
+	mux.Handle("POST /updateuser", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.UpdateUserPassword)))
 
 	mux.HandleFunc("GET /user_stats/{id}", handlers.GetUserStats)
 	mux.HandleFunc("GET /user_id", handlers.GetUserId)
 	mux.HandleFunc("POST /login", handlers.UserLoginWithJWT(jwtManager))
 
 	// Sudoku API
-	mux.HandleFunc("POST /add_grid", handlers.AddGrid)
+	mux.Handle("POST /add_grid", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.AddGrid)))
 	// mux.HandleFunc("GET /grid", handlers.GetGrid)
 	mux.HandleFunc("GET /grid", solo.WebsocketHandlerSolo)
 
 	// Game API
-	mux.HandleFunc("POST /submit_solo_game", handlers.SubmitSoloGame)
-	mux.HandleFunc("POST /submit_multi_game", handlers.SubmitMultiGame)
+	mux.Handle("POST /submit_solo_game", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.SubmitSoloGame)))
 
 	mux.HandleFunc("GET /leaderboard", handlers.GetLeaderboard)
+	mux.HandleFunc("GET /metrics/multiplayer", handlers.GetMultiplayerMetrics(hubManager))
 	// mux.HandleFunc("GET /user_history", handlers.GetUserHistory)
 	// mux.HandleFunc("POST /save_game", handlers.SaveGameProgress)
 
 	mux.HandleFunc("GET /friends/{id}", handlers.GetUserFriends)
-	mux.HandleFunc("DELETE /delete_friend/{id}/{f_id}", handlers.RemoveFriend)
-	mux.HandleFunc("POST /add_friend", handlers.AddFriend)
+	mux.Handle("DELETE /delete_friend/{id}/{f_id}", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.RemoveFriend)))
+	mux.Handle("POST /add_friend", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.AddFriend)))
 
 	mux.HandleFunc("GET /tournaments", handlers.GetAllTournaments)
-	mux.HandleFunc("POST /add_tournament", handlers.AddTournament)
+	mux.Handle("POST /add_tournament", middleware.RequireJWT(jwtManager, http.HandlerFunc(handlers.AddTournament)))
 
 	// ========== WEBSOCKET ENDPOINTS ==========
 
@@ -48,7 +48,7 @@ func InitRoutesSudoku(mux *http.ServeMux, hubManager *multiplayer.HubManager, jw
 
 	// WebSocket Multiplayer
 	mux.HandleFunc("GET /ws/multi", func(w http.ResponseWriter, r *http.Request) {
-		multiplayer.WebsocketHandler(w, r, hubManager)
+		multiplayer.WebsocketHandler(w, r, hubManager, jwtManager)
 	})
 
 }

@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-// structure client pour solo
-
 type SoloClient struct {
 	baseClient *client.BaseClient
 }
@@ -23,8 +21,6 @@ func newSoloClient(conn net.Conn) *SoloClient {
 	}
 }
 
-// fait que décider quoi répondre et pousse via TrySend.
-// Retourne true si la boucle de lecture doit s'arrêter (close reçu).
 func (c *SoloClient) handleFrame(frame websocket.Frame) (shouldStop bool) {
 	switch frame.Opcode {
 	case websocket.OpcodeClose:
@@ -145,7 +141,6 @@ func (c *SoloClient) readPump() {
 
 		buffer = append(buffer, temp[:n]...)
 
-		// Traiter toutes les frames complètes dans le buffer
 		for len(buffer) > 0 {
 			frame, framelen, err := websocket.ParseFrame(buffer)
 			if err != nil {

@@ -54,14 +54,12 @@ func updateUserStats(ctx context.Context, tx pgx.Tx, userId string, win, loss, d
 func SubmitSoloGameDB(parentsContext context.Context, userId string, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
-	// Usage des transactions car double requête
 	tx, err := database.DBPool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("[SubmitSoloGame] cannot start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// Insérer le score
 	_, err = tx.Exec(ctx,
 		`INSERT INTO games_scores (user_id, game_mode, completion_time) 
 		 VALUES ($1, 'solo', $2)`,
@@ -70,7 +68,6 @@ func SubmitSoloGameDB(parentsContext context.Context, userId string, completionT
 		return fmt.Errorf("[SubmitSoloGame] cannot submit the game result: %w", err)
 	}
 
-	// Mettre à jour les stats (considéré comme une victoire en solo)
 	err = updateUserStats(ctx, tx, userId, true, false, false, completionTime, true)
 	if err != nil {
 		return fmt.Errorf("[SubmitSoloGame] cannot update user stats: %w", err)
@@ -88,14 +85,12 @@ func SubmitSoloGameDB(parentsContext context.Context, userId string, completionT
 func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, result, completionTime int) error {
 	ctx, cancel := context.WithTimeout(parentsContext, database.QueryTimeout)
 	defer cancel()
-	// Usage des transactions car double requête
 	tx, err := database.DBPool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("[SubmitMultiGame] cannot start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
-	// Insérer le score
 	_, err = tx.Exec(ctx,
 		`INSERT INTO games_scores (user_id, opponent_id, game_mode, results, completion_time) 
 		 VALUES ($1, $2, '1v1', $3, $4)`,
@@ -104,18 +99,15 @@ func SubmitMultiGameDB(parentsContext context.Context, user1, user2 string, resu
 		return fmt.Errorf("[SubmitMultiGame] cannot submit the game result: %w", err)
 	}
 
-	// Mettre à jour les stats des deux joueurs selon le résultat
 	isWin1 := result == 0
 	isDraw := result == 1
 	isWin2 := result == 2
 
-	// Stats joueur 1
 	err = updateUserStats(ctx, tx, user1, isWin1, isWin2, isDraw, completionTime, false)
 	if err != nil {
 		return fmt.Errorf("[SubmitMultiGame] cannot update user1 stats: %w", err)
 	}
 
-	// Stats joueur 2
 	err = updateUserStats(ctx, tx, user2, isWin2, isWin1, isDraw, completionTime, false)
 	if err != nil {
 		return fmt.Errorf("[SubmitMultiGame] cannot update user2 stats: %w", err)

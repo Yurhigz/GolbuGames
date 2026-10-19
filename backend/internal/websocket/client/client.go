@@ -9,10 +9,10 @@ import (
 )
 
 const (
-	PongWait   = 60 * time.Second // Durée d'attente pour un pong
+	PongWait   = 60 * time.Second
 	Newline    = "\n"
 	Space      = " "
-	PingPeriod = (PongWait * 9) / 10 // Période de ping pour garder la connexion active
+	PingPeriod = (PongWait * 9) / 10
 )
 
 type BaseClient struct {
@@ -50,9 +50,6 @@ func (c *BaseClient) Close() {
 	})
 }
 
-// TrySend tente d'envoyer une frame sans jamais bloquer indéfiniment :
-// si Done est fermé (writePump arrêté / connexion en cours de fermeture),
-// on abandonne au lieu de deadlock.
 func (c *BaseClient) TrySend(frame *websocket.Frame) bool {
 	select {
 	case c.Send <- frame:
