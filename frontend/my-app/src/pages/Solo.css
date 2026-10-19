@@ -115,6 +115,14 @@
     box-shadow: 0 0 8px #ff00cc;
 }
 
+.same-number-cell {
+    background: #00ffe733 !important;
+}
+
+.selected-cell.same-number-cell {
+    background: #ff00cc55 !important;
+}
+
 .number-selector {
     display: flex;
     justify-content: center;

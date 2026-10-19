@@ -1,5 +1,5 @@
-import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import React, { useContext } from "react";
+import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import SideNav from "./components/SideNav";
 import Footer from "./components/footer";
 import Home from "./pages/homepage";
@@ -17,26 +17,38 @@ import FAQ from "./pages/legal/FAQ";
 import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import Friends from "./pages/Friends";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthContext, AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
+
+const RequireAuth = ({ children }) => {
+  const { user, isLoading } = useContext(AuthContext);
+
+  if (isLoading) {
+    return <p role="status">Chargement du compte…</p>;
+  }
+
+  return user ? children : <Navigate to="/login" replace />;
+};
 
 function App() {
   return (
-    <Router>
-      <div className="app">
-        <AuthProvider>
+    <ThemeProvider>
+      <Router>
+        <div className="app">
+          <AuthProvider>
             <SideNav />
             <div className="main-content">
               <Routes>
                 <Route path="/multiplayer/invite/:id" element={<Invite />} />
                 <Route path="/" element={<Home />} />
                 <Route path="/solo" element={<Solo />} />
-                <Route path="/multi" element={<Multi />} />
+                <Route path="/multi" element={<RequireAuth><Multi /></RequireAuth>} />
                 <Route path="/tournament" element={<Tournament />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
-                <Route path="/friends" element={<Friends />} />
+                <Route path="/friends" element={<RequireAuth><Friends /></RequireAuth>} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                 <Route path="/about" element={<About />} />
                 <Route path="/help" element={<Help />} />
                 <Route path="/faq" element={<FAQ />} />
@@ -44,10 +56,11 @@ function App() {
                 <Route path="/privacy" element={<Privacy />} />
               </Routes>
             </div>
-        </AuthProvider>
-        <Footer />
-      </div>
-    </Router>
+          </AuthProvider>
+          <Footer />
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 

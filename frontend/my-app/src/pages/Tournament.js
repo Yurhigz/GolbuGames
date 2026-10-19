@@ -1,71 +1,63 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import axios from "axios";
 import { Input } from "../components/Input";
 import { Card } from "../components/Card";
 import "./Tournament.css";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, authHeaders } from "../config/api";
 
 
-// Anti-XSS : échappe le HTML
-const sanitizeInput = (str) => {
-    const temp = document.createElement("div");
-    temp.textContent = str;
-    return temp.innerHTML;
-};
-
-// Autorise lettres, chiffres, espace, tiret, underscore, ponctuation basique
-const isValidText = (str) => /^[a-zA-Z0-9\s\-_.,!?]+$/.test(str);
+const isValidText = (str) => /^[\p{L}\p{N}\s\-_.,!?]+$/u.test(str);
 
 const Tournament = () => {
     const [tournaments, setTournaments] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [error, setError] = useState("");
+    const [loadError, setLoadError] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
     const [newTournament, setNewTournament] = useState({
         name: "",
         description: "",
-        maxPlayers: 4,
     });
 
     // 🔹 Fonction pour récupérer les tournois depuis le backend
-    const fetchTournaments = async () => {
+    const fetchTournaments = useCallback(async () => {
         try {
+            setLoadError("");
             const response = await axios.get(`${API_BASE_URL}/tournaments`);
             if (response.data && response.data.tournaments) {
                 setTournaments(response.data.tournaments);
             }
-        } catch (err) {
-            console.error("Erreur lors de la récupération des tournois :", err);
+        } catch {
+            setLoadError("Impossible de charger les tournois.");
+        } finally {
+            setIsLoading(false);
         }
-    };
+    }, []);
 
     // 🔹 Chargement initial des tournois
     useEffect(() => {
         fetchTournaments();
-    }, []);
+    }, [fetchTournaments]);
 
     const handleCreateClick = () => setShowModal(true);
 
     const handleCloseModal = () => {
         setShowModal(false);
-        setNewTournament({ name: "", description: "", maxPlayers: 4 });
+        setNewTournament({ name: "", description: "" });
         setError("");
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setNewTournament((prev) => ({
-            ...prev,
-            [name]: name === "maxPlayers" ? parseInt(value, 10) || 1 : value,
-        }));
+        setNewTournament((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleCreateTournament = async () => {
         const rawName = newTournament.name.trim();
         const rawDescription = newTournament.description.trim();
 
-        const name = sanitizeInput(rawName);
-        const description = sanitizeInput(rawDescription);
-        const maxPlayers = newTournament.maxPlayers;
+        const name = rawName;
+        const description = rawDescription;
 
         if (!name || !description) {
             setError("Veuillez remplir tous les champs.");
@@ -92,22 +84,20 @@ const Tournament = () => {
         }
 
         try {
-            // 👉 Envoi au backend
-            const response = await axios.post(`${API_BASE_URL}/add_tournament`, {
+            await axios.post(`${API_BASE_URL}/add_tournament`, {
                 Name: name,
                 Description: description,
                 StartTime: new Date().toISOString(),
                 EndTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            }, {
+                headers: authHeaders()
             });
-
-            console.log("Tournoi créé :", response.data);
 
             // 🔹 Recharge la liste complète depuis l’API pour rester synchro
             await fetchTournaments();
 
             handleCloseModal();
-        } catch (err) {
-            console.error("Erreur lors de la création du tournoi :", err);
+        } catch {
             setError("Impossible de créer le tournoi.");
         }
     };
@@ -123,7 +113,13 @@ const Tournament = () => {
             </div>
 
             <div className="tournament-list">
-                {tournaments.map((t) => (
+                {isLoading ? (
+                    <p>Chargement des tournois…</p>
+                ) : loadError ? (
+                    <p role="alert">{loadError}</p>
+                ) : tournaments.length === 0 ? (
+                    <p>Aucun tournoi pour le moment.</p>
+                ) : tournaments.map((t) => (
                     <Card key={t.ID || t.id} className="tournament-card">
                         <div className="tournament-card-content">
                             <div>
@@ -137,14 +133,9 @@ const Tournament = () => {
                                         Fin : {new Date(t.EndTime).toLocaleDateString()}
                                     </div>
                                 )}
-                                {t.maxPlayers && (
-                                    <div className="tournament-players">
-                                        {t.maxPlayers} joueurs max
-                                    </div>
-                                )}
                             </div>
-                            <button size="sm" className="mode-button button">
-                                Rejoindre
+                            <button type="button" className="mode-button button" disabled>
+                                Participation bientôt disponible
                             </button>
                         </div>
                     </Card>
@@ -173,16 +164,6 @@ const Tournament = () => {
                             onChange={handleChange}
                             className="modal-input"
                             autoComplete="off"
-                        />
-                        <Input
-                            name="maxPlayers"
-                            type="number"
-                            placeholder="Nombre de joueurs"
-                            value={newTournament.maxPlayers}
-                            onChange={handleChange}
-                            className="modal-input"
-                            min={1}
-                            max={128}
                         />
                         <div className="modal-actions">
                             <button

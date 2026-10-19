@@ -22,6 +22,12 @@
     margin-bottom: 1.5rem;
 }
 
+.form-error {
+    margin: 0 0 1rem;
+    color: #ff6b6b;
+    line-height: 1.5;
+}
+
 .input-field {
     width: 100%;
     padding: 0.75rem;

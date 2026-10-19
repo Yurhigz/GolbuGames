@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./Multi.css";
 import { WEBSOCKET_BASE_URL } from "../config/api";
 
@@ -12,6 +12,13 @@ const Multi = () => {
   const [errors, setErrors] = useState(0);
   const [time, setTime] = useState(0);
   const wsRef = useRef(null);
+  const statusRef = useRef("idle");
+  const manualCloseRef = useRef(false);
+
+  const updateStatus = (nextStatus) => {
+    statusRef.current = nextStatus;
+    setStatus(nextStatus);
+  };
 
   // Transforme un tableau plat en matrice 9x9
   const parseBoardArray = (arr) => {
@@ -38,6 +45,22 @@ const Multi = () => {
     return out;
   };
 
+  const handleNumberSelect = useCallback((number) => {
+    if (
+      !selectedCell ||
+      givenCells.includes(selectedCell.row * 9 + selectedCell.col)
+    )
+      return;
+
+    const position = selectedCell.row * 9 + selectedCell.col;
+
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({ type: "validate_move", position, value: number })
+      );
+    }
+  }, [givenCells, selectedCell]);
+
   // Timer
   useEffect(() => {
     if (status !== "playing") return;
@@ -48,7 +71,11 @@ const Multi = () => {
   // Cleanup WS
   useEffect(() => {
     return () => {
-      if (wsRef.current) wsRef.current.close();
+      if (wsRef.current) {
+        manualCloseRef.current = true;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
   }, []);
 
@@ -74,23 +101,32 @@ const Multi = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [status, selectedCell]);
+  }, [handleNumberSelect, status, selectedCell]);
 
   const handleMatchmaking = () => {
-    if (wsRef.current) wsRef.current.close();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      updateStatus("idle");
+      setMessage("Connectez-vous pour jouer en multijoueur.");
+      return;
+    }
 
-    const ws = new WebSocket(`${WEBSOCKET_BASE_URL}/ws/multi`);
+    if (wsRef.current) {
+      const previousSocket = wsRef.current;
+      wsRef.current = null;
+      previousSocket.close();
+    }
+    manualCloseRef.current = false;
+
+    const ws = new WebSocket(`${WEBSOCKET_BASE_URL}/ws/multi`, [
+      "golbugames",
+      `auth.${token}`,
+    ]);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      setStatus("searching");
+      updateStatus("searching");
       setMessage("🔍 Recherche d’un joueur...");
-      ws.send(
-        JSON.stringify({
-          type: "system",
-          action: "join_matchmaking",
-        })
-      );
     };
 
     ws.onmessage = (event) => {
@@ -101,7 +137,7 @@ const Multi = () => {
     if (msg.type === "system") {
       switch (msg.message) {
         case "waitingOpponent":
-          setStatus("waiting");
+          updateStatus("waiting");
           setMessage("En attente d’un autre joueur...");
           break;
 
@@ -110,7 +146,7 @@ const Multi = () => {
           break;
 
         case "gameStarting":
-          setStatus("countdown");
+          updateStatus("countdown");
           let count = msg.countdown || 5;
           setMessage(`La partie commence dans ${count}...`);
 
@@ -120,7 +156,7 @@ const Multi = () => {
               setMessage(`La partie commence dans ${count}...`);
             } else {
               clearInterval(interval);
-              setStatus("playing");
+              updateStatus("playing");
               setMessage("🎮 Partie commencée !");
               const board = parseBoardArray(msg.grid);
               setGrid(board);
@@ -132,13 +168,13 @@ const Multi = () => {
           break;
 
         case "gameEnding":
-          setStatus("finished");
+          updateStatus("finished");
           setWinner(msg.winner);
           setMessage(`Partie terminée. Vainqueur: ${msg.winner}`);
           break;
 
         case "opponentLeft":
-          setStatus("left");
+          updateStatus("left");
           setMessage("❌ Votre adversaire a quitté la partie.");
           break;
 
@@ -147,8 +183,11 @@ const Multi = () => {
       }
     }
 
-    if (msg.type === "gameMessage") {
-      const { row, col, value, valid } = msg;
+    if (msg.type === "validate_move") {
+      const { position, value, valid } = msg;
+      if (!Number.isInteger(position) || position < 0 || position >= 81) return;
+      const row = Math.floor(position / 9);
+      const col = position % 9;
       if (valid) {
         setGrid((prev) => {
           const newGrid = prev.map((r) => [...r]);
@@ -167,38 +206,21 @@ const Multi = () => {
 
 
     ws.onclose = () => {
-      if (status !== "finished") {
-        setStatus("idle");
+      if (wsRef.current !== ws || manualCloseRef.current) return;
+      if (!["finished", "left"].includes(statusRef.current)) {
+        updateStatus("idle");
         setMessage("❌ Déconnecté du serveur.");
       }
     };
   };
         
-  const handleNumberSelect = (number) => {
-    if (
-      !selectedCell ||
-      givenCells.includes(selectedCell.row * 9 + selectedCell.col)
-    )
-      return;
-
-    const { row, col } = selectedCell;
-    const position = row * 9 + col;
-
-    if (wsRef.current) {
-      wsRef.current.send(
-        JSON.stringify({ type: "validate_move", position, "value":number })
-      );
-    }
-  };
-
   const handleQuit = () => {
     if (wsRef.current) {
-      wsRef.current.send(
-        JSON.stringify({ type: "system", action: "quit", code: 1003 })
-      );
+      manualCloseRef.current = true;
       wsRef.current.close();
+      wsRef.current = null;
     }
-    setStatus("idle");
+    updateStatus("idle");
     setMessage("Vous avez quitté la partie.");
   };
 
@@ -207,9 +229,12 @@ const Multi = () => {
       <h1 className="multi-title">Multijoueur Sudoku</h1>
 
       {status === "idle" && (
-        <button className="button mode-button" onClick={handleMatchmaking}>
-          Trouver un joueur
-        </button>
+        <>
+          <button className="button mode-button" onClick={handleMatchmaking}>
+            Trouver un joueur
+          </button>
+          {message && <p className="status-box">{message}</p>}
+        </>
       )}
 
       {["searching", "waiting", "countdown"].includes(status) && (
@@ -284,12 +309,18 @@ const Multi = () => {
         <div className="status-box">
           <p>{message}</p>
           {winner && <p className="winner">🏆 Gagnant : {winner}</p>}
+          <button className="button mode-button" onClick={handleQuit}>
+            Retour au menu
+          </button>
         </div>
       )}
 
       {status === "left" && (
         <div className="status-box">
           <p>{message}</p>
+          <button className="button mode-button" onClick={handleQuit}>
+            Retour au menu
+          </button>
         </div>
       )}
     </div>
